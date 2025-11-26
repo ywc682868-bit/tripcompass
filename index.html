@@ -43,16 +43,13 @@
     position: fixed;
     bottom: 50px; 
     
-    /* ▼▼▼ 修改這裡：從置中改為靠左 ▼▼▼ */
-    /* 原本是 left: 50%; transform: translateX(-50%); */
-    
-    left: 20px;   /* 距離左邊螢幕邊緣 20px */
-    transform: none; /* 取消置中位移 */
+    left: 5px;  /* 距離左邊只留 5px，更靠左 */
+    width: calc(100% - 10px); /* 總寬度減去 10px (左右各留 5px)，變超長 */
     
     /* 建議：若靠左，寬度可以縮小一點，不用佔滿 90% */
     /* 如果覺得太長，可以把 width: 90% 改為 width: auto 或 max-width: ... */
     width: 95%; 
-    max-width: 550px;
+    max-width: 500px;
 
     /* ...其他樣式保持不變... */
     height: 56px;
