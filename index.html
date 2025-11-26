@@ -39,30 +39,35 @@
             z-index: 100;
         }
         
-       #combined-bottom-bar {
-    position: fixed;
-    bottom: 50px; 
-    
-    left: 1px;  /* 距離左邊只留 5px，更靠左 */
-    width: calc(100% - 10px); /* 總寬度減去 10px (左右各留 5px)，變超長 */
-    
-    /* 建議：若靠左，寬度可以縮小一點，不用佔滿 90% */
-    /* 如果覺得太長，可以把 width: 90% 改為 width: auto 或 max-width: ... */
-    width: 95%; 
-    max-width: 550px;
+       /* ... 前面的 CSS ... */
 
-    /* ...其他樣式保持不變... */
+#combined-bottom-bar {
+    position: fixed;
+    
+    /* ▼▼▼ 修改這裡 ▼▼▼ */
+    /* 將原本的 bottom: 0; 改為 15px 或 20px */
+    bottom: 20px; 
+    
+    left: 50%; 
+    transform: translateX(-50%);
+    width: 100%; 
+    max-width: 500px; 
     height: 56px;
     background-color: white; 
-    border-radius: 50px; 
-    border: 1px solid #e5e7eb;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); 
+    border-top: 1px solid #e5e7eb;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.02);
     z-index: 50;
     display: flex; 
     align-items: center; 
-    justify-content: flex-start;
-    padding: 00.5 rem;
+    justify-content: space-between;
+    padding: 0 0.75rem;
+
+    /* ▼▼▼ 建議新增 ▼▼▼ */
+    /* 因為往上移了，建議加上圓角會比較好看，像個懸浮島 */
+    border-radius: 16px; 
+    border: 1px solid #e5e7eb; /* 補上邊框讓它更明顯 */
 }
+
 
         .trip-card:last-child .timeline-connector { display: none; }
         .location-link { cursor: pointer; text-decoration: none; color: inherit; }
