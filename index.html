@@ -28,7 +28,7 @@
             background-color: white;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
             position: relative;
-            padding-bottom: 70px; 
+            padding-bottom: 90px; 
         }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -39,27 +39,32 @@
             z-index: 100;
         }
         
-        #combined-bottom-bar {
-            position: fixed; bottom: 20px; 
+       #combined-bottom-bar {
+    position: fixed;
+    
+    /* ▼▼▼ 修改這裡：加大數值，讓它浮得更高 ▼▼▼ */
+    bottom: 50px; 
     
     left: 50%; 
     transform: translateX(-50%);
-    width: 100%; 
-    max-width: 500px; 
+    
+    /* 建議：為了讓懸浮感更自然，稍微縮減寬度，不要貼齊螢幕邊緣 */
+    width: 92%; 
+    max-width: 480px;
+    
     height: 56px;
     background-color: white; 
-    border-top: 1px solid #e5e7eb;
-    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.02);
+    
+    /* 加上圓角與陰影，讓它像個膠囊 */
+    border-radius: 50px; 
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); 
+    
     z-index: 50;
     display: flex; 
     align-items: center; 
     justify-content: space-between;
-    padding: 0 0.75rem;
-
-    /* ▼▼▼ 建議新增 ▼▼▼ */
-    /* 因為往上移了，建議加上圓角會比較好看，像個懸浮島 */
-    border-radius: 16px; 
-    border: 1px solid #e5e7eb; /* 補上邊框讓它更明顯 */
+    padding: 0 1rem; /* 左右留白稍微加大一點 */
 }
 
         .trip-card:last-child .timeline-connector { display: none; }
