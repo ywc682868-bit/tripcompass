@@ -57,8 +57,8 @@
     
     /* 加上圓角與陰影，讓它像個膠囊 */
     border-radius: 50px; 
-    border: 0px solid #e5e7eb;
-    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1); 
+    border: 2px solid #e5e7eb;
+    box-shadow: 0 6px 17px rgba(0, 0, 0, 0.1); 
     
     z-index: 50;
     display: flex; 
@@ -767,23 +767,30 @@
     </div>
     
     <div id="combined-bottom-bar">
-        <div class="flex items-center gap-0.5 bg-[#F0F0F0] p-0.5 rounded-lg border border-[#E0E0E0] flex-shrink-0 flex-grow mr-1 max-w-[85%]">
-            <span id="rate-display-label" class="text-[9px] font-bold text-[#7E92A1] mr-0.5 ml-0.5 tracking-tighter truncate">今日匯率：</span>
-            
-            <select id="bar-calc-currency" class="bg-white border border-[#E0E0E0] rounded p-0 text-[9px] font-bold text-[#5F6368] h-6 w-9 text-center appearance-none cursor-pointer">
-                <option value="USD">USD</option>
-                <option value="KRW">KRW</option>
-                <option value="JPY">JPY</option>
-                <option value="CNY">CNY</option>
-                <option value="GBP">GBP</option>
-            </select>
-            <input type="number" id="bar-calc-amount" placeholder="0" class="w-12 h-6 text-[9px] p-0.5 border border-[#E0E0E0] rounded text-center font-medium text-[#5F6368]">
-            <span class="text-[#A9A9A9] font-bold text-[9px] mx-0.5">=</span>
-            <span class="text-[#7E92A1] font-bold text-[9px]">TWD</span>
-            <input type="text" id="bar-calc-result" readonly value="0" class="w-12 h-6 text-[9px] p-0.5 border-none bg-transparent text-[#7E92A1] font-extrabold text-left focus:outline-none truncate">
-        </div>
+    <div class="flex items-center gap-1 bg-[#F0F0F0] p-1 rounded-lg border border-[#E0E0E0] flex-shrink-0 flex-grow mr-1 max-w-[85%]">
+        
+        <span id="rate-display-label" class="text-[11px] font-bold text-[#7E92A1] mr-1 ml-1 tracking-tighter truncate">今日匯率：</span>
+        
+        <select id="bar-calc-currency" class="bg-white border border-[#E0E0E0] rounded p-0 text-[11px] font-bold text-[#5F6368] h-8 w-11 text-center appearance-none cursor-pointer">
+            <option value="USD">USD</option>
+            <option value="KRW">KRW</option>
+            <option value="JPY">JPY</option>
+            <option value="CNY">CNY</option>
+            <option value="GBP">GBP</option>
+        </select>
 
-        <div class="flex items-center gap-1 flex-shrink-0 ml-auto">
+        <input type="number" id="bar-calc-amount" placeholder="0" class="w-14 h-8 text-[11px] p-1 border border-[#E0E0E0] rounded text-center font-medium text-[#5F6368]">
+        
+        <span class="text-[#A9A9A9] font-bold text-[10px] mx-0.5">=</span>
+        
+        <span class="text-[#7E92A1] font-bold text-[10px]">TWD</span>
+        
+        <input type="text" id="bar-calc-result" readonly value="0" class="w-16 h-8 text-xs p-1 border-none bg-transparent text-[#7E92A1] font-extrabold text-left focus:outline-none truncate">
+    </div>
+
+    <div class="flex items-center gap-1 flex-shrink-0 ml-auto">
+        </div>
+</div>
             <button id="add-schedule-btn" class="flex flex-row items-center gap-0.5 text-[#888888] hover:text-[#7E92A1] transition-colors">
                 <span class="text-xs">➕</span>
                 <span class="text-[10px] font-bold">新增</span>
