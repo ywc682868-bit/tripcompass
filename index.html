@@ -40,14 +40,27 @@
         }
         
         #combined-bottom-bar {
-            position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
-            width: 100%; max-width: 500px; height: 56px;
-            background-color: white; border-top: 1px solid #e5e7eb;
-            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.02);
-            z-index: 50;
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 0 0.75rem;
-        }
+            position: fixed; bottom: 20px; 
+    
+    left: 50%; 
+    transform: translateX(-50%);
+    width: 100%; 
+    max-width: 500px; 
+    height: 56px;
+    background-color: white; 
+    border-top: 1px solid #e5e7eb;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.02);
+    z-index: 50;
+    display: flex; 
+    align-items: center; 
+    justify-content: space-between;
+    padding: 0 0.75rem;
+
+    /* ▼▼▼ 建議新增 ▼▼▼ */
+    /* 因為往上移了，建議加上圓角會比較好看，像個懸浮島 */
+    border-radius: 16px; 
+    border: 1px solid #e5e7eb; /* 補上邊框讓它更明顯 */
+}
 
         .trip-card:last-child .timeline-connector { display: none; }
         .location-link { cursor: pointer; text-decoration: none; color: inherit; }
