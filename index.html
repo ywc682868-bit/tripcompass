@@ -29,7 +29,8 @@
             background-color: white;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
             position: relative;
-            padding-top: 100px; /* 留出固定 Header 的空間 */
+            /* 留出固定 Header 的空間 */
+            padding-top: 130px; 
         }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -53,7 +54,7 @@
             box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
         #header-content-wrapper {
-             padding: 0.75rem 0.75rem 0.5rem 0.75rem; 
+             padding: 0.2rem 0.75rem 0.2rem 0.75rem; 
         }
 
         #combined-bottom-bar {
@@ -68,19 +69,22 @@
             z-index: 50;
             display: flex; 
             flex-direction: column; 
-            padding: 0.75rem 0.75rem 0.5rem 0.75rem;
+            padding-top: 0.2rem; 
+    padding-right: 0.75rem; 
+    padding-bottom: 0.2rem; 
+    padding-left: 0.75rem;
             border-radius: 24px;
             border: 1px solid #f0f0f0; 
         }
 
         /* R1: 置中圓形新增按鈕的樣式 - 尺寸和樣式已調整 */
         .prominent-integrated-btn {
-            width: 36px; 
-            height: 36px; 
+            width: 30px; 
+            height: 30px; 
             background-color: #7E92A1;
             border-radius: 50%;
             color: white;
-            font-size: 20px; 
+            font-size: 18px; 
             font-weight: 300;
             display: flex;
             align-items: center;
@@ -94,6 +98,17 @@
         }
         .prominent-integrated-btn:active { transform: scale(0.95); }
 
+
+        /* 行程卡片白色色塊縮小視覺效果 */
+        .trip-card { 
+            margin-left: 0.125rem; /* 約 2px */
+            margin-right: 0.125rem; /* 約 2px */
+            width: 100%;
+            margin-bottom: 0.75rem;
+            position: relative;
+            min-height: 20px;
+            display: flex;
+        }
 
         .trip-card:last-child .timeline-connector { display: none; }
         .location-link { cursor: pointer; text-decoration: none; color: inherit; }
@@ -123,15 +138,14 @@
         .shopping-img-box { width: 50px; height: 50px; background-color: #f0f0f0; border-radius: 6px; overflow: hidden; display: flex; justify-content: center; align-items: center; cursor: pointer; border: 1px dashed #ccc; position: relative;}
         .shopping-img-box img { width: 100%; height: 100%; object-fit: cover; }
         
-        /* 針對需求 2：購物清單地點輸入欄位高一點，呈現方形 */
+        /* 針對購物清單地點輸入欄位高一點，呈現方形 */
         .shopping-location-input {
-            height: 50px; /* 設為與圖片框相同的高度 50px */
-            padding: 0.5rem; /* 增加內邊距 */
-            line-height: 1.2; /* 調整行高以容納多行文字 */
-            box-sizing: border-box; /* 確保 padding 不增加總寬度/高度 */
-            text-align: left !important; /* 取消原有的 text-align: center; */
-            font-size: 0.75rem; /* 稍大一點的字體 */
-            /* 調整 border 確保與旁邊 input 樣式統一 */
+            height: 50px; 
+            padding: 0.5rem; 
+            line-height: 1.2; 
+            box-sizing: border-box; 
+            text-align: left !important; 
+            font-size: 0.75rem; 
             border-width: 1px;
             border-color: #E0E0E0;
         }
@@ -167,14 +181,15 @@
             transform: translateX(0);
         }
         
-        /* 2. 行程卡片靜態按鈕樣式 */
+        /* 2. 行程卡片靜態按鈕樣式 - 移除絕對定位，讓其自然流動 */
         .card-static-actions {
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            display: flex;
-            gap: 4px;
-        }
+    display: flex;
+    gap: 12px;
+    align-self: flex-start; /* 靠左對齊垂直線 */
+    flex-shrink: 0;
+    margin-bottom: 8px; /* 【關鍵修改】增加與下方費用的距離 */
+    padding-left: 0.5rem; /* 與 info-block-content 對齊 */
+}
         .card-static-actions button {
             padding: 2px 6px;
             font-size: 9px;
@@ -189,9 +204,9 @@
             .swipe-item-content { transform: translateX(0) !important; }
             .trip-card .swipe-item-content { cursor: pointer; } 
             .card-static-actions { display: flex; } /* 顯示靜態按鈕 */
-            /* 修正右側區塊內容下移，讓出頂部按鈕空間 */
+            /* 修正右側區塊內容上移 */
             .info-block-content { 
-                margin-top: 30px; /* 增加頂部間距 */
+                margin-top: 0;
             }
             /* 1. 行程地點名稱上移與按鈕同列 */
             .trip-card .content-text-block { 
@@ -207,18 +222,72 @@
             }
         }
 
+        /* --- 行程卡片右側費用區塊 排版修正 (平均分散與靠左對齊垂直線) --- */
+        .trip-card .flex-row > div:nth-child(2) {
+             /* 這是包含按鈕組和費用/人名 外層的 Flex 容器 */
+             display: flex;
+             flex-direction: column;
+             /* 讓內容（按鈕組 + 費用/成員塊）在垂直方向上平均分配空間 */
+             justify-content: space-between; 
+             align-items: stretch; 
+             height: 100%;
+             padding-top: 5px; /* 確保頂部按鈕與卡片邊緣有間距 */
+        }
+
+        /* 讓 info-block-content (費用+成員) 靠底部對齊，確保費用和人名貼齊底部 */
+        .info-block-content {
+    display: flex;
+    flex-direction: column;
+    /* 貼齊底部，並確保中間元素不被壓縮 */
+    justify-content: flex-end; 
+    /* 全部靠左切齊垂直線 */
+    align-items: flex-start; 
+    
+    /* 【關鍵修改】設置行間距為 10px，增加三列的距離 */
+    gap: 10px; 
+    
+    padding-bottom: 5px; 
+    padding-top: 5px; 
+    height: 100%; 
+    width: 100%;
+    padding-left: 0.5rem; 
+}
+        /* 費用行文字強制靠左 */
+        .info-block-content > div {
+            justify-content: flex-start !important;
+            padding-left: 0; 
+        }
+
+        
         /* 3. 調整底部匯率區域高度 */
-        #currency-display-row { padding-bottom: 0.5rem; margin-bottom: 0.5rem; }
-        #rate-display-container { height: 20px; }
+        #currency-display-row { 
+     padding-bottom: 0.2rem; 
+     margin-bottom: 0.2rem; 
+     /* 增大 margin-top，例如改為 2.5rem */
+     margin-top: 0.4rem; 
+}
+        #rate-display-container { 
+            height: 20px; 
+            align-items: center;
+        }
 
         /* 1. 單行匯率樣式 */
         #rate-display-container {
             display: flex;
-            align-items: center;
+            align-items: center; /* 置中顯示 */
             justify-content: flex-start; 
-            height: 20px; 
+            height: 28px; 
             text-align: left;
             padding-left: 0.5rem; 
+        }
+        /* 放大「今日匯率」該行字體 */
+        #rate-display-label {
+            font-size: 0.85rem; 
+            font-weight: bold; 
+            color: #7E92A1;
+            text-align: left;
+            /* 確保單行文字能夠垂直置中在 20px 的高度內 */
+            line-height: 20px; 
         }
 
         /* 2. 匯率換算等號樣式 */
@@ -228,23 +297,25 @@
              color: #A9A9A9;
         }
 
-        /* R1: 【修改】TWD 0 的字體縮小一號 (需求 1) */
+        /* TWD 0 字體大小和垂直位置對齊 KRW/Input */
         .currency-result-twd {
-             font-size: 1rem; /* 縮小到 1rem (約 16px) */
+             font-size: 0.7rem; /* 匹配 KRW 代碼的字體大小 */
              font-weight: bold;
-             line-height: 1.5rem; 
+             line-height: 26px; /* 匹配輸入框高度 */
              color: #7E92A1;
+             text-align: right; 
         }
         #bar-calc-result {
             padding: 0;
             align-self: center; 
             vertical-align: middle;
             height: 1.5rem; 
-            /* 讓數字使用縮小的字體 */
-            font-size: 1rem !important; /* 確保應用縮小的字體 */
-            /* 調整水平和垂直位置 */
-            margin-right: -4px; 
-            transform: translateX(5px) translateY(0px); 
+            font-size: 0.7rem !important; /* 匹配 KRW/Input 字體大小 */
+            margin-right: 0; 
+            transform: translateX(0); 
+            line-height: 26px; /* 匹配輸入框高度 */
+            padding-left: 0.25rem; 
+            flex-grow: 1; /* 讓結果輸入框盡可能佔滿空間 */
         }
         
         /* R4: 清單內的小型 FAB 樣式 - 確保 + 置中 */
@@ -322,6 +393,7 @@
                 const day = String(date.getDate()).padStart(2, '0');
                 const dayOfWeekMap = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
                 const dayOfWeek = dayOfWeekMap[date.getDay()]; 
+                // 修正日期格式為 日.月.年 星期英文縮寫 (e.g. 25.12.23 Thu)
                 return `${day}.${month}.${year} ${dayOfWeek}`;
             }
 
@@ -365,6 +437,30 @@
                 window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(input)}`, '_blank');
             }
             
+            /**
+             * 格式化數字：如果整數或只有一位小數，則去除尾部的 .0 或 .00。
+             */
+            function formatCurrency(value) {
+                // 確保輸入是數字
+                if (typeof value !== 'number') {
+                    value = parseFloat(value);
+                }
+                
+                // 處理無效或零值
+                if (isNaN(value) || value === 0) return '0';
+                
+                // 決定要保留多少小數，然後使用 replace 去除尾隨零
+                let formatted = value.toFixed(2); 
+
+                // 移除 .00
+                formatted = formatted.replace(/\.00$/, ''); 
+                // 移除 X.Y0 尾部的 0 (例如 3935.50 -> 3935.5)
+                formatted = formatted.replace(/(\.\d)0$/, '$1'); 
+
+                return formatted;
+            }
+
+
             // --- Currency & Weather ---
             async function fetchExchangeRate(baseCurrency) {
                 const fallback = { 'USD': 32.5, 'JPY': 0.215, 'KRW': 0.023, 'GBP': 41.2, 'CNY': 4.5, 'TWD': 1 };
@@ -415,7 +511,7 @@
                 const barSelect = document.getElementById('bar-calc-currency');
                 if(barSelect) { 
                     barSelect.value = currencyConfig.currency; 
-                    document.getElementById('bar-calc-amount').value = 1; 
+                    // 移除預設設置 value = 1 的行，讓輸入框保持空白
                     calculateCurrency(); 
                 }
 
@@ -444,7 +540,7 @@
                 const style = getCardStyle(schedule.Type);
                 const config = CATEGORY_COLORS[schedule.Type] || CATEGORY_COLORS['default'];
                 
-                // --- 【修改】需求 3: 卡片顯示 TWD, 人均保留兩位小數 ---
+                // --- 費用計算邏輯 ---
                 const foreignAmount = schedule.Amount || 0;
                 const rate = schedule.Rate || 1;
                 const amountTWD = foreignAmount * rate; // 計算總金額 (TWD)
@@ -467,28 +563,30 @@
                 const remainingTWD = amountTWD - specifiedAmountTWD;
                 const unspecifiedCount = unspecifiedMembers.length;
                 
-                let perPerson = '0.00';
-                let displayAmountTWD = amountTWD.toFixed(0);
+                let perPersonTWD = 0;
+                let displayAmountTWD = amountTWD.toFixed(0); // 總金額顯示為 TWD 整數
                 
                 if (amountTWD > 0) {
                     let totalParticipants = members.length > 0 ? members.length : 1;
                     
                     if (unspecifiedCount > 0) {
-                        // 2. 計算剩餘部分的人均金額 (保留兩位小數)
-                        const splitPerPerson = remainingTWD / unspecifiedCount;
-                        perPerson = (splitPerPerson).toFixed(2); 
+                        // 2. 計算剩餘部分的人均金額
+                        perPersonTWD = remainingTWD / unspecifiedCount;
                     } else if (members.length > 0) {
                          // 如果所有成員都指定了金額
-                        perPerson = (amountTWD / totalParticipants).toFixed(2);
+                        perPersonTWD = amountTWD / totalParticipants;
                     } else {
                         // 如果沒有成員名單，則只顯示總金額/1
-                        perPerson = amountTWD.toFixed(2);
+                        perPersonTWD = amountTWD;
                     }
                     
                     // 3. 總金額顯示為 TWD 且無小數點
                     displayAmountTWD = amountTWD.toFixed(0);
                 }
-                // --- 結束修改 ---
+                
+                // 4. 格式化人均金額 (應用格式化函數)
+                const formattedPerPerson = formatCurrency(perPersonTWD);
+                // --- 結束費用計算修改 ---
                 
                 const displayName = CATEGORY_NAMES[schedule.Type] || schedule.Type;
                 const scheduleJsonString = JSON.stringify({
@@ -534,16 +632,18 @@
                             </h3>
                             <p class="text-[#888888] text-[10px] line-clamp-4 whitespace-pre-wrap leading-tight">${schedule.說明 || ''}</p>
                         </div>
+                        
                         <div class="flex flex-col items-center justify-center min-w-[70px] border-l border-gray-100 pl-1 pb-1 flex-shrink-0 relative">
-                            <div class="card-static-actions">
+                            
+                            <div class="card-static-actions"> 
                                 <button class="bg-[#7E92A1] text-white modify-btn-static" data-schedule='${scheduleJsonString}'>修改</button>
                                 <button class="bg-[#CB8572] text-white delete-btn-static" data-id="${schedule.id}">刪除</button>
                             </div>
                             
-                            <div class="flex flex-col items-start gap-2 w-full info-block-content">
-                                <div class="flex items-center justify-start leading-none w-full"><span class="text-[#8F9E8B] font-bold text-[10px]">💰 TWD$${displayAmountTWD}</span></div>
-                                <div class="flex items-center justify-start leading-none w-full"><span class="text-[#888888] font-bold text-[10px]">👫 TWD$${perPerson}</span></div>
-                                <div class="flex flex-wrap items-center justify-start max-w-[70px] leading-tight gap-0.5 mt-0.5 min-h-[12px]">${memberHtml}</div>
+                            <div class="flex flex-col items-end justify-end w-full info-block-content">
+                                <div class="flex items-center justify-end leading-none w-full"><span class="text-[#8F9E8B] font-bold text-[10px]">💰 TWD$${displayAmountTWD}</span></div>
+                                <div class="flex items-center justify-end leading-none w-full"><span class="text-[#888888] font-bold text-[10px]">👫 TWD$${formattedPerPerson}</span></div>
+                                <div class="flex flex-wrap items-center justify-end max-w-[70px] leading-tight gap-0.5 mt-0.5 min-h-[12px]">${memberHtml}</div>
                             </div>
                         </div>
                     </div>
@@ -574,19 +674,22 @@
             const loadSchedules = function(tripId, dayId) {
                 if (unsubscribeSchedule) unsubscribeSchedule();
                 document.getElementById('schedule-list-container').innerHTML = '<div class="p-4 text-center text-[#A9A9A9] text-xs">載入中...</div>';
+                
+                // 確保 Firestore 查詢包含排序欄位
                 const q = query(collection(db, `artifacts/${appId}/public/data/Trips/${tripId}/Schedules`), where('dayId', '==', dayId), orderBy('Time'));
+                
                 unsubscribeSchedule = onSnapshot(q, (snapshot) => {
                     const container = document.getElementById('schedule-list-container');
                     container.innerHTML = ''; 
                     const schedules = [];
                     const trip = tripData[currentTripId];
 
-                    // 1. 更新行程區塊標題為日期和星期
+                    // 1. 更新 Header 中的日期標題
                     if (trip) {
                         const targetDate = getDateFromDayId(trip, dayId);
                         if (targetDate) {
                             const formattedDate = formatDateForHeader(targetDate);
-                            document.getElementById('schedule-list-date-header').textContent = `${dayId} ${formattedDate}`;
+                            document.getElementById('header-day-date-display').textContent = `${formattedDate}`;
                         }
                     }
 
@@ -601,9 +704,13 @@
                         }
                         schedules.push({ id: doc.id, ...data });
                     });
-                    schedules.sort((a, b) => a.Time.localeCompare(b.Time));
+                    
                     if (schedules.length === 0) container.innerHTML = `<div class="p-4 text-center text-[#A9A9A9] text-xs">此日暫無行程。</div>`;
                     schedules.forEach(s => container.appendChild(createTripCard(s)));
+                }, (error) => {
+                    // 捕獲錯誤，以防索引未設置導致載入失敗
+                    console.error("Firestore 載入行程失敗:", error);
+                    container.innerHTML = `<div class="p-4 text-center text-[#CB8572] text-xs">行程載入錯誤，請檢查 Firebase 索引設置。</div>`;
                 });
             };
 
@@ -681,9 +788,18 @@
                 addDayBtn.textContent = '+';
                 addDayBtn.addEventListener('click', addDay); 
                 daysContainer.appendChild(addDayBtn);
-                document.getElementById('schedule-list-date-header').className = "text-sm font-bold text-[#4A4B4D] mb-1";
-                // 這裡留空，由 loadSchedules 填充 Day X 日期
-                document.getElementById('schedule-list-date-header').textContent = ''; 
+                
+                // 這裡的 Day Tabs 渲染完成後，觸發載入該 Day 的日期
+                if (currentTripId) {
+                     const selectedTrip = tripData[currentTripId];
+                     if (selectedTrip) {
+                        const targetDate = getDateFromDayId(selectedTrip, currentDayId);
+                        if (targetDate) {
+                            const formattedDate = formatDateForHeader(targetDate);
+                            document.getElementById('header-day-date-display').textContent = `${formattedDate}`;
+                        }
+                    }
+                }
             }
 
             // --- Currency Logic ---
@@ -883,10 +999,19 @@
                     Amount: parseFloat(form['form-amount'].value) || 0, Rate: currentTripRate || 1, members
                 };
                 const col = collection(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`);
-                if (editingScheduleId) await updateDoc(doc(col, editingScheduleId), data);
-                else await addDoc(col, data);
+                
+                // 執行保存操作
+                if (editingScheduleId) {
+                    await updateDoc(doc(col, editingScheduleId), data);
+                } else {
+                    await addDoc(col, data);
+                }
+                
+                // 保存成功後，關閉頁面並重新載入列表
                 document.getElementById('add-schedule-modal').style.display = 'none';
-                currentDayId = dayId; renderDayTabs(); loadSchedules(currentTripId, currentDayId);
+                currentDayId = dayId; 
+                renderDayTabs(); 
+                loadSchedules(currentTripId, currentDayId);
             }
 
             // --- Lists Feature ---
@@ -976,7 +1101,7 @@
                 listContainer.setAttribute('data-list-id', listData.id);
                 
                 if (listData.type === 'check') {
-                    // Checklist Header: 帶 | 名稱 | 收
+                    // Checklist Item: 帶 | 名稱 | 收
                     const header = document.createElement('div');
                     header.className = 'flex items-center text-xs font-bold text-[#7E92A1] px-2 py-1 mb-2 border-b border-gray-100 sticky top-0 bg-white z-20';
                     header.innerHTML = `
@@ -1008,7 +1133,7 @@
                     deleteBg.className = 'swipe-item-delete-bg';
                     deleteBg.innerHTML = `
                         <button class="px-2 py-1 h-full text-xs font-bold bg-[#7E92A1] hover:bg-[#64748B] transition-colors" data-action="modify" style="width: 70px;">修改</button>
-                        <button class="px-2 py-1 h-full text-xs font-bold bg-[#CB8572] hover:bg-[#B56B5A] transition-colors" data-action="delete" style="width: 70px;">刪除</button>
+                        <button class="px-2 py-1 h-full text-xs font-bold bg-[#CB8572] hover:bg-[#B56B5A] transition-colors" data-action="delete" data-id="${item.id}" style="width: 70px;">刪除</button>
                     `;
                     wrapper.appendChild(deleteBg);
 
@@ -1067,7 +1192,6 @@
                         if (item.imageUrl) {
                              const editOverlay = document.createElement('div');
                              editOverlay.className = 'absolute bottom-0 right-0 bg-white/80 text-[8px] px-1 cursor-pointer';
-                             editOverlay.textContent = '更換';
                              editOverlay.onclick = (e) => { e.stopPropagation(); fileInput.click(); };
                              imgBox.appendChild(editOverlay);
                         }
@@ -1097,7 +1221,7 @@
                         const inputs = content.querySelectorAll('input[type="text"], textarea');
                         inputs[0].onchange = () => updateListItem(listData, index, { text: inputs[0].value });
                         inputs[1].onchange = () => updateListItem(listData, index, { desc: inputs[1].value });
-                        // 【修改】需求 2: 這裡的 inputs[2] 現在是 地點 textarea
+                        // 修正：地點 textarea 是第三個 inputs 元素
                         inputs[2].onchange = () => updateListItem(listData, index, { location: inputs[2].value });
                     }
                     
@@ -1305,12 +1429,15 @@
                         <button id="new-trip-btn" class="px-2 py-1 bg-[#7E92A1] text-white text-xs font-semibold rounded hover:bg-[#64748B] transition-colors hidden">+ 新增</button>
                     </div>
                 </div>
+                <div id="header-day-date-container" class="pb-1">
+                    <h2 id="header-day-date-display" class="text-sm font-bold text-[#4A4B4D]"></h2>
+                </div>
                 <div id="day-tabs-container" class="flex overflow-x-auto space-x-2 pb-1 no-scrollbar"></div>
             </div>
         </header>
         
         <div class="px-3 pt-2 pb-0">
-            <h2 id="schedule-list-date-header" class="text-sm font-bold text-[#4A4B4D] mb-1"></h2>
+            <h2 id="schedule-list-date-header" class="hidden"></h2> 
         </div>
         <div id="schedule-list-container" class="px-3 pt-0 pb-4">
             <div class="p-4 text-center text-[#A9A9A9] text-xs">行程加載中...</div>
@@ -1329,7 +1456,7 @@
                 <select id="bar-calc-currency" class="bg-gray-50 border border-[#E0E0E0] rounded p-0.5 text-[10px] font-bold text-[#5F6368] h-6 w-10 text-center appearance-none cursor-pointer">
                     <option value="USD">USD</option><option value="JPY">JPY</option><option value="KRW">KRW</option><option value="CNY">CNY</option><option value="GBP">GBP</option>
                 </select>
-                <input type="number" id="bar-calc-amount" placeholder="0" class="w-10 h-6 text-[10px] p-0.5 border border-[#E0E0E0] rounded text-center font-medium text-[#5F6368]">
+                <input type="number" id="bar-calc-amount" class="w-20 h-6 text-[10px] p-0.5 border border-[#E0E0E0] rounded text-center font-medium text-[#5F6368]">
                 
                 <span class="currency-bar-equals">=</span>
                 <span class="currency-result-twd">TWD</span>
