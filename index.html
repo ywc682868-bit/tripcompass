@@ -167,15 +167,17 @@
         #currency-display-row { padding-bottom: 0.5rem; margin-bottom: 0.5rem; }
         #rate-display-container { height: 20px; }
 
-        /* 單行匯率樣式 */
+        /* 1. 單行匯率樣式 */
         #rate-display-container {
             display: flex;
             align-items: center;
-            justify-content: center;
-            height: 20px; /* 縮小高度 */
-            text-align: center;
+            /* 1. 靠左對齊 */
+            justify-content: flex-start; 
+            height: 20px; 
+            text-align: left;
+            padding-left: 0.5rem; /* 增加左內邊距 */
         }
-        
+
         /* R4: 清單內的小型 FAB 樣式 */
         .list-fab-small {
             position: absolute;
@@ -550,7 +552,7 @@
                 // rate 是: 1 外幣 = N TWD (從 API 抓取的匯率，或 fallback 值)
                 const rate = await fetchExchangeRate(currencyCode);
                 
-                // 1. 【核心修改】計算 1 TWD = 多少外幣 (即 1 / rate)
+                // 1. 計算 1 TWD = 多少外幣 (即 1 / rate)
                 const twdToForeignRate = rate > 0 ? (1 / rate) : 0; 
                 let displayRate = twdToForeignRate.toFixed(2);
                 
@@ -805,6 +807,299 @@
                 });
             }
 
+            // 4. 輔助函式：啟用滑動操作
+            function enableSwipeToDelete(contentEl, actionEl, type) {
+                let startX = 0;
+                let currentTranslate = 0;
+                let isSwiping = false;
+                const threshold = 70; 
+                const maxSlide = 140; 
+                const isMobile = window.innerWidth <= 500;
+                if (!isMobile) return; 
+
+                contentEl.addEventListener('touchstart', (e) => {
+                    startX = e.touches[0].clientX;
+                    isSwiping = false;
+                    // Reset others
+                    document.querySelectorAll('.swipe-item-content').forEach(el => {
+                        if(el !== contentEl) el.style.transform = 'translateX(0)';
+                    });
+                }, {passive: true});
+
+                contentEl.addEventListener('touchmove', (e) => {
+                    const currentX = e.touches[0].clientX;
+                    const diff = currentX - startX;
+                    // 只允許向左滑
+                    if (diff < 0) {
+                        isSwiping = true;
+                        currentTranslate = Math.max(diff, -maxSlide); 
+                        contentEl.style.transform = `translateX(${currentTranslate}px)`;
+                    } else if(currentTranslate < 0) {
+                        // Allow to close by sliding right
+                        currentTranslate = Math.min(diff - maxSlide, 0);
+                        contentEl.style.transform = `translateX(${currentTranslate}px)`;
+                    }
+                }, {passive: true});
+
+                contentEl.addEventListener('touchend', (e) => {
+                    if (isSwiping) {
+                        if (currentTranslate < -threshold) {
+                            contentEl.style.transform = `translateX(-${maxSlide}px)`; // Keep open
+                        } else {
+                            contentEl.style.transform = `translateX(0)`; // Close
+                        }
+                    }
+                    currentTranslate = 0;
+                    isSwiping = false;
+                });
+                
+                // 處理點擊滑動區域按鈕的事件
+                actionEl.querySelectorAll('button').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const action = button.getAttribute('data-action');
+                        if (type === 'schedule') {
+                            const scheduleJson = JSON.parse(button.closest('.swipe-item-delete-bg').querySelector('[data-action="modify"]').getAttribute('data-schedule'));
+                            if (action === 'modify') {
+                                openEditScheduleModal(JSON.stringify(scheduleJson));
+                            } else if (action === 'delete') {
+                                deleteSchedule(scheduleJson.id);
+                            }
+                        } else if (type === 'list') {
+                            const wrapper = button.closest('.swipe-item-container');
+                            const listData = tripData[currentTripId].lists.find(l => l.id === currentListTabId); 
+                            const index = parseInt(wrapper.getAttribute('data-index'));
+                            if (action === 'delete') {
+                                deleteListItem(listData, index);
+                            } else if (action === 'modify') {
+                                alert("請直接點擊輸入框進行修改。");
+                            }
+                        }
+                        contentEl.style.transform = `translateX(0)`;
+                    });
+                });
+            }
+
+
+            function openEditScheduleModal(json) {
+                const s = JSON.parse(json);
+                editingScheduleId = s.id;
+                document.getElementById('add-schedule-modal-title').textContent = s.Location; 
+                document.getElementById('modal-save-btn').textContent = '儲存';
+                const deleteBtn = document.getElementById('modal-delete-btn');
+                deleteBtn.style.display = 'block';
+                deleteBtn.onclick = () => deleteSchedule(s.id);
+                document.getElementById('form-date').value = s.Date; document.getElementById('form-time').value = s.Time;
+                document.getElementById('form-location').value = s.Location; document.getElementById('form-type').value = s.Type;
+                document.getElementById('form-details').value = s.說明; document.getElementById('form-address').value = s.Address;
+                document.getElementById('form-amount').value = s.Amount || 0;
+                const trip = tripData[currentTripId];
+                document.getElementById('form-currency-label').textContent = trip.currency || 'TWD';
+                updateTwdPreview(s.Amount || 0);
+                const container = document.getElementById('form-members-container'); container.innerHTML = '';
+                const members = s.members || [];
+                if (members.length > 0) members.forEach(m => addMemberInput(typeof m === 'string' ? m : m.name, typeof m === 'string' ? '' : m.amount));
+                else { addMemberInput('',''); addMemberInput('',''); }
+                document.getElementById('add-schedule-modal').style.display = 'flex';
+            }
+            function showAddScheduleModal() {
+                if (!currentTripId) { alert("請先選擇計畫"); return; }
+                document.getElementById('add-schedule-form').reset(); editingScheduleId = null;
+                document.getElementById('modal-delete-btn').style.display = 'none';
+                const container = document.getElementById('form-members-container'); container.innerHTML = '';
+                const trip = tripData[currentTripId];
+                document.getElementById('form-date').min = trip.startDate;
+                document.getElementById('form-date').value = getDateFromDayId(trip, currentDayId).toISOString().split('T')[0];
+                document.getElementById('form-time').value = new Date().toTimeString().substring(0, 5);
+                document.getElementById('form-currency-label').textContent = trip.currency || 'TWD';
+                document.getElementById('add-schedule-modal-title').textContent = '新增行程';
+                const defMembers = trip.members || [];
+                if (defMembers.length > 0) defMembers.forEach(n => addMemberInput(n, ''));
+                else { addMemberInput('',''); addMemberInput('',''); }
+                document.getElementById('add-schedule-modal').style.display = 'flex';
+            }
+            function showSettingsModal() {
+                const t = tripData[currentTripId];
+                document.getElementById('settings-trip-name').value = t.name;
+                document.getElementById('settings-trip-country').value = t.country || 'TW'; 
+                document.getElementById('settings-start-date').value = t.startDate || getTodayDateString();
+                document.getElementById('settings-num-days').value = t.numDays || 1;
+                const c = document.getElementById('settings-members-container'); c.innerHTML = '';
+                (t.members || []).forEach(n => addTripMemberInput(n));
+                if (!(t.members || []).length) { addTripMemberInput(''); addTripMemberInput(''); }
+                document.getElementById('settings-modal').style.display = 'flex';
+            }
+            function addMemberInput(name='', amt='') {
+                const d = document.createElement('div'); d.className = 'flex items-center space-x-2 mt-1.5';
+                d.innerHTML = `<input type="text" name="schedule-member-name" value="${name}" placeholder="名字" class="compact-input w-16 rounded-md border border-[#E0E0E0]"><input type="number" name="schedule-member-amount" value="${amt}" placeholder="金額" class="compact-input w-16 rounded-md border border-[#E0E0E0]"><button type="button" class="text-[#CB8572] font-bold p-1 rm-btn">×</button>`;
+                d.querySelector('.rm-btn').onclick = () => d.remove();
+                document.getElementById('form-members-container').appendChild(d);
+            }
+            function addTripMemberInput(name='') {
+                const d = document.createElement('div'); d.className = 'flex items-center space-x-2 mt-1.5';
+                d.innerHTML = `<input type="text" name="trip-member-name" value="${name}" placeholder="成員名字" class="flex-1 rounded-md border border-[#E0E0E0] p-2 border compact-input"><button type="button" class="text-[#CB8572] font-bold p-1 rm-btn">×</button>`;
+                d.querySelector('.rm-btn').onclick = () => d.remove();
+                document.getElementById('settings-members-container').appendChild(d);
+            }
+            async function submitSchedule() {
+                const form = document.getElementById('add-schedule-form');
+                const dateVal = form['form-date'].value;
+                if (!dateVal) return alert("請選日期");
+                const trip = tripData[currentTripId];
+                const dayId = `Day ${dateDiffInDays(new Date(dateVal), new Date(trip.startDate)) + 1}`;
+                const members = [];
+                const names = document.querySelectorAll('input[name="schedule-member-name"]');
+                const amts = document.querySelectorAll('input[name="schedule-member-amount"]');
+                names.forEach((n, i) => { if(n.value.trim()) members.push({name: n.value.trim(), amount: amts[i].value ? parseFloat(amts[i].value) : null}); });
+                const data = {
+                    dayId, Time: form['form-time'].value, Location: form['form-location'].value,
+                    Type: form['form-type'].value, 說明: form['form-details'].value, Address: form['form-address'].value,
+                    Amount: parseFloat(form['form-amount'].value) || 0, Rate: currentTripRate || 1, members
+                };
+                const col = collection(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`);
+                if (editingScheduleId) await updateDoc(doc(col, editingScheduleId), data);
+                else await addDoc(col, data);
+                document.getElementById('add-schedule-modal').style.display = 'none';
+                currentDayId = dayId; renderDayTabs(); loadSchedules(currentTripId, currentDayId);
+            }
+
+            // --- Lists Feature ---
+            async function checkAndCreateDefaultLists(tripId) {
+                const listCol = collection(db, `artifacts/${appId}/public/data/Trips/${tripId}/Lists`);
+                const snapshot = await getDocs(listCol);
+                if (snapshot.empty) {
+                    await addDoc(listCol, { name: '物品', type: 'check', order: 1, items: [] });
+                    await addDoc(listCol, { name: '購物', type: 'shopping', order: 2, items: [] });
+                }
+            }
+
+            function loadLists() {
+                if (!currentTripId) return alert("請先選擇計畫");
+                document.getElementById('lists-modal').style.display = 'flex';
+                if (unsubscribeLists) unsubscribeLists();
+                const q = query(collection(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Lists`), orderBy('order'));
+                unsubscribeLists = onSnapshot(q, (snapshot) => {
+                    const tabsContainer = document.getElementById('list-tabs');
+                    const contentContainer = document.getElementById('list-content');
+                    tabsContainer.innerHTML = '';
+                    
+                    let lists = [];
+                    snapshot.forEach(doc => lists.push({ id: doc.id, ...doc.data() }));
+                    // 為了 List Swipe 邏輯能存取，將 List Data 暫存到 tripData
+                    if (tripData[currentTripId]) tripData[currentTripId].lists = lists;
+
+                    if (lists.length === 0) {
+                        contentContainer.innerHTML = '<div class="p-4 text-center text-[#A9A9A9] text-xs">請新增清單</div>';
+                        return;
+                    }
+                    if (!currentListTabId || !lists.find(l => l.id === currentListTabId)) currentListTabId = lists[0].id;
+
+                    lists.forEach(l => {
+                        const tab = document.createElement('div');
+                        const isActive = l.id === currentListTabId;
+                        tab.className = `cursor-pointer px-3 py-1 text-sm ${isActive ? 'list-tab-active' : 'list-tab-inactive'}`;
+                        tab.textContent = l.name;
+                        tab.onclick = () => { currentListTabId = l.id; loadLists(); };
+                        tabsContainer.appendChild(tab);
+                    });
+
+                    // Add Tab (+)
+                    const addTab = document.createElement('div');
+                    addTab.className = 'cursor-pointer px-3 py-1 text-sm text-[#A9A9A9] font-bold';
+                    addTab.textContent = '+';
+                    addTab.onclick = async () => {
+                        const name = prompt("輸入新清單名稱：");
+                        if (name) {
+                            await addDoc(collection(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Lists`), {
+                                name, type: 'check', order: lists.length + 1, items: []
+                            });
+                        }
+                    };
+                    tabsContainer.appendChild(addTab);
+
+                    // Render Content
+                    const activeList = lists.find(l => l.id === currentListTabId);
+                    contentContainer.innerHTML = '';
+                    if (activeList) {
+                        renderListItems(activeList, contentContainer);
+                    }
+                });
+            }
+
+            // 4. 輔助函式：啟用滑動操作
+            function enableSwipeToDelete(contentEl, actionEl, type) {
+                let startX = 0;
+                let currentTranslate = 0;
+                let isSwiping = false;
+                const threshold = 70; 
+                const maxSlide = 140; 
+                const isMobile = window.innerWidth <= 500;
+                if (!isMobile) return; 
+
+                contentEl.addEventListener('touchstart', (e) => {
+                    startX = e.touches[0].clientX;
+                    isSwiping = false;
+                    // Reset others
+                    document.querySelectorAll('.swipe-item-content').forEach(el => {
+                        if(el !== contentEl) el.style.transform = 'translateX(0)';
+                    });
+                }, {passive: true});
+
+                contentEl.addEventListener('touchmove', (e) => {
+                    const currentX = e.touches[0].clientX;
+                    const diff = currentX - startX;
+                    // 只允許向左滑
+                    if (diff < 0) {
+                        isSwiping = true;
+                        currentTranslate = Math.max(diff, -maxSlide); 
+                        contentEl.style.transform = `translateX(${currentTranslate}px)`;
+                    } else if(currentTranslate < 0) {
+                        // Allow to close by sliding right
+                        currentTranslate = Math.min(diff - maxSlide, 0);
+                        contentEl.style.transform = `translateX(${currentTranslate}px)`;
+                    }
+                }, {passive: true});
+
+                contentEl.addEventListener('touchend', (e) => {
+                    if (isSwiping) {
+                        if (currentTranslate < -threshold) {
+                            contentEl.style.transform = `translateX(-${maxSlide}px)`; // Keep open
+                        } else {
+                            contentEl.style.transform = `translateX(0)`; // Close
+                        }
+                    }
+                    currentTranslate = 0;
+                    isSwiping = false;
+                });
+                
+                // 處理點擊滑動區域按鈕的事件
+                actionEl.querySelectorAll('button').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const action = button.getAttribute('data-action');
+                        if (type === 'schedule') {
+                            const scheduleJson = JSON.parse(button.closest('.swipe-item-delete-bg').querySelector('[data-action="modify"]').getAttribute('data-schedule'));
+                            if (action === 'modify') {
+                                openEditScheduleModal(JSON.stringify(scheduleJson));
+                            } else if (action === 'delete') {
+                                deleteSchedule(scheduleJson.id);
+                            }
+                        } else if (type === 'list') {
+                            const wrapper = button.closest('.swipe-item-container');
+                            const listData = tripData[currentTripId].lists.find(l => l.id === currentListTabId); 
+                            const index = parseInt(wrapper.getAttribute('data-index'));
+                            if (action === 'delete') {
+                                deleteListItem(listData, index);
+                            } else if (action === 'modify') {
+                                alert("請直接點擊輸入框進行修改。");
+                            }
+                        }
+                        contentEl.style.transform = `translateX(0)`;
+                    });
+                });
+            }
+
+
             function renderListItems(listData, container) {
                 const items = listData.items || [];
                 
@@ -1010,17 +1305,27 @@
                     stats[name].categories[type] = (stats[name].categories[type] || 0) + amountTWD;
                 }
                 document.getElementById('expense-total-amount').textContent = grandTotalTWD.toFixed(0);
-                if (expenseChart) expenseChart.destroy();
+                
+                // 3. 圓餅圖顯示邏輯優化
+                const chartContainer = document.getElementById('expense-chart-container');
+                chartContainer.innerHTML = '<canvas id="expense-chart"></canvas>'; // 重新創建 Canvas
                 const ctx = document.getElementById('expense-chart').getContext('2d');
+                
+                if (expenseChart) expenseChart.destroy(); // 銷毀舊圖表
+
                 expenseChart = new Chart(ctx, { 
                     type: 'pie', 
                     data: { 
                         labels: Object.keys(typeTotalsTWD).map(t => CATEGORY_NAMES[t] || t),
                         datasets: [{ data: Object.values(typeTotalsTWD), backgroundColor: Object.keys(typeTotalsTWD).map(t => (CATEGORY_COLORS[t]||CATEGORY_COLORS.default).hex), borderWidth: 0 }] 
                     },
-                    options: { plugins: { legend: { display: false } } } 
+                    options: { 
+                         responsive: true,
+                         maintainAspectRatio: false, // 確保在 h-32 內顯示
+                         plugins: { legend: { display: false } } 
+                    } 
                 });
-                document.getElementById('expense-chart-container').innerHTML = '<canvas id="expense-chart"></canvas>';
+                
                 const list = document.getElementById('expense-member-list'); list.innerHTML = '';
                 const header = document.createElement('div');
                 header.className = 'grid grid-cols-3 border-b border-[#E0E0E0] pb-1 mb-2 font-bold text-[#5F6368] text-[10px]'; 
@@ -1106,7 +1411,7 @@
                     document.getElementById('new-trip-from-settings-btn').onclick = () => { document.getElementById('settings-modal').style.display = 'none'; document.getElementById('new-trip-modal').style.display = 'flex'; };
                 });
             }
-            return { initApp, deleteListItem }; // 移除了 showListItemOptions，因為其邏輯被整合到 swipe delete 處理中
+            return { initApp, deleteListItem };
         })();
         window.App.initApp();
     </script>
@@ -1155,11 +1460,11 @@
         
         <div id="currency-display-row" class="flex justify-between w-full border-b border-gray-100 pb-3 mb-2">
 
-            <div id="rate-display-container" class="w-1/2 flex items-center justify-center border-r border-gray-100">
-                <span id="rate-display-label" class="text-xs font-bold text-[#7E92A1] text-center">今日匯率：1 TWD = TWD 1.00</span> 
+            <div id="rate-display-container" class="w-1/2 flex items-center justify-start border-r border-gray-100 pl-1">
+                <span id="rate-display-label" class="text-xs font-bold text-[#7E92A1] text-left">今日匯率：1 TWD = TWD 1.00</span> 
             </div>
 
-            <div class="w-1/2 flex items-center justify-end gap-0.5 pl-2">
+            <div class="w-1/2 flex items-center justify-start gap-0.5 pl-2">
                 <select id="bar-calc-currency" class="bg-gray-50 border border-[#E0E0E0] rounded p-0.5 text-[10px] font-bold text-[#5F6368] h-6 w-10 text-center appearance-none cursor-pointer">
                     <option value="USD">USD</option><option value="JPY">JPY</option><option value="KRW">KRW</option><option value="CNY">CNY</option><option value="GBP">GBP</option>
                 </select>
@@ -1243,8 +1548,8 @@
 
     <div id="lists-modal" class="modal-overlay hidden">
         <div class="bg-white rounded-xl shadow-2xl p-4 w-11/12 max-w-sm h-[80vh] flex flex-col">
-            <h3 class="text-base font-bold mb-2 flex justify-between items-center text-[#4A4B4D]">清單<button id="lists-modal-close-btn" class="text-[#A9A9A9] hover:text-[#5F6368] text-xl leading-none">×</button></h3>
-            <div id="list-tabs" class="flex gap-1 border-b border-gray-100 mb-2 overflow-x-auto no-scrollbar"></div>
+            <h3 class="text-base font-bold mb-2 flex justify-between items-center flex-shrink-0 text-[#4A4B4D]">清單<button id="lists-modal-close-btn" class="text-[#A9A9A9] hover:text-[#5F6368] text-xl leading-none">×</button></h3>
+            <div id="list-tabs" class="flex gap-1 border-b border-gray-100 mb-2 overflow-x-auto no-scrollbar flex-shrink-0"></div>
             <div id="list-content" class="flex-grow overflow-y-auto flex flex-col"></div>
         </div>
     </div>
