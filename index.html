@@ -29,6 +29,7 @@
             background-color: white;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
             position: relative;
+            padding-top: 100px; /* 留出固定 Header 的空間 */
         }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -39,13 +40,20 @@
             z-index: 100;
         }
 
+        /* 1. 固定 Header */
         header {
-            position: sticky;
+            position: fixed; /* 改為 fixed */
             top: 0;
+            width: 100%;
+            max-width: 500px; /* 繼承 app-container 寬度 */
+            margin: 0 auto;
             background-color: rgba(255, 255, 255, 0.98);
             backdrop-filter: blur(5px);
             z-index: 40;
             box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        #header-content-wrapper {
+             padding: 0.75rem 0.75rem 0.5rem 0.75rem; 
         }
 
         #combined-bottom-bar {
@@ -60,29 +68,31 @@
             z-index: 50;
             display: flex; 
             flex-direction: column; 
-            /* 調整整體垂直 padding */
-            padding: 0.5rem 0.75rem 0.5rem 0.75rem; 
+            padding: 0.75rem 0.75rem 0.5rem 0.75rem;
             border-radius: 24px;
             border: 1px solid #f0f0f0; 
         }
 
-        /* R1: 置中圓形新增按鈕的樣式 */
-        #center-add-btn {
+        /* R1: 置中圓形新增按鈕的樣式 - 尺寸和樣式已調整 */
+        .prominent-integrated-btn {
             width: 36px; 
             height: 36px; 
+            background-color: #7E92A1;
             border-radius: 50%;
-            color: #7E92A1;
-            font-size: 24px; 
+            color: white;
+            font-size: 20px; 
             font-weight: 300;
             display: flex;
             align-items: center;
             justify-content: center;
+            box-shadow: none; 
+            cursor: pointer;
             flex-shrink: 0;
-            margin-top: 0; 
-            padding: 0;
+            margin-top: 0px; 
+            border: none; 
             transition: transform 0.1s;
         }
-        #center-add-btn:active { transform: scale(0.95); }
+        .prominent-integrated-btn:active { transform: scale(0.95); }
 
 
         .trip-card:last-child .timeline-connector { display: none; }
@@ -110,7 +120,7 @@
         .list-tab-active { border-bottom: 2px solid #7E92A1; color: #7E92A1; font-weight: bold; }
         .list-tab-inactive { color: #A9A9A9; }
         
-        .shopping-img-box { width: 50px; height: 50px; background-color: #f0f0f0; border-radius: 6px; overflow: hidden; display: flex; justify-content: center; align-items: center; cursor: pointer; border: 1px dashed #ccc; }
+        .shopping-img-box { width: 50px; height: 50px; background-color: #f0f0f0; border-radius: 6px; overflow: hidden; display: flex; justify-content: center; align-items: center; cursor: pointer; border: 1px dashed #ccc; position: relative;}
         .shopping-img-box img { width: 100%; height: 100%; object-fit: cover; }
 
         .swipe-item-container {
@@ -120,17 +130,18 @@
             margin-bottom: 0.5rem;
             touch-action: pan-y; 
         }
+        /* 4. 行程卡片 滑動刪除區塊 */
         .swipe-item-delete-bg {
             position: absolute;
             top: 0;
             bottom: 0;
             right: 0;
-            width: 70px;
-            background-color: #EF4444; 
+            width: 140px; 
+            background-color: transparent; 
             color: white;
             display: flex;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-end;
             font-size: 0.75rem;
             font-weight: bold;
             z-index: 1;
@@ -141,8 +152,28 @@
             background-color: white;
             transition: transform 0.2s ease-out;
             transform: translateX(0);
-            /* Add padding here for click targets, especially for list items */
-            padding-right: 25px; /* Leave space for the desktop delete button */
+        }
+        
+        /* 5. PC 隱藏滑動按鈕，並復位卡片 */
+        @media (min-width: 501px) {
+            .swipe-item-delete-bg { display: none !important; }
+            .swipe-item-content { transform: translateX(0) !important; }
+            /* 讓整個卡片可點擊 */
+            .trip-card .swipe-item-content { cursor: pointer; } 
+        }
+
+
+        /* 3. 調整底部匯率區域高度 */
+        #currency-display-row { padding-bottom: 0.5rem; margin-bottom: 0.5rem; }
+        #rate-display-container { height: 20px; }
+
+        /* 單行匯率樣式 */
+        #rate-display-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 20px; /* 縮小高度 */
+            text-align: center;
         }
         
         /* R4: 清單內的小型 FAB 樣式 */
@@ -150,37 +181,22 @@
             position: absolute;
             bottom: 10px; 
             right: 10px; 
-            width: 30px; 
-            height: 30px; 
+            width: 36px; 
+            height: 36px; 
             background-color: #7E92A1;
             color: white;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 18px;
-            font-weight: bold;
+            font-size: 20px;
+            font-weight: 300;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             cursor: pointer;
             z-index: 50;
             transition: transform 0.1s;
         }
         .list-fab-small:active { transform: scale(0.9); }
-        
-        /* 新增：桌面版刪除按鈕樣式 */
-        .desktop-delete-btn {
-            position: absolute;
-            right: 0;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #EF4444;
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-            padding: 5px;
-            line-height: 1;
-            z-index: 15; /* 確保它在內容之上 */
-        }
 
     </style>
     <script type="module">
@@ -196,7 +212,7 @@
               projectId: "mytravelplanner-36283",
               storageBucket: "mytravelplanner-36283.appspot.com",
               messagingSenderId: "86504733738",
-              appId: "1:86504733738:web:5167a6a795eb206dfed753"
+              appId: "1:86504733738:web:5167a6a795eb2066f272d"
             };
 
             const COUNTRY_CONFIG = {
@@ -366,9 +382,21 @@
 
                 const card = document.createElement('div');
                 card.className = 'trip-card flex w-full mb-3 relative min-h-[90px]';
-                card.innerHTML = `
-                    <div class="timeline-connector absolute -bottom-2 left-7 w-[3px] h-4 bg-[#7E92A1] transform -translate-x-1/2 z-0"></div>
-                    <div class="flex w-full rounded-xl shadow-lg bg-white overflow-visible relative items-stretch h-full z-10">
+                
+                // 4. & 5. 滑動操作區域 (包含修改和刪除按鈕)
+                const swipeActions = document.createElement('div');
+                swipeActions.className = 'swipe-item-delete-bg';
+                swipeActions.innerHTML = `
+                    <button class="px-2 py-1 h-full text-xs font-bold bg-[#7E92A1] hover:bg-[#64748B] transition-colors" data-action="modify" data-schedule='${scheduleJsonString}' style="width: 70px;">修改</button>
+                    <button class="px-2 py-1 h-full text-xs font-bold bg-[#CB8572] hover:bg-[#B56B5A] transition-colors" data-action="delete" data-id="${schedule.id}" style="width: 70px;">刪除</button>
+                `;
+                card.appendChild(swipeActions);
+
+
+                const content = document.createElement('div');
+                content.className = 'swipe-item-content flex w-full rounded-xl shadow-lg bg-white overflow-visible relative items-stretch h-full z-10';
+                
+                content.innerHTML = `
                         <div class="${config.bg} w-14 flex-none flex flex-col items-center justify-start gap-2 text-white rounded-l-xl relative z-10 h-full py-2.5">
                              <span class="text-[10px] font-bold tracking-tight leading-none">${schedule.Time}</span>
                              <span class="text-2xl leading-none mb-1">${style.icon}</span>
@@ -382,7 +410,6 @@
                                 <p class="text-[#888888] text-[10px] line-clamp-4 whitespace-pre-wrap leading-tight">${schedule.說明 || ''}</p>
                             </div>
                             <div class="flex flex-col items-center justify-center min-w-[70px] border-l border-gray-100 pl-1 pb-1 flex-shrink-0">
-                                <button class="px-2 pt-[0.5px] pb-0 text-[9px] text-white bg-[#6B7280] rounded hover:bg-[#4B5563] transition-colors modify-btn mb-1 w-auto text-center">修改</button>
                                 <div class="flex flex-col items-start gap-2 mt-2 w-full">
                                     <div class="flex items-center justify-start leading-none w-full"><span class="text-[#8F9E8B] font-bold text-[10px]">💰 ${amount > 0 ? amount : 0}</span></div>
                                     <div class="flex items-center justify-start leading-none w-full"><span class="text-[#888888] font-bold text-[10px]">👫 ${amount > 0 ? perPerson : 0}</span></div>
@@ -390,9 +417,25 @@
                                 </div>
                             </div>
                         </div>
-                    </div>`;
+                    `;
+                card.appendChild(content);
+
                 card.querySelector('.map-link').addEventListener('click', (e) => { e.preventDefault(); navigateToMap(schedule.Address || schedule.Location); });
-                card.querySelector('.modify-btn').addEventListener('click', () => openEditScheduleModal(scheduleJsonString));
+                
+                // 5. PC 模式下，點擊卡片任何地方都觸發編輯
+                content.addEventListener('click', (e) => {
+                    // 阻止點擊地圖連結時也打開編輯視窗
+                    if (e.target.classList.contains('map-link')) return; 
+                    // 檢查是否為 PC 模式 (簡易判斷，假設 max-width 500px 是手機)
+                    if (window.innerWidth > 500) { 
+                        openEditScheduleModal(scheduleJsonString);
+                    }
+                });
+
+
+                // 4. 啟用滑動操作
+                enableSwipeToDelete(content, swipeActions, 'schedule'); 
+                
                 return card;
             }
 
@@ -454,6 +497,16 @@
                 });
             };
 
+            // 2. 新增天數功能
+            const addDay = async function() {
+                if (!currentTripId) return;
+                const trip = tripData[currentTripId];
+                const newNumDays = (trip.numDays || 1) + 1;
+                await updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}`), {
+                    numDays: newNumDays
+                }, { merge: true });
+            }
+
             function changeTrip(tripId) {
                 currentTripId = tripId;
                 updateHeaderInfo();
@@ -484,7 +537,7 @@
                 const addDayBtn = document.createElement('button');
                 addDayBtn.className = 'px-3 py-1.5 text-xs font-bold rounded-lg bg-[#7E92A1] text-white hover:bg-[#64748B] flex-shrink-0 ml-2';
                 addDayBtn.textContent = '+';
-                addDayBtn.addEventListener('click', showSettingsModal); 
+                addDayBtn.addEventListener('click', addDay); 
                 daysContainer.appendChild(addDayBtn);
                 document.getElementById('schedule-list-date-header').className = "text-sm font-bold text-[#4A4B4D] mb-1";
                 document.getElementById('schedule-list-date-header').textContent = currentDateTitle;
@@ -494,21 +547,24 @@
             async function calculateCurrency() {
                 const currencyCode = document.getElementById('bar-calc-currency').value;
                 const amount = parseFloat(document.getElementById('bar-calc-amount').value) || 0;
+                // rate 是: 1 外幣 = N TWD (從 API 抓取的匯率，或 fallback 值)
                 const rate = await fetchExchangeRate(currencyCode);
-                let twdToForeignRate = rate > 0 ? (1 / rate) : 0;
+                
+                // 1. 【核心修改】計算 1 TWD = 多少外幣 (即 1 / rate)
+                const twdToForeignRate = rate > 0 ? (1 / rate) : 0; 
                 let displayRate = twdToForeignRate.toFixed(2);
                 
-                // Updates the dynamic rate value in the left column
+                // 更新左欄的匯率顯示為單行格式: 今日匯率：1 TWD = N KRW
                 const rateDisplayLabel = document.getElementById('rate-display-label');
                 if (rateDisplayLabel) {
-                    // 只輸出動態值，靜態標籤在 HTML 中
-                    rateDisplayLabel.textContent = `${currencyCode} ${displayRate}`;
+                    rateDisplayLabel.textContent = `今日匯率：1 TWD = ${currencyCode} ${displayRate}`;
                 }
 
                 if (amount === 0) { 
                     document.getElementById('bar-calc-result').value = '0'; 
                     return; 
                 }
+                // 匯率換算 (外幣 * 匯率 = TWD) 保持不變
                 document.getElementById('bar-calc-result').value = (amount * rate).toFixed(0); 
             }
             function updateTwdPreview(amount) {
@@ -527,9 +583,83 @@
             function deleteSchedule(id) {
                 if (confirm("確定刪除？")) {
                     deleteDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`, id));
-                    document.getElementById('add-schedule-modal').style.display = 'none';
                 }
             }
+            
+            // 4. 輔助函式：啟用滑動操作
+            function enableSwipeToDelete(contentEl, actionEl, type) {
+                let startX = 0;
+                let currentTranslate = 0;
+                let isSwiping = false;
+                const threshold = 70; 
+                const maxSlide = 140; 
+                const isMobile = window.innerWidth <= 500;
+                if (!isMobile) return; // PC 模式不啟用滑動
+
+                contentEl.addEventListener('touchstart', (e) => {
+                    startX = e.touches[0].clientX;
+                    isSwiping = false;
+                    // Reset others
+                    document.querySelectorAll('.swipe-item-content').forEach(el => {
+                        if(el !== contentEl) el.style.transform = 'translateX(0)';
+                    });
+                }, {passive: true});
+
+                contentEl.addEventListener('touchmove', (e) => {
+                    const currentX = e.touches[0].clientX;
+                    const diff = currentX - startX;
+                    // 只允許向左滑
+                    if (diff < 0) {
+                        isSwiping = true;
+                        currentTranslate = Math.max(diff, -maxSlide); 
+                        contentEl.style.transform = `translateX(${currentTranslate}px)`;
+                    } else if(currentTranslate < 0) {
+                        // Allow to close by sliding right
+                        currentTranslate = Math.min(diff - maxSlide, 0);
+                        contentEl.style.transform = `translateX(${currentTranslate}px)`;
+                    }
+                }, {passive: true});
+
+                contentEl.addEventListener('touchend', (e) => {
+                    if (isSwiping) {
+                        if (currentTranslate < -threshold) {
+                            contentEl.style.transform = `translateX(-${maxSlide}px)`; // Keep open
+                        } else {
+                            contentEl.style.transform = `translateX(0)`; // Close
+                        }
+                    }
+                    currentTranslate = 0;
+                    isSwiping = false;
+                });
+                
+                // 處理點擊滑動區域按鈕的事件
+                actionEl.querySelectorAll('button').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const action = button.getAttribute('data-action');
+                        if (type === 'schedule') {
+                            const scheduleJson = JSON.parse(button.closest('.swipe-item-delete-bg').querySelector('[data-action="modify"]').getAttribute('data-schedule'));
+                            if (action === 'modify') {
+                                openEditScheduleModal(JSON.stringify(scheduleJson));
+                            } else if (action === 'delete') {
+                                deleteSchedule(scheduleJson.id);
+                            }
+                        } else if (type === 'list') {
+                            const wrapper = button.closest('.swipe-item-container');
+                            const listData = tripData[currentTripId].lists.find(l => l.id === currentListTabId); 
+                            const index = parseInt(wrapper.getAttribute('data-index'));
+                            if (action === 'delete') {
+                                deleteListItem(listData, index);
+                            } else if (action === 'modify') {
+                                alert("請直接點擊輸入框進行修改。");
+                            }
+                        }
+                        contentEl.style.transform = `translateX(0)`;
+                    });
+                });
+            }
+
+
             function openEditScheduleModal(json) {
                 const s = JSON.parse(json);
                 editingScheduleId = s.id;
@@ -622,34 +752,6 @@
                 }
             }
 
-            // R1 Fix: 創建一個獨立的函數來處理新增項目，保證資料完整性 (Fixes List Add Bug)
-            async function addNewListItem(tripId, listId, isChecklist) {
-                const listDocRef = doc(db, `artifacts/${appId}/public/data/Trips/${tripId}/Lists/${listId}`);
-                
-                try {
-                    const docSnap = await getDoc(listDocRef);
-                    if (!docSnap.exists()) {
-                         console.error("List document does not exist:", listId);
-                         return;
-                    }
-                    
-                    const currentData = docSnap.data();
-                    const currentItems = currentData.items || [];
-                    let newItem;
-                    if (isChecklist) {
-                        newItem = { id: Date.now(), text: '', checkedLeft: false, checkedRight: false };
-                    } else {
-                        newItem = { id: Date.now(), text: '', desc: '', location: '', imageUrl: '' };
-                    }
-                    await updateDoc(listDocRef, { items: [...currentItems, newItem] });
-                } catch (error) {
-                    console.error("Error adding new list item:", error);
-                    // 提供使用者回饋
-                    alert("新增項目失敗，請稍後再試。");
-                }
-            }
-
-
             function loadLists() {
                 if (!currentTripId) return alert("請先選擇計畫");
                 document.getElementById('lists-modal').style.display = 'flex';
@@ -662,7 +764,9 @@
                     
                     let lists = [];
                     snapshot.forEach(doc => lists.push({ id: doc.id, ...doc.data() }));
-                    
+                    // 為了 List Swipe 邏輯能存取，將 List Data 暫存到 tripData
+                    if (tripData[currentTripId]) tripData[currentTripId].lists = lists;
+
                     if (lists.length === 0) {
                         contentContainer.innerHTML = '<div class="p-4 text-center text-[#A9A9A9] text-xs">請新增清單</div>';
                         return;
@@ -701,54 +805,27 @@
                 });
             }
 
-            // 輔助函式：啟用滑動刪除
-            function enableSwipeToDelete(contentEl, deleteBg, onDelete) {
-                let startX = 0;
-                let currentTranslate = 0;
-                const threshold = 50; // 滑動多少距離後顯示刪除
-                
-                contentEl.addEventListener('touchstart', (e) => {
-                    startX = e.touches[0].clientX;
-                    // Reset others
-                    document.querySelectorAll('.swipe-item-content').forEach(el => {
-                        if(el !== contentEl) el.style.transform = 'translateX(0)';
-                    });
-                }, {passive: true});
-
-                contentEl.addEventListener('touchmove', (e) => {
-                    const currentX = e.touches[0].clientX;
-                    const diff = currentX - startX;
-                    // 只允許向左滑
-                    if (diff < 0) {
-                        currentTranslate = Math.max(diff, -70); // Max slide 70px
-                        contentEl.style.transform = `translateX(${currentTranslate}px)`;
-                    }
-                }, {passive: true});
-
-                contentEl.addEventListener('touchend', (e) => {
-                    if (currentTranslate < -threshold) {
-                        contentEl.style.transform = `translateX(-70px)`; // Keep open
-                    } else {
-                        contentEl.style.transform = `translateX(0)`; // Close
-                    }
-                    currentTranslate = 0;
-                });
-                
-                deleteBg.addEventListener('click', onDelete);
-            }
-
             function renderListItems(listData, container) {
                 const items = listData.items || [];
                 
                 // --- Add Item Logic for FAB ---
-                const handleAddItem = () => {
-                    // Calls the robust asynchronous function
-                    addNewListItem(currentTripId, listData.id, listData.type === 'check');
+                const handleAddItem = async () => {
+                    let newItem;
+                    if (listData.type === 'check') {
+                        newItem = { id: Date.now(), text: '', checkedLeft: false, checkedRight: false };
+                    } else {
+                        // Shopping List item
+                        newItem = { id: Date.now(), text: '', desc: '', location: '', imageUrl: '' };
+                    }
+                    await updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Lists/${listData.id}`), {
+                        items: [...items, newItem]
+                    });
                 };
                 
                 // Items List Container
                 const listContainer = document.createElement('div');
-                listContainer.className = 'space-y-2 overflow-y-auto flex-grow pb-4'; 
+                listContainer.className = 'space-y-2 overflow-y-auto flex-grow pb-12 list-content-inner'; 
+                listContainer.setAttribute('data-list-id', listData.id);
                 
                 if (listData.type === 'check') {
                     // Checklist Header: 帶 | 名稱 | 收
@@ -758,17 +835,17 @@
                         <div class="w-8 text-center">帶</div>
                         <div class="flex-grow text-center">名稱</div>
                         <div class="w-8 text-center">收</div>
-                        <div class="w-8"></div> `;
+                    `;
                     container.appendChild(header);
                     
                 } 
                 
-                // R2: 小圓 FAB (浮動在清單右下角)
+                // R4: 小圓 FAB 
                 const smallFab = document.createElement('div');
                 smallFab.className = 'list-fab-small'; 
                 smallFab.textContent = '＋';
                 smallFab.onclick = handleAddItem;
-                container.style.position = 'relative'; // Set positioning context for container
+                container.style.position = 'relative'; 
                 container.appendChild(smallFab);
 
 
@@ -776,48 +853,45 @@
                     // Swipe Wrapper
                     const wrapper = document.createElement('div');
                     wrapper.className = 'swipe-item-container';
+                    wrapper.setAttribute('data-index', index); 
                     
+                    // 5. 清單滑動操作區塊 (包含修改和刪除按鈕)
                     const deleteBg = document.createElement('div');
                     deleteBg.className = 'swipe-item-delete-bg';
-                    deleteBg.textContent = '刪除';
+                    deleteBg.innerHTML = `
+                        <button class="px-2 py-1 h-full text-xs font-bold bg-[#7E92A1] hover:bg-[#64748B] transition-colors" data-action="modify" style="width: 70px;">修改</button>
+                        <button class="px-2 py-1 h-full text-xs font-bold bg-[#CB8572] hover:bg-[#B56B5A] transition-colors" data-action="delete" style="width: 70px;">刪除</button>
+                    `;
                     wrapper.appendChild(deleteBg);
 
                     const content = document.createElement('div');
-                    content.className = 'swipe-item-content relative'; // Added relative for desktop delete button positioning
+                    content.className = 'swipe-item-content';
                     wrapper.appendChild(content);
 
-                    // Enable Swipe
-                    enableSwipeToDelete(content, deleteBg, () => deleteListItem(listData, index));
+                    // 5. 啟用清單滑動操作
+                    enableSwipeToDelete(content, deleteBg, 'list'); 
                     
-                    // --- 1. 新增桌面版刪除按鈕元素 ---
-                    const deleteBtn = document.createElement('button');
-                    deleteBtn.className = 'desktop-delete-btn';
-                    deleteBtn.innerHTML = '×';
-                    // 綁定刪除事件
-                    deleteBtn.onclick = () => deleteListItem(listData, index); 
-                    content.appendChild(deleteBtn);
-                    // ------------------------------------
+                    // 點擊清單項目在 PC 模式下沒有任何特殊操作，手機模式下是滑動
+                    if (window.innerWidth > 500) {
+                         content.style.cursor = 'text'; // 讓滑鼠知道可以點擊編輯
+                    }
+
 
                     if (listData.type === 'check') {
                         // Checklist Item: 帶 | 名稱 | 收
                         content.className += ' flex items-center gap-2 p-2 border border-gray-100 bg-white';
                         content.innerHTML = `
                             <div class="w-8 flex justify-center"><input type="checkbox" class="w-4 h-4 cursor-pointer" ${item.checkedLeft ? 'checked' : ''}></div>
-                            <input type="text" value="${item.text}" placeholder="物品名稱" class="flex-grow compact-input border-none bg-transparent focus:bg-gray-50 text-left">
+                            <input type="text" value="${item.text}" placeholder="物品名稱" class="flex-grow compact-input border-none bg-transparent focus:bg-gray-50 text-center">
                             <div class="w-8 flex justify-center"><input type="checkbox" class="w-4 h-4 cursor-pointer" ${item.checkedRight ? 'checked' : ''}></div>
                         `;
-                        // Re-fetch inputs as innerHTML was overwritten
                         const inputs = content.querySelectorAll('input');
                         inputs[0].onchange = () => updateListItem(listData, index, { checkedLeft: inputs[0].checked });
                         inputs[1].onchange = () => updateListItem(listData, index, { text: inputs[1].value });
                         inputs[2].onchange = () => updateListItem(listData, index, { checkedRight: inputs[2].checked });
-
-                        // Append the delete button after setting innerHTML
-                        content.appendChild(deleteBtn);
-
                     } else {
-                        // Shopping Item: Image | Name/Desc | Location | Delete
-                        content.className += ' grid grid-cols-[50px_1fr_80px_25px] gap-2 items-start p-2 border border-gray-100 bg-white';
+                        // Shopping Item: Image | Name/Desc | Location
+                        content.className += ' grid grid-cols-[50px_1fr_80px] gap-2 items-start p-2 border border-gray-100 bg-white';
                         content.innerHTML = `
                             <div class="shopping-img-box" title="點擊上傳/檢視">
                                 ${item.imageUrl ? `<img src="${item.imageUrl}">` : '<span class="text-xs text-gray-400">圖</span>'}
@@ -829,15 +903,9 @@
                             <div class="flex flex-col gap-1 h-full justify-center">
                                 <input type="text" value="${item.location || ''}" placeholder="地點" class="compact-input border border-gray-100 rounded bg-gray-50 w-full text-center">
                             </div>
-                            <div class="flex justify-center items-start pt-1"></div> 
                             <input type="file" accept="image/*" class="hidden file-input">
                         `;
                         
-                        // Append the delete button into the last grid cell (index 3, but inserted dynamically)
-                        const lastGridCell = content.querySelector('.grid').children[3];
-                        if(lastGridCell) lastGridCell.appendChild(deleteBtn);
-                        
-                        // Re-bind other events and inputs
                         const imgBox = content.querySelector('.shopping-img-box');
                         const fileInput = content.querySelector('.file-input');
                         
@@ -952,6 +1020,7 @@
                     },
                     options: { plugins: { legend: { display: false } } } 
                 });
+                document.getElementById('expense-chart-container').innerHTML = '<canvas id="expense-chart"></canvas>';
                 const list = document.getElementById('expense-member-list'); list.innerHTML = '';
                 const header = document.createElement('div');
                 header.className = 'grid grid-cols-3 border-b border-[#E0E0E0] pb-1 mb-2 font-bold text-[#5F6368] text-[10px]'; 
@@ -1032,44 +1101,46 @@
                     document.getElementById('add-member-btn').onclick = () => addMemberInput('','');
                     document.getElementById('settings-add-member-btn').onclick = () => addTripMemberInput('');
                     document.getElementById('delete-trip-btn').onclick = async () => {
-                          if(confirm("刪除此計畫？")) { await deleteDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}`)); document.getElementById('settings-modal').style.display = 'none'; }
+                             if(confirm("刪除此計畫？")) { await deleteDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}`)); document.getElementById('settings-modal').style.display = 'none'; }
                     };
                     document.getElementById('new-trip-from-settings-btn').onclick = () => { document.getElementById('settings-modal').style.display = 'none'; document.getElementById('new-trip-modal').style.display = 'flex'; };
                 });
             }
-            return { initApp };
+            return { initApp, deleteListItem }; // 移除了 showListItemOptions，因為其邏輯被整合到 swipe delete 處理中
         })();
         window.App.initApp();
     </script>
 </head>
 <body>
     <div id="app-container" class="pb-20">
-        <header class="p-3 border-b border-gray-100">
-            <div class="flex justify-between items-center mb-1">
-                <div class="flex flex-col justify-center flex-grow min-w-0 mr-2">
-                    <div class="flex flex-col items-start">
-                         <div class="flex items-center w-full">
-                             <button id="settings-btn" class="p-1 mr-0.5 text-[#888888] hover:text-[#5F6368]" title="行程設定">📅</button>
-                             <select id="trip-select" class="w-full truncate"></select>
-                         </div>
-                         <div class="flex items-center space-x-1 text-[#888888] ml-1 mt-0.5">
-                            <span class="font-bold text-xs">👫</span>
-                            <span id="header-members-list" class="truncate text-xs font-bold text-gray-400">...</span>
+        <header>
+            <div id="header-content-wrapper" class="p-3 border-b border-gray-100">
+                <div class="flex justify-between items-center mb-1">
+                    <div class="flex flex-col justify-center flex-grow min-w-0 mr-2">
+                        <div class="flex flex-col items-start">
+                             <div class="flex items-center w-full">
+                                  <button id="settings-btn" class="p-1 mr-0.5 text-[#888888] hover:text-[#5F6368]" title="行程設定">📅</button>
+                                  <select id="trip-select" class="w-full truncate"></select>
+                             </div>
+                             <div class="flex items-center space-x-1 text-[#888888] ml-1 mt-0.5">
+                                <span class="font-bold text-xs">👫</span>
+                                <span id="header-members-list" class="truncate text-xs font-bold text-gray-400">...</span>
+                             </div>
                         </div>
                     </div>
-                </div>
 
-                <div id="weather-info-container" class="flex flex-col items-center justify-center mr-2 text-[#888888]">
-                     <div id="header-weather-icon" class="text-3xl leading-none mb-0"></div>
-                     <span id="header-weather-temp" class="text-base font-bold"></span>
-                     <span id="header-location-name" class="text-xs font-bold mt-0.5"></span>
-                </div>
+                    <div id="weather-info-container" class="flex flex-col items-center justify-center mr-2 text-[#888888]">
+                         <div id="header-weather-icon" class="text-3xl leading-none mb-0"></div>
+                         <span id="header-weather-temp" class="text-base font-bold"></span>
+                         <span id="header-location-name" class="text-xs font-bold mt-0.5"></span>
+                    </div>
 
-                <div class="flex items-center flex-shrink-0">
-                    <button id="new-trip-btn" class="px-2 py-1 bg-[#7E92A1] text-white text-xs font-semibold rounded hover:bg-[#64748B] transition-colors hidden">+ 新增</button>
+                    <div class="flex items-center flex-shrink-0">
+                        <button id="new-trip-btn" class="px-2 py-1 bg-[#7E92A1] text-white text-xs font-semibold rounded hover:bg-[#64748B] transition-colors hidden">+ 新增</button>
+                    </div>
                 </div>
+                <div id="day-tabs-container" class="flex overflow-x-auto space-x-2 pb-1 no-scrollbar"></div>
             </div>
-            <div id="day-tabs-container" class="flex overflow-x-auto space-x-2 pb-1 no-scrollbar"></div>
         </header>
         
         <div class="px-3 pt-2 pb-0">
@@ -1082,16 +1153,13 @@
     
     <div id="combined-bottom-bar">
         
-        <div id="currency-display-row" class="flex justify-between w-full border-b border-gray-100 pb-1 mb-1">
+        <div id="currency-display-row" class="flex justify-between w-full border-b border-gray-100 pb-3 mb-2">
 
-            <div class="flex items-center justify-end flex-1 border-r border-gray-100 pr-2">
-                <div class="flex items-baseline gap-1">
-                    <span class="text-xs text-[#7E92A1] font-bold">今日匯率：</span>
-                    <span id="rate-display-label" class="text-xs font-extrabold text-[#4A4B4D]"></span> 
-                </div>
+            <div id="rate-display-container" class="w-1/2 flex items-center justify-center border-r border-gray-100">
+                <span id="rate-display-label" class="text-xs font-bold text-[#7E92A1] text-center">今日匯率：1 TWD = TWD 1.00</span> 
             </div>
 
-            <div class="flex items-center gap-1 flex-1 pl-3">
+            <div class="w-1/2 flex items-center justify-end gap-0.5 pl-2">
                 <select id="bar-calc-currency" class="bg-gray-50 border border-[#E0E0E0] rounded p-0.5 text-[10px] font-bold text-[#5F6368] h-6 w-10 text-center appearance-none cursor-pointer">
                     <option value="USD">USD</option><option value="JPY">JPY</option><option value="KRW">KRW</option><option value="CNY">CNY</option><option value="GBP">GBP</option>
                 </select>
@@ -1103,20 +1171,18 @@
             </div>
         </div>
         
-        <div class="flex justify-around items-center w-full pt-0">
-             <button id="btn-lists" class="flex-1 flex items-center justify-center gap-1 text-[#888888] hover:text-[#7E92A1] py-1">
-                <span class="text-base">📝</span>
-                <span class="text-[12px] font-bold">清單</span>
-            </button>
-            
-            <button id="center-add-btn" class="flex items-center justify-center text-2xl font-bold flex-shrink-0 leading-none" style="width: 36px; height: 36px; border: 2px solid #7E92A1; border-radius: 50%; color: #7E92A1; background-color: white; margin-top: 0; box-shadow: 0 2px 4px rgba(126, 146, 161, 0.4);">
-                ＋
-            </button>
+        <div class="flex justify-around items-center w-full pt-1">
+             <button id="btn-lists" class="flex-1 flex flex-row items-center justify-center gap-1 text-[#888888] hover:text-[#7E92A1] py-1">
+                 <span class="text-base leading-none">📝</span>
+                 <span class="text-[12px] font-bold leading-none">清單</span>
+             </button>
+             
+             <button id="center-add-btn" class="prominent-integrated-btn">＋</button>
 
-            <button id="split-expense-btn" class="flex-1 flex items-center justify-center gap-1 text-[#888888] hover:text-[#8F9E8B] py-1">
-                <span class="text-base">💰</span>
-                <span class="text-[12px] font-bold">花費</span>
-            </button>
+             <button id="split-expense-btn" class="flex-1 flex flex-row items-center justify-center gap-1 text-[#888888] hover:text-[#8F9E8B] py-1">
+                 <span class="text-base leading-none">💰</span>
+                 <span class="text-[12px] font-bold leading-none">花費</span>
+             </button>
         </div>
     </div>
 
@@ -1155,12 +1221,12 @@
 
                     <div class="w-24 flex-shrink-0 flex flex-col gap-1 mt-6">
                          <div class="flex items-center gap-1">
-                             <label id="form-currency-label" class="text-[10px] text-[#7E92A1] font-bold w-6 text-right">USD</label>
-                             <input type="number" id="form-amount" min="0" placeholder="0" class="w-full p-1 border border-[#E0E0E0] rounded text-right text-[11px] h-7 text-[#5F6368]">
+                              <label id="form-currency-label" class="text-[10px] text-[#7E92A1] font-bold w-6 text-right">USD</label>
+                              <input type="number" id="form-amount" min="0" placeholder="0" class="w-full p-1 border border-[#E0E0E0] rounded text-right text-[11px] h-7 text-[#5F6368]">
                          </div>
                          <div class="flex items-center gap-1">
-                             <span class="text-[10px] text-[#A9A9A9] font-bold w-6 text-right">TWD</span>
-                             <input type="number" id="form-amount-twd" placeholder="0" class="w-full p-1 border border-[#E0E0E0] bg-[#F0F0F0] rounded text-right text-[#7E92A1] font-bold text-[11px] h-7">
+                              <span class="text-[10px] text-[#A9A9A9] font-bold w-6 text-right">TWD</span>
+                              <input type="number" id="form-amount-twd" placeholder="0" class="w-full p-1 border border-[#E0E0E0] bg-[#F0F0F0] rounded text-right text-[#7E92A1] font-bold text-[11px] h-7">
                          </div>
                     </div>
                 </div>
@@ -1224,7 +1290,7 @@
                     <span class="text-[#5F6368] font-medium text-xs">總花費</span>
                     <span class="text-sm font-extrabold text-[#4A4B4D]">TWD$ <span id="expense-total-amount">0</span></span>
                 </div>
-                <div class="h-32 w-full relative flex justify-center items-center">
+                <div id="expense-chart-container" class="h-32 w-full relative flex justify-center items-center">
                     <canvas id="expense-chart"></canvas>
                 </div>
             </div>
