@@ -20,6 +20,7 @@
             overflow-x: hidden;
             font-size: 0.875rem;
             color: #5F6368;
+            padding-bottom: 140px; 
         }
         #app-container {
             max-width: 500px;
@@ -28,7 +29,6 @@
             background-color: white;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
             position: relative;
-            padding-bottom: 90px; 
         }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -38,78 +38,155 @@
             display: flex; justify-content: center; align-items: center;
             z-index: 100;
         }
-        
-       /* ... 前面的 CSS ... */
 
-#combined-bottom-bar {
-    position: fixed;
-    
-    /* ▼▼▼ 修改這裡 ▼▼▼ */
-    /* 將原本的 bottom: 0; 改為 15px 或 20px */
-    bottom: 20px; 
-    
-    left: 50%; 
-    transform: translateX(-50%);
-    width: 100%; 
-    max-width: 500px; 
-    height: 55px;
-    background-color: white; 
-    border-top: 0.5px solid #e5e7eb;
-    box-shadow: 0 -15px 20px rgba(0, 0, 0, 0.1);
-    z-index: 50;
-    display: flex; 
-    align-items: center; 
-    justify-content: space-between;
-    padding: 0 0.75rem;
+        header {
+            position: sticky;
+            top: 0;
+            background-color: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(5px);
+            z-index: 40;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
 
-    /* ▼▼▼ 建議新增 ▼▼▼ */
-    /* 因為往上移了，建議加上圓角會比較好看，像個懸浮島 */
-    border-radius: 50px; 
-    border: 0.05px solid #e5e7eb; /* 補上邊框讓它更明顯 */
-}
+        #combined-bottom-bar {
+            position: fixed;
+            bottom: 20px; 
+            left: 50%; 
+            transform: translateX(-50%);
+            width: 95%; 
+            max-width: 480px; 
+            background-color: white; 
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            z-index: 50;
+            display: flex; 
+            flex-direction: column; 
+            /* 調整整體垂直 padding */
+            padding: 0.5rem 0.75rem 0.5rem 0.75rem; 
+            border-radius: 24px;
+            border: 1px solid #f0f0f0; 
+        }
+
+        /* R1: 置中圓形新增按鈕的樣式 */
+        #center-add-btn {
+            width: 36px; 
+            height: 36px; 
+            border-radius: 50%;
+            color: #7E92A1;
+            font-size: 24px; 
+            font-weight: 300;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-top: 0; 
+            padding: 0;
+            transition: transform 0.1s;
+        }
+        #center-add-btn:active { transform: scale(0.95); }
 
 
         .trip-card:last-child .timeline-connector { display: none; }
         .location-link { cursor: pointer; text-decoration: none; color: inherit; }
         .location-link:hover { color: #7E92A1; }
         
-        /* 調整選單樣式，使其看起來像大標題 */
         #trip-select {
-            font-size: 1.125rem; /* text-lg */
+            font-size: 1.125rem; 
             font-weight: 800; color: #4A4B4D; 
             background-color: transparent;
             border: none; cursor: pointer; padding-right: 1.5rem; max-width: 100%;
             text-overflow: ellipsis; overflow: hidden; white-space: nowrap; appearance: none;
             background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%237E92A1' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
             background-position: right center; background-repeat: no-repeat; background-size: 1.25em 1.25em;
-            margin-bottom: -4px; /* 拉近與下方成員的距離 */
+            margin-bottom: -4px; 
         }
         #trip-select:focus { outline: none; }
 
-        #bar-calc-currency {
-            background-color: white; border: 1px solid #E0E0E0; border-radius: 0.25rem;
-            padding: 0 0.1rem; font-weight: bold; color: #5F6368;
-            appearance: none; cursor: pointer; min-width: 34px; height: 24px; 
-            font-size: 0.6rem; text-align: center; text-align-last: center;
-        }
-        input[type=number]::-webkit-inner-spin-button, 
-        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-        
         .compact-input { padding: 0.2rem 0.3rem; font-size: 0.7rem; height: 26px; color: #5F6368; border-color: #E0E0E0; }
         .compact-input:focus { border-color: #7E92A1; outline: none; ring: 1px solid #7E92A1; }
         .compact-label { font-size: 0.7rem; margin-bottom: 0rem; color: #7E92A1; font-weight: 700; }
 
-        input[type="time"]::-webkit-datetime-edit-fields-wrapper { padding: 0; }
-        input[type="time"] { text-align: center; }
-        input[type="date"] { text-align: center; }
+        input[type="time"], input[type="date"] { text-align: center; }
         
-        #weather-info-container { cursor: pointer; }
-        #weather-info-container:active { opacity: 0.7; }
+        .list-tab-active { border-bottom: 2px solid #7E92A1; color: #7E92A1; font-weight: bold; }
+        .list-tab-inactive { color: #A9A9A9; }
+        
+        .shopping-img-box { width: 50px; height: 50px; background-color: #f0f0f0; border-radius: 6px; overflow: hidden; display: flex; justify-content: center; align-items: center; cursor: pointer; border: 1px dashed #ccc; }
+        .shopping-img-box img { width: 100%; height: 100%; object-fit: cover; }
+
+        .swipe-item-container {
+            position: relative;
+            overflow: hidden;
+            border-radius: 0.375rem;
+            margin-bottom: 0.5rem;
+            touch-action: pan-y; 
+        }
+        .swipe-item-delete-bg {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            right: 0;
+            width: 70px;
+            background-color: #EF4444; 
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: bold;
+            z-index: 1;
+        }
+        .swipe-item-content {
+            position: relative;
+            z-index: 10;
+            background-color: white;
+            transition: transform 0.2s ease-out;
+            transform: translateX(0);
+            /* Add padding here for click targets, especially for list items */
+            padding-right: 25px; /* Leave space for the desktop delete button */
+        }
+        
+        /* R4: 清單內的小型 FAB 樣式 */
+        .list-fab-small {
+            position: absolute;
+            bottom: 10px; 
+            right: 10px; 
+            width: 30px; 
+            height: 30px; 
+            background-color: #7E92A1;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            cursor: pointer;
+            z-index: 50;
+            transition: transform 0.1s;
+        }
+        .list-fab-small:active { transform: scale(0.9); }
+        
+        /* 新增：桌面版刪除按鈕樣式 */
+        .desktop-delete-btn {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #EF4444;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            padding: 5px;
+            line-height: 1;
+            z-index: 15; /* 確保它在內容之上 */
+        }
+
     </style>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, getDocs, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         window.App = (function() {
             const appId = 'my-trip-app';
@@ -117,7 +194,7 @@
               apiKey: "AIzaSyDx2yrJ3YUe93A-JdgJPtZChLvylCEht28",
               authDomain: "mytravelplanner-36283.firebaseapp.com",
               projectId: "mytravelplanner-36283",
-              storageBucket: "mytravelplanner-36283.firebasestorage.app",
+              storageBucket: "mytravelplanner-36283.appspot.com",
               messagingSenderId: "86504733738",
               appId: "1:86504733738:web:5167a6a795eb206dfed753"
             };
@@ -140,19 +217,16 @@
                 'default': { bg: 'bg-[#A9A9A9]', hex: '#A9A9A9', text: 'text-[#A9A9A9]' } 
             };
             
-            const MEMBER_COLORS = [
-                'text-[#CB8572]', 'text-[#7E92A1]', 'text-[#8F9E8B]', 'text-[#9E869C]', 'text-[#9C8B74]'
-            ];
-
-            const CATEGORY_NAMES = {
-                'location': '景點', 'restaurant': '餐廳', 'coffee': '咖啡廳', '交通': '交通', 'shopping': '購物', 'accommodation': '住宿', 'default': '未分類'
-            };
+            const MEMBER_COLORS = ['text-[#CB8572]', 'text-[#7E92A1]', 'text-[#8F9E8B]', 'text-[#9E869C]', 'text-[#9C8B74]'];
+            const CATEGORY_NAMES = { 'location': '景點', 'restaurant': '餐廳', 'coffee': '咖啡廳', '交通': '交通', 'shopping': '購物', 'accommodation': '住宿', 'default': '未分類' };
 
             let db, auth;
             let currentTripId = '', currentDayId = 'Day 1', editingScheduleId = null, tripData = {}, userLocation = null;
-            let unsubscribeSchedule = null, unsubscribeTrips = null, expenseChart = null, currentTripRate = 1;
+            let unsubscribeSchedule = null, unsubscribeTrips = null, unsubscribeLists = null, expenseChart = null, currentTripRate = 1;
             let currentLocationNameForWeather = '台北'; 
+            let currentListTabId = null;
 
+            // --- Utility Functions ---
             function formatDate(date) {
                 const year = String(date.getFullYear()).slice(-2); 
                 const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -188,21 +262,12 @@
                 return { color: config.bg, icon, hex: config.hex, text: config.text };
             }
             function navigateToMap(input) {
-    if (!input) return;
-
-    // 情況 1：如果您輸入的是完整的 Google Maps 網址 (例如短網址或分享連結)
-    // 直接打開該網址
-    if (input.includes('http') || input.includes('goo.gl') || input.includes('maps.')) {
-        window.open(input, '_blank');
-        return;
-    }
-
-    // 情況 2：如果是地址、地標或經緯度
-    // 使用 Google Maps 的標準搜尋格式： https://www.google.com/maps/search/?api=1&query=[您的內容]
-    // encodeURIComponent() 是為了把中文、空格或特殊符號轉為網址格式，避免連結失效
-    window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(input)}`, '_blank');
-}
+                if (!input) return;
+                if (input.includes('http') || input.includes('goo.gl') || input.includes('maps.')) { window.open(input, '_blank'); return; }
+                window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(input)}`, '_blank');
+            }
             
+            // --- Currency & Weather ---
             async function fetchExchangeRate(baseCurrency) {
                 const fallback = { 'USD': 32.5, 'JPY': 0.215, 'KRW': 0.023, 'GBP': 41.2, 'CNY': 4.5, 'TWD': 1 };
                 if (!baseCurrency || baseCurrency === 'TWD') return 1;
@@ -211,28 +276,20 @@
                     if (!response.ok) throw new Error('API Error');
                     const data = await response.json();
                     if (data && data.rates && data.rates.TWD) return data.rates.TWD;
-                } catch (e) {
-                    console.log("匯率抓取失敗，使用備用匯率", e);
-                }
+                } catch (e) { console.log("匯率抓取失敗", e); }
                 return fallback[baseCurrency] || 1;
             }
-            
             function getUserPosition() {
                 return new Promise((resolve, reject) => {
                     if (!navigator.geolocation) { reject('Geolocation not supported'); } else { navigator.geolocation.getCurrentPosition(resolve, reject); }
                 });
             }
-
             function openWeather() {
-                if (currentLocationNameForWeather) {
-                    window.open(`https://www.google.com/search?q=${encodeURIComponent(currentLocationNameForWeather + ' 天氣')}`, '_blank');
-                }
+                if (currentLocationNameForWeather) { window.open(`https://www.google.com/search?q=${encodeURIComponent(currentLocationNameForWeather + ' 天氣')}`, '_blank'); }
             }
-
             async function updateHeaderInfo() {
                 const trip = tripData[currentTripId];
                 if (!trip) return;
-                
                 let targetConfig = null;
                 try {
                     if (!userLocation) {
@@ -271,9 +328,7 @@
                         const colorClass = MEMBER_COLORS[i % MEMBER_COLORS.length];
                         return `<span class="${colorClass} mr-1">${m}</span>`;
                     }).join('');
-                } else {
-                    memberContainer.textContent = '尚未設定';
-                }
+                } else { memberContainer.textContent = '尚未設定'; }
 
                 try {
                     const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${targetConfig.lat}&longitude=${targetConfig.lon}&current=temperature_2m,weather_code&timezone=auto`);
@@ -286,6 +341,7 @@
                 } catch (e) {}
             }
 
+            // --- Trip Cards ---
             function createTripCard(schedule) {
                 const style = getCardStyle(schedule.Type);
                 const config = CATEGORY_COLORS[schedule.Type] || CATEGORY_COLORS['default'];
@@ -310,45 +366,31 @@
 
                 const card = document.createElement('div');
                 card.className = 'trip-card flex w-full mb-3 relative min-h-[90px]';
-                // 依據 Requirement 3 大改版面
                 card.innerHTML = `
                     <div class="timeline-connector absolute -bottom-2 left-7 w-[3px] h-4 bg-[#7E92A1] transform -translate-x-1/2 z-0"></div>
-
                     <div class="flex w-full rounded-xl shadow-lg bg-white overflow-visible relative items-stretch h-full z-10">
                         <div class="${config.bg} w-14 flex-none flex flex-col items-center justify-start gap-2 text-white rounded-l-xl relative z-10 h-full py-2.5">
                              <span class="text-[10px] font-bold tracking-tight leading-none">${schedule.Time}</span>
                              <span class="text-2xl leading-none mb-1">${style.icon}</span>
                              <span class="text-[9px] font-medium opacity-90 leading-none">${displayName}</span>
                         </div>
-
-                        <div class="flex-grow py-0.36 px-2 flex flex-row items-stretch relative rounded-r-xl bg-white z-10 h-full">
-                            
-                            <div class="flex-grow flex flex-col justify-start min-w-0 pr-2 mt-2">
+                        <div class="flex-grow py-0.36 pl-1.5 pr-2 flex flex-row items-stretch relative rounded-r-xl bg-white z-10 h-full">
+                            <div class="flex-grow flex flex-col justify-start min-w-0 pr-2 mt-3.5">
                                 <h3 class="text-xs font-bold text-[#4A4B4D] leading-tight mb-0.5">
                                     <a href="#" class="location-link map-link hover:underline">${schedule.Location}</a>
                                 </h3>
                                 <p class="text-[#888888] text-[10px] line-clamp-4 whitespace-pre-wrap leading-tight">${schedule.說明 || ''}</p>
                             </div>
-
                             <div class="flex flex-col items-center justify-center min-w-[70px] border-l border-gray-100 pl-1 pb-1 flex-shrink-0">
                                 <button class="px-2 pt-[0.5px] pb-0 text-[9px] text-white bg-[#6B7280] rounded hover:bg-[#4B5563] transition-colors modify-btn mb-1 w-auto text-center">修改</button>
-                                
                                 <div class="flex flex-col items-start gap-2 mt-2 w-full">
-                                    <div class="flex items-center justify-start leading-none w-full">
-                                        <span class="text-[#8F9E8B] font-bold text-[10px]">💰 ${amount > 0 ? amount : 0}</span>
-                                    </div>
-                                    <div class="flex items-center justify-start leading-none w-full">
-                                        <span class="text-[#888888] font-bold text-[10px]">👫 ${amount > 0 ? perPerson : 0}</span>
-                                    </div>
-                                    <div class="flex flex-wrap items-center justify-start max-w-[70px] leading-tight gap-0.5 mt-0.5 min-h-[12px]">
-                                        ${memberHtml}
-                                    </div>
+                                    <div class="flex items-center justify-start leading-none w-full"><span class="text-[#8F9E8B] font-bold text-[10px]">💰 ${amount > 0 ? amount : 0}</span></div>
+                                    <div class="flex items-center justify-start leading-none w-full"><span class="text-[#888888] font-bold text-[10px]">👫 ${amount > 0 ? perPerson : 0}</span></div>
+                                    <div class="flex flex-wrap items-center justify-start max-w-[70px] leading-tight gap-0.5 mt-0.5 min-h-[12px]">${memberHtml}</div>
                                 </div>
                             </div>
-
                         </div>
-                    </div>
-                `;
+                    </div>`;
                 card.querySelector('.map-link').addEventListener('click', (e) => { e.preventDefault(); navigateToMap(schedule.Address || schedule.Location); });
                 card.querySelector('.modify-btn').addEventListener('click', () => openEditScheduleModal(scheduleJsonString));
                 return card;
@@ -356,13 +398,11 @@
 
             const loadSchedules = function(tripId, dayId) {
                 if (unsubscribeSchedule) unsubscribeSchedule();
-                // 切換時立即清空容器，提供「空白版面」或「載入中」的視覺
                 document.getElementById('schedule-list-container').innerHTML = '<div class="p-4 text-center text-[#A9A9A9] text-xs">載入中...</div>';
-                
                 const q = query(collection(db, `artifacts/${appId}/public/data/Trips/${tripId}/Schedules`), where('dayId', '==', dayId));
                 unsubscribeSchedule = onSnapshot(q, (snapshot) => {
                     const container = document.getElementById('schedule-list-container');
-                    container.innerHTML = ''; // 清空載入中提示
+                    container.innerHTML = ''; 
                     const schedules = [];
                     const trip = tripData[currentTripId];
                     snapshot.forEach(doc => {
@@ -377,7 +417,6 @@
                         schedules.push({ id: doc.id, ...data });
                     });
                     schedules.sort((a, b) => a.Time.localeCompare(b.Time));
-                    // 若無行程，顯示空白/提示
                     if (schedules.length === 0) container.innerHTML = `<div class="p-4 text-center text-[#A9A9A9] text-xs">此日暫無行程。</div>`;
                     schedules.forEach(s => container.appendChild(createTripCard(s)));
                 });
@@ -388,25 +427,18 @@
                 const tripsRef = collection(db, `artifacts/${appId}/public/data/Trips`);
                 unsubscribeTrips = onSnapshot(tripsRef, (snapshot) => {
                     const select = document.getElementById('trip-select');
-                    // 保存當前選中的值，以免重建列表時跑掉，除非該值已不存在
                     const previousVal = currentTripId;
-                    
                     select.innerHTML = ''; tripData = {};
-                    
                     if (snapshot.empty) {
-                        // 無計畫時的 UI 處理
                         document.getElementById('settings-btn').style.display = 'none';
                         document.getElementById('new-trip-btn').style.display = 'inline-flex';
-                        select.style.display = 'none';
-                        currentTripId = '';
-                        document.getElementById('schedule-list-container').innerHTML = ''; // 清空版面
+                        select.style.display = 'none'; currentTripId = '';
+                        document.getElementById('schedule-list-container').innerHTML = '';
                         return;
                     }
-                    
                     select.style.display = 'block';
                     document.getElementById('settings-btn').style.display = 'inline-flex';
                     document.getElementById('new-trip-btn').style.display = 'none';
-                    
                     let foundPrevious = false;
                     snapshot.forEach(doc => {
                         const data = doc.data();
@@ -416,28 +448,18 @@
                         select.appendChild(option);
                         if (doc.id === previousVal) foundPrevious = true;
                     });
-                    
-                    // 邏輯修正：如果之前選的 ID 還在，就保持；否則選第一個；若剛新增，則使用剛新增的ID
-                    if (!currentTripId) {
-                        currentTripId = Object.keys(tripData)[0];
-                    } else if (!foundPrevious && previousVal) {
-                        // 如果之前的 ID 被刪除了，選第一個
-                        currentTripId = Object.keys(tripData)[0];
-                    }
-                    
+                    if (!currentTripId || (!foundPrevious && previousVal)) { currentTripId = Object.keys(tripData)[0]; }
                     select.value = currentTripId;
-                    
-                    // 觸發更新
                     changeTrip(currentTripId);
                 });
             };
 
-            // 抽離出切換計畫的邏輯
             function changeTrip(tripId) {
                 currentTripId = tripId;
                 updateHeaderInfo();
                 renderDayTabs();
                 loadSchedules(currentTripId, currentDayId);
+                checkAndCreateDefaultLists(tripId);
             }
 
             function renderDayTabs() {
@@ -468,21 +490,25 @@
                 document.getElementById('schedule-list-date-header').textContent = currentDateTitle;
             }
 
+            // --- Currency Logic ---
             async function calculateCurrency() {
                 const currencyCode = document.getElementById('bar-calc-currency').value;
                 const amount = parseFloat(document.getElementById('bar-calc-amount').value) || 0;
-                
                 const rate = await fetchExchangeRate(currencyCode);
-                
-                // Requirement 2: 顯示 1 台幣 = 多少外幣
-                // rate 是 "1 外幣 = ? 台幣"
-                // 所以 1 台幣 = (1 / rate) 外幣
                 let twdToForeignRate = rate > 0 ? (1 / rate) : 0;
                 let displayRate = twdToForeignRate.toFixed(2);
                 
-                document.getElementById('rate-display-label').textContent = `今日匯率：${currencyCode} ${displayRate}`;
+                // Updates the dynamic rate value in the left column
+                const rateDisplayLabel = document.getElementById('rate-display-label');
+                if (rateDisplayLabel) {
+                    // 只輸出動態值，靜態標籤在 HTML 中
+                    rateDisplayLabel.textContent = `${currencyCode} ${displayRate}`;
+                }
 
-                if (amount === 0) { document.getElementById('bar-calc-result').value = '0'; return; }
+                if (amount === 0) { 
+                    document.getElementById('bar-calc-result').value = '0'; 
+                    return; 
+                }
                 document.getElementById('bar-calc-result').value = (amount * rate).toFixed(0); 
             }
             function updateTwdPreview(amount) {
@@ -497,23 +523,21 @@
                 document.getElementById('form-amount').value = (val / rate).toFixed(2);
             }
 
+            // --- Schedule CRUD ---
             function deleteSchedule(id) {
                 if (confirm("確定刪除？")) {
                     deleteDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`, id));
                     document.getElementById('add-schedule-modal').style.display = 'none';
                 }
             }
-
             function openEditScheduleModal(json) {
                 const s = JSON.parse(json);
                 editingScheduleId = s.id;
                 document.getElementById('add-schedule-modal-title').textContent = s.Location; 
                 document.getElementById('modal-save-btn').textContent = '儲存';
-                
                 const deleteBtn = document.getElementById('modal-delete-btn');
                 deleteBtn.style.display = 'block';
                 deleteBtn.onclick = () => deleteSchedule(s.id);
-
                 document.getElementById('form-date').value = s.Date; document.getElementById('form-time').value = s.Time;
                 document.getElementById('form-location').value = s.Location; document.getElementById('form-type').value = s.Type;
                 document.getElementById('form-details').value = s.說明; document.getElementById('form-address').value = s.Address;
@@ -527,12 +551,10 @@
                 else { addMemberInput('',''); addMemberInput('',''); }
                 document.getElementById('add-schedule-modal').style.display = 'flex';
             }
-
             function showAddScheduleModal() {
                 if (!currentTripId) { alert("請先選擇計畫"); return; }
                 document.getElementById('add-schedule-form').reset(); editingScheduleId = null;
                 document.getElementById('modal-delete-btn').style.display = 'none';
-
                 const container = document.getElementById('form-members-container'); container.innerHTML = '';
                 const trip = tripData[currentTripId];
                 document.getElementById('form-date').min = trip.startDate;
@@ -545,7 +567,6 @@
                 else { addMemberInput('',''); addMemberInput('',''); }
                 document.getElementById('add-schedule-modal').style.display = 'flex';
             }
-            
             function showSettingsModal() {
                 const t = tripData[currentTripId];
                 document.getElementById('settings-trip-name').value = t.name;
@@ -557,7 +578,6 @@
                 if (!(t.members || []).length) { addTripMemberInput(''); addTripMemberInput(''); }
                 document.getElementById('settings-modal').style.display = 'flex';
             }
-
             function addMemberInput(name='', amt='') {
                 const d = document.createElement('div'); d.className = 'flex items-center space-x-2 mt-1.5';
                 d.innerHTML = `<input type="text" name="schedule-member-name" value="${name}" placeholder="名字" class="compact-input w-16 rounded-md border border-[#E0E0E0]"><input type="number" name="schedule-member-amount" value="${amt}" placeholder="金額" class="compact-input w-16 rounded-md border border-[#E0E0E0]"><button type="button" class="text-[#CB8572] font-bold p-1 rm-btn">×</button>`;
@@ -570,7 +590,6 @@
                 d.querySelector('.rm-btn').onclick = () => d.remove();
                 document.getElementById('settings-members-container').appendChild(d);
             }
-
             async function submitSchedule() {
                 const form = document.getElementById('add-schedule-form');
                 const dateVal = form['form-date'].value;
@@ -593,6 +612,296 @@
                 currentDayId = dayId; renderDayTabs(); loadSchedules(currentTripId, currentDayId);
             }
 
+            // --- Lists Feature ---
+            async function checkAndCreateDefaultLists(tripId) {
+                const listCol = collection(db, `artifacts/${appId}/public/data/Trips/${tripId}/Lists`);
+                const snapshot = await getDocs(listCol);
+                if (snapshot.empty) {
+                    await addDoc(listCol, { name: '物品', type: 'check', order: 1, items: [] });
+                    await addDoc(listCol, { name: '購物', type: 'shopping', order: 2, items: [] });
+                }
+            }
+
+            // R1 Fix: 創建一個獨立的函數來處理新增項目，保證資料完整性 (Fixes List Add Bug)
+            async function addNewListItem(tripId, listId, isChecklist) {
+                const listDocRef = doc(db, `artifacts/${appId}/public/data/Trips/${tripId}/Lists/${listId}`);
+                
+                try {
+                    const docSnap = await getDoc(listDocRef);
+                    if (!docSnap.exists()) {
+                         console.error("List document does not exist:", listId);
+                         return;
+                    }
+                    
+                    const currentData = docSnap.data();
+                    const currentItems = currentData.items || [];
+                    let newItem;
+                    if (isChecklist) {
+                        newItem = { id: Date.now(), text: '', checkedLeft: false, checkedRight: false };
+                    } else {
+                        newItem = { id: Date.now(), text: '', desc: '', location: '', imageUrl: '' };
+                    }
+                    await updateDoc(listDocRef, { items: [...currentItems, newItem] });
+                } catch (error) {
+                    console.error("Error adding new list item:", error);
+                    // 提供使用者回饋
+                    alert("新增項目失敗，請稍後再試。");
+                }
+            }
+
+
+            function loadLists() {
+                if (!currentTripId) return alert("請先選擇計畫");
+                document.getElementById('lists-modal').style.display = 'flex';
+                if (unsubscribeLists) unsubscribeLists();
+                const q = query(collection(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Lists`), orderBy('order'));
+                unsubscribeLists = onSnapshot(q, (snapshot) => {
+                    const tabsContainer = document.getElementById('list-tabs');
+                    const contentContainer = document.getElementById('list-content');
+                    tabsContainer.innerHTML = '';
+                    
+                    let lists = [];
+                    snapshot.forEach(doc => lists.push({ id: doc.id, ...doc.data() }));
+                    
+                    if (lists.length === 0) {
+                        contentContainer.innerHTML = '<div class="p-4 text-center text-[#A9A9A9] text-xs">請新增清單</div>';
+                        return;
+                    }
+                    if (!currentListTabId || !lists.find(l => l.id === currentListTabId)) currentListTabId = lists[0].id;
+
+                    lists.forEach(l => {
+                        const tab = document.createElement('div');
+                        const isActive = l.id === currentListTabId;
+                        tab.className = `cursor-pointer px-3 py-1 text-sm ${isActive ? 'list-tab-active' : 'list-tab-inactive'}`;
+                        tab.textContent = l.name;
+                        tab.onclick = () => { currentListTabId = l.id; loadLists(); };
+                        tabsContainer.appendChild(tab);
+                    });
+
+                    // Add Tab (+)
+                    const addTab = document.createElement('div');
+                    addTab.className = 'cursor-pointer px-3 py-1 text-sm text-[#A9A9A9] font-bold';
+                    addTab.textContent = '+';
+                    addTab.onclick = async () => {
+                        const name = prompt("輸入新清單名稱：");
+                        if (name) {
+                            await addDoc(collection(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Lists`), {
+                                name, type: 'check', order: lists.length + 1, items: []
+                            });
+                        }
+                    };
+                    tabsContainer.appendChild(addTab);
+
+                    // Render Content
+                    const activeList = lists.find(l => l.id === currentListTabId);
+                    contentContainer.innerHTML = '';
+                    if (activeList) {
+                        renderListItems(activeList, contentContainer);
+                    }
+                });
+            }
+
+            // 輔助函式：啟用滑動刪除
+            function enableSwipeToDelete(contentEl, deleteBg, onDelete) {
+                let startX = 0;
+                let currentTranslate = 0;
+                const threshold = 50; // 滑動多少距離後顯示刪除
+                
+                contentEl.addEventListener('touchstart', (e) => {
+                    startX = e.touches[0].clientX;
+                    // Reset others
+                    document.querySelectorAll('.swipe-item-content').forEach(el => {
+                        if(el !== contentEl) el.style.transform = 'translateX(0)';
+                    });
+                }, {passive: true});
+
+                contentEl.addEventListener('touchmove', (e) => {
+                    const currentX = e.touches[0].clientX;
+                    const diff = currentX - startX;
+                    // 只允許向左滑
+                    if (diff < 0) {
+                        currentTranslate = Math.max(diff, -70); // Max slide 70px
+                        contentEl.style.transform = `translateX(${currentTranslate}px)`;
+                    }
+                }, {passive: true});
+
+                contentEl.addEventListener('touchend', (e) => {
+                    if (currentTranslate < -threshold) {
+                        contentEl.style.transform = `translateX(-70px)`; // Keep open
+                    } else {
+                        contentEl.style.transform = `translateX(0)`; // Close
+                    }
+                    currentTranslate = 0;
+                });
+                
+                deleteBg.addEventListener('click', onDelete);
+            }
+
+            function renderListItems(listData, container) {
+                const items = listData.items || [];
+                
+                // --- Add Item Logic for FAB ---
+                const handleAddItem = () => {
+                    // Calls the robust asynchronous function
+                    addNewListItem(currentTripId, listData.id, listData.type === 'check');
+                };
+                
+                // Items List Container
+                const listContainer = document.createElement('div');
+                listContainer.className = 'space-y-2 overflow-y-auto flex-grow pb-4'; 
+                
+                if (listData.type === 'check') {
+                    // Checklist Header: 帶 | 名稱 | 收
+                    const header = document.createElement('div');
+                    header.className = 'flex items-center text-xs font-bold text-[#7E92A1] px-2 py-1 mb-2 border-b border-gray-100 sticky top-0 bg-white z-20';
+                    header.innerHTML = `
+                        <div class="w-8 text-center">帶</div>
+                        <div class="flex-grow text-center">名稱</div>
+                        <div class="w-8 text-center">收</div>
+                        <div class="w-8"></div> `;
+                    container.appendChild(header);
+                    
+                } 
+                
+                // R2: 小圓 FAB (浮動在清單右下角)
+                const smallFab = document.createElement('div');
+                smallFab.className = 'list-fab-small'; 
+                smallFab.textContent = '＋';
+                smallFab.onclick = handleAddItem;
+                container.style.position = 'relative'; // Set positioning context for container
+                container.appendChild(smallFab);
+
+
+                items.forEach((item, index) => {
+                    // Swipe Wrapper
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'swipe-item-container';
+                    
+                    const deleteBg = document.createElement('div');
+                    deleteBg.className = 'swipe-item-delete-bg';
+                    deleteBg.textContent = '刪除';
+                    wrapper.appendChild(deleteBg);
+
+                    const content = document.createElement('div');
+                    content.className = 'swipe-item-content relative'; // Added relative for desktop delete button positioning
+                    wrapper.appendChild(content);
+
+                    // Enable Swipe
+                    enableSwipeToDelete(content, deleteBg, () => deleteListItem(listData, index));
+                    
+                    // --- 1. 新增桌面版刪除按鈕元素 ---
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'desktop-delete-btn';
+                    deleteBtn.innerHTML = '×';
+                    // 綁定刪除事件
+                    deleteBtn.onclick = () => deleteListItem(listData, index); 
+                    content.appendChild(deleteBtn);
+                    // ------------------------------------
+
+                    if (listData.type === 'check') {
+                        // Checklist Item: 帶 | 名稱 | 收
+                        content.className += ' flex items-center gap-2 p-2 border border-gray-100 bg-white';
+                        content.innerHTML = `
+                            <div class="w-8 flex justify-center"><input type="checkbox" class="w-4 h-4 cursor-pointer" ${item.checkedLeft ? 'checked' : ''}></div>
+                            <input type="text" value="${item.text}" placeholder="物品名稱" class="flex-grow compact-input border-none bg-transparent focus:bg-gray-50 text-left">
+                            <div class="w-8 flex justify-center"><input type="checkbox" class="w-4 h-4 cursor-pointer" ${item.checkedRight ? 'checked' : ''}></div>
+                        `;
+                        // Re-fetch inputs as innerHTML was overwritten
+                        const inputs = content.querySelectorAll('input');
+                        inputs[0].onchange = () => updateListItem(listData, index, { checkedLeft: inputs[0].checked });
+                        inputs[1].onchange = () => updateListItem(listData, index, { text: inputs[1].value });
+                        inputs[2].onchange = () => updateListItem(listData, index, { checkedRight: inputs[2].checked });
+
+                        // Append the delete button after setting innerHTML
+                        content.appendChild(deleteBtn);
+
+                    } else {
+                        // Shopping Item: Image | Name/Desc | Location | Delete
+                        content.className += ' grid grid-cols-[50px_1fr_80px_25px] gap-2 items-start p-2 border border-gray-100 bg-white';
+                        content.innerHTML = `
+                            <div class="shopping-img-box" title="點擊上傳/檢視">
+                                ${item.imageUrl ? `<img src="${item.imageUrl}">` : '<span class="text-xs text-gray-400">圖</span>'}
+                            </div>
+                            <div class="flex flex-col gap-1">
+                                <input type="text" value="${item.text}" placeholder="商品名稱" class="compact-input border-b border-transparent focus:border-gray-300 font-bold w-full bg-transparent p-0">
+                                <textarea placeholder="說明" rows="2" class="compact-input border-none bg-transparent focus:bg-gray-50 w-full text-[10px] resize-none p-0">${item.desc || ''}</textarea>
+                            </div>
+                            <div class="flex flex-col gap-1 h-full justify-center">
+                                <input type="text" value="${item.location || ''}" placeholder="地點" class="compact-input border border-gray-100 rounded bg-gray-50 w-full text-center">
+                            </div>
+                            <div class="flex justify-center items-start pt-1"></div> 
+                            <input type="file" accept="image/*" class="hidden file-input">
+                        `;
+                        
+                        // Append the delete button into the last grid cell (index 3, but inserted dynamically)
+                        const lastGridCell = content.querySelector('.grid').children[3];
+                        if(lastGridCell) lastGridCell.appendChild(deleteBtn);
+                        
+                        // Re-bind other events and inputs
+                        const imgBox = content.querySelector('.shopping-img-box');
+                        const fileInput = content.querySelector('.file-input');
+                        
+                        imgBox.onclick = () => {
+                            if(item.imageUrl) {
+                                document.getElementById('zoom-img').src = item.imageUrl;
+                                document.getElementById('image-zoom-modal').style.display = 'flex';
+                            } else { fileInput.click(); }
+                        };
+                        
+                        if (item.imageUrl) {
+                             const editOverlay = document.createElement('div');
+                             editOverlay.className = 'absolute bottom-0 right-0 bg-white/80 text-[8px] px-1 cursor-pointer';
+                             editOverlay.textContent = '更換';
+                             editOverlay.onclick = (e) => { e.stopPropagation(); fileInput.click(); };
+                             imgBox.appendChild(editOverlay);
+                        }
+
+                        fileInput.onchange = async (e) => {
+                            const file = e.target.files[0];
+                            if (!file) return;
+                            const reader = new FileReader();
+                            reader.onload = (e) => {
+                                const img = new Image();
+                                img.onload = () => {
+                                    const canvas = document.createElement('canvas');
+                                    const MAX_WIDTH = 300;
+                                    const scaleSize = MAX_WIDTH / img.width;
+                                    canvas.width = MAX_WIDTH;
+                                    canvas.height = img.height * scaleSize;
+                                    const ctx = canvas.getContext("2d");
+                                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                                    const dataUrl = canvas.toDataURL("image/jpeg", 0.7);
+                                    updateListItem(listData, index, { imageUrl: dataUrl });
+                                };
+                                img.src = e.target.result;
+                            };
+                            reader.readAsDataURL(file);
+                        };
+
+                        const inputs = content.querySelectorAll('input[type="text"], textarea');
+                        inputs[0].onchange = () => updateListItem(listData, index, { text: inputs[0].value });
+                        inputs[1].onchange = () => updateListItem(listData, index, { desc: inputs[1].value });
+                        inputs[2].onchange = () => updateListItem(listData, index, { location: inputs[2].value });
+                    }
+                    
+                    listContainer.appendChild(wrapper);
+                });
+                container.appendChild(listContainer);
+            }
+
+            async function updateListItem(listData, index, changes) {
+                const newItems = [...listData.items];
+                newItems[index] = { ...newItems[index], ...changes };
+                await updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Lists/${listData.id}`), { items: newItems });
+            }
+
+            async function deleteListItem(listData, index) {
+                if(!confirm("刪除此項目？")) return;
+                const newItems = listData.items.filter((_, i) => i !== index);
+                await updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Lists/${listData.id}`), { items: newItems });
+            }
+
+            // --- Expenses ---
             async function loadExpenseSummary() {
                 if (!currentTripId) return alert("請先選擇計畫");
                 const snapshot = await getDocs(collection(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`));
@@ -670,6 +979,7 @@
                 document.getElementById('split-expense-modal').style.display = 'flex';
             }
 
+            // --- Initialization ---
             function initApp() {
                 document.addEventListener('DOMContentLoaded', async () => {
                     const app = initializeApp(firebaseConfig);
@@ -677,15 +987,15 @@
                     await signInAnonymously(auth);
                     loadTripList();
                     
-                    // 監聽下拉選單變化，Requirement 4: 選擇其他計畫時調整內容
-                    document.getElementById('trip-select').addEventListener('change', (e) => {
-                        changeTrip(e.target.value);
-                    });
-
+                    document.getElementById('trip-select').addEventListener('change', (e) => { changeTrip(e.target.value); });
                     document.getElementById('settings-btn').onclick = showSettingsModal;
                     document.getElementById('new-trip-btn').onclick = () => document.getElementById('new-trip-modal').style.display = 'flex';
-                    document.getElementById('add-schedule-btn').onclick = showAddScheduleModal;
+                    // Center Add Button
+                    document.getElementById('center-add-btn').onclick = showAddScheduleModal;
+                    
                     document.getElementById('split-expense-btn').onclick = loadExpenseSummary;
+                    document.getElementById('btn-lists').onclick = loadLists; 
+                    
                     document.getElementById('bar-calc-currency').onchange = calculateCurrency;
                     document.getElementById('bar-calc-amount').oninput = calculateCurrency;
                     document.getElementById('form-amount').oninput = (e) => updateTwdPreview(e.target.value);
@@ -711,12 +1021,14 @@
                         await setDoc(doc(db, `artifacts/${appId}/public/data/Trips/${id}`), {
                             name: form['new-trip-name'].value, startDate: form['new-trip-start-date'].value, numDays: 1, country, currency: COUNTRY_CONFIG[country].currency
                         }, {merge: true});
-                        // Requirement 4: 新增計畫後，切換到新 ID 並提供空白版面
                         currentTripId = id; 
                         changeTrip(currentTripId);
                         document.getElementById('new-trip-modal').style.display = 'none';
                     };
                     document.getElementById('split-expense-close-btn').onclick = () => document.getElementById('split-expense-modal').style.display = 'none';
+                    document.getElementById('lists-modal-close-btn').onclick = () => document.getElementById('lists-modal').style.display = 'none';
+                    document.getElementById('image-zoom-modal').onclick = () => document.getElementById('image-zoom-modal').style.display = 'none';
+
                     document.getElementById('add-member-btn').onclick = () => addMemberInput('','');
                     document.getElementById('settings-add-member-btn').onclick = () => addTripMemberInput('');
                     document.getElementById('delete-trip-btn').onclick = async () => {
@@ -732,7 +1044,7 @@
 </head>
 <body>
     <div id="app-container" class="pb-20">
-        <header class="p-3 border-b border-gray-100 sticky top-0 bg-white z-10">
+        <header class="p-3 border-b border-gray-100">
             <div class="flex justify-between items-center mb-1">
                 <div class="flex flex-col justify-center flex-grow min-w-0 mr-2">
                     <div class="flex flex-col items-start">
@@ -760,7 +1072,7 @@
             <div id="day-tabs-container" class="flex overflow-x-auto space-x-2 pb-1 no-scrollbar"></div>
         </header>
         
-        <div class="px-3 pt-0 pb-0">
+        <div class="px-3 pt-2 pb-0">
             <h2 id="schedule-list-date-header" class="text-sm font-bold text-[#4A4B4D] mb-1"></h2>
         </div>
         <div id="schedule-list-container" class="px-3 pt-0 pb-4">
@@ -769,39 +1081,44 @@
     </div>
     
     <div id="combined-bottom-bar">
-    
-    <div class="flex items-center gap-0.5 bg-[#F0F0F0] p-1 rounded-lg border border-[#E0E0E0] flex-shrink-0">
         
-        <span id="rate-display-label" class="text-[10px] font-bold text-[#7E92A1] tracking-tighter truncate">今日匯率：</span>
-        
-        <select id="bar-calc-currency" class="bg-white border border-[#E0E0E0] rounded p-0 text-[10px] font-bold text-[#5F6368] h-6 w-9 text-center appearance-none cursor-pointer">
-            <option value="USD">USD</option>
-            <option value="KRW">KRW</option>
-            <option value="JPY">JPY</option>
-            <option value="CNY">CNY</option>
-            <option value="GBP">GBP</option>
-        </select>
+        <div id="currency-display-row" class="flex justify-between w-full border-b border-gray-100 pb-1 mb-1">
 
-        <input type="number" id="bar-calc-amount" placeholder="0" class="w-10 h-6 text-[10px] p-0.5 border border-[#E0E0E0] rounded text-center font-medium text-[#5F6368]">
-        
-        <span class="text-[#A9A9A9] font-bold text-[9px]">=</span>
-        
-        <span class="text-[#7E92A1] font-bold text-[9px]">TWD</span>
-        
-        <input type="text" id="bar-calc-result" readonly value="0" class="w-12 h-6 text-[10px] p-0 border-none bg-transparent text-[#7E92A1] font-extrabold text-left focus:outline-none truncate">
-    </div>
+            <div class="flex items-center justify-end flex-1 border-r border-gray-100 pr-2">
+                <div class="flex items-baseline gap-1">
+                    <span class="text-xs text-[#7E92A1] font-bold">今日匯率：</span>
+                    <span id="rate-display-label" class="text-xs font-extrabold text-[#4A4B4D]"></span> 
+                </div>
+            </div>
 
-    <div class="flex items-center gap-1 flex-shrink-0 mr-3">
-        <button id="add-schedule-btn" class="flex flex-row items-center gap-0.75 text-[#888888] hover:text-[#7E92A1] transition-colors">
-            <span class="text-xs">➕</span>
-            <span class="text-[14px] font-bold">新增</span>
-        </button>
-        <button id="split-expense-btn" class="flex flex-row items-center gap-0.75 text-[#888888] hover:text-[#8F9E8B] transition-colors">
-            <span class="text-xs">💰</span>
-            <span class="text-[14px] font-bold">花費</span>
-        </button>
+            <div class="flex items-center gap-1 flex-1 pl-3">
+                <select id="bar-calc-currency" class="bg-gray-50 border border-[#E0E0E0] rounded p-0.5 text-[10px] font-bold text-[#5F6368] h-6 w-10 text-center appearance-none cursor-pointer">
+                    <option value="USD">USD</option><option value="JPY">JPY</option><option value="KRW">KRW</option><option value="CNY">CNY</option><option value="GBP">GBP</option>
+                </select>
+                <input type="number" id="bar-calc-amount" placeholder="0" class="w-10 h-6 text-[10px] p-0.5 border border-[#E0E0E0] rounded text-center font-medium text-[#5F6368]">
+                
+                <span class="text-[#A9A9A9] font-bold text-[9px]">=</span>
+                <span class="text-[#7E92A1] font-bold text-[9px]">TWD</span>
+                <input type="text" id="bar-calc-result" readonly value="0" class="w-12 h-6 text-[10px] p-0 border-none bg-transparent text-[#7E92A1] font-extrabold text-left focus:outline-none truncate">
+            </div>
+        </div>
+        
+        <div class="flex justify-around items-center w-full pt-0">
+             <button id="btn-lists" class="flex-1 flex items-center justify-center gap-1 text-[#888888] hover:text-[#7E92A1] py-1">
+                <span class="text-base">📝</span>
+                <span class="text-[12px] font-bold">清單</span>
+            </button>
+            
+            <button id="center-add-btn" class="flex items-center justify-center text-2xl font-bold flex-shrink-0 leading-none" style="width: 36px; height: 36px; border: 2px solid #7E92A1; border-radius: 50%; color: #7E92A1; background-color: white; margin-top: 0; box-shadow: 0 2px 4px rgba(126, 146, 161, 0.4);">
+                ＋
+            </button>
+
+            <button id="split-expense-btn" class="flex-1 flex items-center justify-center gap-1 text-[#888888] hover:text-[#8F9E8B] py-1">
+                <span class="text-base">💰</span>
+                <span class="text-[12px] font-bold">花費</span>
+            </button>
+        </div>
     </div>
-</div>
 
     <div id="add-schedule-modal" class="modal-overlay hidden">
         <div class="bg-white rounded-xl shadow-2xl p-3 w-11/12 max-w-sm max-h-[90vh] overflow-y-auto">
@@ -856,6 +1173,18 @@
                 </div>
             </form>
         </div>
+    </div>
+
+    <div id="lists-modal" class="modal-overlay hidden">
+        <div class="bg-white rounded-xl shadow-2xl p-4 w-11/12 max-w-sm h-[80vh] flex flex-col">
+            <h3 class="text-base font-bold mb-2 flex justify-between items-center text-[#4A4B4D]">清單<button id="lists-modal-close-btn" class="text-[#A9A9A9] hover:text-[#5F6368] text-xl leading-none">×</button></h3>
+            <div id="list-tabs" class="flex gap-1 border-b border-gray-100 mb-2 overflow-x-auto no-scrollbar"></div>
+            <div id="list-content" class="flex-grow overflow-y-auto flex flex-col"></div>
+        </div>
+    </div>
+
+    <div id="image-zoom-modal" class="modal-overlay hidden z-[150] bg-black/80">
+        <img id="zoom-img" class="max-w-[95%] max-h-[90%] rounded shadow-lg object-contain">
     </div>
 
     <div id="settings-modal" class="modal-overlay hidden">
