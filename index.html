@@ -358,7 +358,6 @@
                 const scheduleJson = JSON.stringify({ ...schedule, Amount: schedule.Amount || 0 });
                 let memberHtml = (members.length > 0) ? members.map((m, i) => `<span class="${MEMBER_COLORS[i % MEMBER_COLORS.length]} text-[9px] font-bold mr-1">${typeof m === 'string' ? m : m.name}</span>`).join('') : '';
 
-                // 修改：將 rounded-xl, overflow-hidden, shadow-lg 加到最外層容器，解決邊緣溢色問題
                 const card = document.createElement('div');
                 card.className = 'trip-card flex w-full mb-3 relative min-h-[75px] rounded-xl overflow-hidden shadow-lg';
                 
@@ -367,7 +366,6 @@
                 swipeActions.innerHTML = `<button class="px-2 py-1 h-full text-xs font-bold bg-[#7E92A1] text-white" data-action="modify" data-schedule='${scheduleJson}'>修改</button><button class="px-2 py-1 h-full text-xs font-bold bg-[#CB8572] text-white" data-action="delete" data-id="${schedule.id}">刪除</button>`;
                 card.appendChild(swipeActions);
 
-                // 修改：移除內層的 rounded-xl 和 shadow-lg，確保它被外層裁切
                 const content = document.createElement('div');
                 content.className = 'swipe-item-content flex w-full bg-white overflow-hidden relative items-stretch h-full z-10';
                 content.innerHTML = `
@@ -476,12 +474,9 @@
                 const d = getDateFromDayId(trip, currentDayId); if (d) document.getElementById('header-day-date-display').textContent = formatDateForHeader(d);
             }
 
-            // 修改：優化匯率顯示 (1 TWD = 46.68 KRW -> ≈ KRW 46.68)
             async function calculateCurrency() {
                 const code = document.getElementById('bar-calc-currency').value; const amt = parseFloat(document.getElementById('bar-calc-amount').value) || 0;
                 const rate = await fetchExchangeRate(code); const displayRate = rate > 0 ? (1/rate).toFixed(2) : '0.00';
-                
-                // 改用簡短格式： 匯率 ≈ KRW 46.68
                 document.getElementById('rate-display-label').textContent = `匯率 ≈ ${code} ${displayRate}`;
                 document.getElementById('bar-calc-result').value = (amt === 0) ? '0' : (amt * rate).toFixed(0);
             }
@@ -796,8 +791,8 @@
                             <button id="modal-close-btn" class="absolute top-3 right-3 text-[#A9A9A9] hover:text-[#5F6368] text-2xl leading-none w-6 h-6 flex items-center justify-center">×</button>
                             <form id="add-schedule-form" class="space-y-2">
                                 <div class="grid grid-cols-2 gap-2"> 
-                                    <div><label class="block compact-label">日期</label><input type="date" id="form-date" class="compact-input block w-full rounded border shadow-sm text-center h-6 leading-6 p-2" style="width: 100% !important;"></div> 
-                                    <div><label class="block compact-label">時間</label><input type="time" id="form-time" class="compact-input block w-full rounded border shadow-sm text-center h-6 leading-6 p-2" style="width: 100% !important;"></div>
+                                    <div><label class="block compact-label">日期</label><input type="date" id="form-date" class="compact-input block w-full rounded border shadow-sm text-center" style="width: 100% !important; min-width: 100%; box-sizing: border-box;"></div> 
+                                    <div><label class="block compact-label">時間</label><input type="time" id="form-time" class="compact-input block w-full rounded border shadow-sm text-center" style="width: 100% !important; min-width: 100%; box-sizing: border-box;"></div>
                                 </div>
                                 <div class="grid grid-cols-2 gap-1">
                                     <div><label class="block compact-label">類型</label>
