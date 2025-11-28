@@ -33,12 +33,28 @@
         #bar-calc-result { font-size: 0.7rem; font-weight: bold; color: #7E92A1; }
 
         /* --- 行程卡片 (Trip Card) --- */
-        .trip-card { width: 100%; margin-bottom: 0.75rem; position: relative; min-height: 75px; display: flex; } 
+        .trip-card { width: 100%; margin-bottom: 0.75rem; position: relative; min-height: 75px; display: flex; }
         .swipe-item-container { position: relative; overflow: hidden; border-radius: 0.375rem; margin-bottom: 0.5rem; touch-action: pan-y; }
         .swipe-item-delete-bg { position: absolute; top: 0; bottom: 0; right: 0; width: 140px; display: flex; align-items: center; justify-content: flex-end; z-index: 1; }
         .swipe-item-content { position: relative; z-index: 10; background-color: white; transition: transform 0.2s ease-out; transform: translateX(0); width: 100%; display: flex; align-items: stretch; overflow: hidden; }
         
-        .card-right-col { display: flex; flex-direction: column; justify-content: flex-start; align-items: flex-end; min-width: 70px; border-left: 1px solid #f3f4f6; padding-left: 0.25rem; padding-bottom: 0.25rem; padding-top: 10px; flex-shrink: 0; position: relative; }
+        /* 修改：強制固定右側欄位寬度為 90px，解決直線移動問題 */
+        .card-right-col { 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: flex-start; 
+            align-items: flex-end; 
+            width: 90px;          /* 固定寬度 */
+            min-width: 90px;      /* 禁止縮小 */
+            max-width: 90px;      /* 禁止放大 */
+            flex: 0 0 90px;       /* Flex 屬性鎖死 */
+            border-left: 1px solid #f3f4f6; 
+            padding-left: 0.25rem; 
+            padding-bottom: 0.25rem; 
+            padding-top: 10px; 
+            position: relative; 
+        }
+
         .info-block-content { display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-start; gap: 6px; height: 100%; width: 100%; margin-top: 4px; }
         .info-block-content > div { justify-content: flex-start !important; }
         .card-static-actions { display: none; gap: 8px; margin-bottom: 4px; padding-left: 0.5rem; width: 100%; justify-content: flex-start; }
@@ -363,9 +379,12 @@
                 const d = getDateFromDayId(trip, currentDayId); if (d) document.getElementById('header-day-date-display').textContent = formatDateForHeader(d);
             }
 
+            // 修改：優化匯率顯示 (1 TWD = 46.68 KRW -> ≈ KRW 46.68)
             async function calculateCurrency() {
                 const code = document.getElementById('bar-calc-currency').value; const amt = parseFloat(document.getElementById('bar-calc-amount').value) || 0;
                 const rate = await fetchExchangeRate(code); const displayRate = rate > 0 ? (1/rate).toFixed(2) : '0.00';
+                
+                // 改用簡短格式： 匯率 ≈ KRW 46.68
                 document.getElementById('rate-display-label').textContent = `匯率 ≈ ${code} ${displayRate}`;
                 document.getElementById('bar-calc-result').value = (amt === 0) ? '0' : (amt * rate).toFixed(0);
             }
@@ -413,7 +432,7 @@
                     const uid = auth.currentUser ? auth.currentUser.uid : null; 
                     const data = { 
                         dayId, 
-                        Date: dateVal, 
+                        Date: dateVal, // 保留日期修正
                         Time: document.getElementById('form-time').value, Location: document.getElementById('form-location').value, 
                         Type: document.getElementById('form-type').value, 說明: document.getElementById('form-details').value, 
                         Address: document.getElementById('form-address').value, Amount: parseFloat(document.getElementById('form-amount').value) || 0, 
@@ -686,8 +705,8 @@
                             <button id="modal-close-btn" class="absolute top-3 right-3 text-[#A9A9A9] hover:text-[#5F6368] text-2xl leading-none w-6 h-6 flex items-center justify-center">×</button>
                             <form id="add-schedule-form" class="space-y-2">
                                 <div class="grid grid-cols-2 gap-2"> 
-                                    <div><label class="block compact-label">日期</label><input type="date" id="form-date" class="compact-input block w-full rounded border shadow-sm text-center h-6 leading-6 p-2" style="width: 100% !important;"></div> 
-                                    <div><label class="block compact-label">時間</label><input type="time" id="form-time" class="compact-input block w-full rounded border shadow-sm text-center h-6 leading-6 p-2" style="width: 100% !important;"></div>
+                                    <div><label class="block compact-label">日期</label><input type="date" id="form-date" class="compact-input block w-full rounded border shadow-sm text-center h-6 leading-6 p-2" style="width: 100% !important; min-width: 100%; box-sizing: border-box;"></div> 
+                                    <div><label class="block compact-label">時間</label><input type="time" id="form-time" class="compact-input block w-full rounded border shadow-sm text-center h-6 leading-6 p-2" style="width: 100% !important; min-width: 100%; box-sizing: border-box;"></div>
                                 </div>
                                 <div class="grid grid-cols-2 gap-1">
                                     <div><label class="block compact-label">類型</label>
