@@ -284,7 +284,8 @@
                             <h3 class="text-xs font-bold text-[#4A4B4D] leading-tight mb-0.5"><a href="#" class="location-link map-link hover:underline">${schedule.Location}</a></h3>
                             <p class="text-[#888888] text-[10px] line-clamp-4 whitespace-pre-wrap leading-tight">${schedule.說明 || ''}</p>
                         </div>
-                        <div class="card-right-col">
+                        
+                        <div class="card-right-col" style="width: 90px; min-width: 90px; max-width: 90px; flex: 0 0 90px;">
                             <div class="card-static-actions"> 
                                 <button class="bg-[#7E92A1] text-white modify-btn-static rounded px-1.5 py-0.5 text-[9px] font-bold" data-schedule='${scheduleJson}'>修改</button>
                                 <button class="bg-[#CB8572] text-white delete-btn-static rounded px-1.5 py-0.5 text-[9px] font-bold" data-id="${schedule.id}">刪除</button>
@@ -379,12 +380,9 @@
                 const d = getDateFromDayId(trip, currentDayId); if (d) document.getElementById('header-day-date-display').textContent = formatDateForHeader(d);
             }
 
-            // 修改：優化匯率顯示 (1 TWD = 46.68 KRW -> ≈ KRW 46.68)
             async function calculateCurrency() {
                 const code = document.getElementById('bar-calc-currency').value; const amt = parseFloat(document.getElementById('bar-calc-amount').value) || 0;
                 const rate = await fetchExchangeRate(code); const displayRate = rate > 0 ? (1/rate).toFixed(2) : '0.00';
-                
-                // 改用簡短格式： 匯率 ≈ KRW 46.68
                 document.getElementById('rate-display-label').textContent = `匯率 ≈ ${code} ${displayRate}`;
                 document.getElementById('bar-calc-result').value = (amt === 0) ? '0' : (amt * rate).toFixed(0);
             }
@@ -432,7 +430,7 @@
                     const uid = auth.currentUser ? auth.currentUser.uid : null; 
                     const data = { 
                         dayId, 
-                        Date: dateVal, // 保留日期修正
+                        Date: dateVal, 
                         Time: document.getElementById('form-time').value, Location: document.getElementById('form-location').value, 
                         Type: document.getElementById('form-type').value, 說明: document.getElementById('form-details').value, 
                         Address: document.getElementById('form-address').value, Amount: parseFloat(document.getElementById('form-amount').value) || 0, 
@@ -704,19 +702,26 @@
                             </h3>
                             <button id="modal-close-btn" class="absolute top-3 right-3 text-[#A9A9A9] hover:text-[#5F6368] text-2xl leading-none w-6 h-6 flex items-center justify-center">×</button>
                             <form id="add-schedule-form" class="space-y-2">
-                                <div class="grid grid-cols-2 gap-2"> 
-                                    <div><label class="block compact-label">日期</label><input type="date" id="form-date" class="compact-input block w-full rounded border shadow-sm text-center h-6 leading-6 p-2" style="width: 100% !important; min-width: 100%; box-sizing: border-box;"></div> 
-                                    <div><label class="block compact-label">時間</label><input type="time" id="form-time" class="compact-input block w-full rounded border shadow-sm text-center h-6 leading-6 p-2" style="width: 100% !important; min-width: 100%; box-sizing: border-box;"></div>
+                                <div class="grid grid-cols-2 gap-3">  <div class="min-w-0"> <label class="block compact-label">日期</label>
+                                        <input type="date" id="form-date" class="compact-input block w-full rounded border shadow-sm text-center" style="width: 100% !important; box-sizing: border-box;">
+                                    </div> 
+                                    <div class="min-w-0">
+                                        <label class="block compact-label">時間</label>
+                                        <input type="time" id="form-time" class="compact-input block w-full rounded border shadow-sm text-center" style="width: 100% !important; box-sizing: border-box;">
+                                    </div>
                                 </div>
-                                <div class="grid grid-cols-2 gap-1">
-                                    <div><label class="block compact-label">類型</label>
-                                        <select id="form-type" class="compact-input block w-full rounded border shadow-sm">
+                                <div class="grid grid-cols-2 gap-3"> <div class="min-w-0">
+                                        <label class="block compact-label">類型</label>
+                                        <select id="form-type" class="compact-input block w-full rounded border shadow-sm" style="width: 100% !important; box-sizing: border-box;">
                                             <option value="location">📍 景點</option><option value="restaurant">🍽️ 餐廳</option>
                                             <option value="coffee">☕ 咖啡廳</option><option value="accommodation">🛏️ 住宿</option>
                                             <option value="交通">🚗 交通</option><option value="shopping">🛍️ 購物</option>
                                         </select>
                                     </div>
-                                    <div><label class="block compact-label">地點</label><input type="text" id="form-location" class="compact-input block w-full rounded border shadow-sm"></div>
+                                    <div class="min-w-0">
+                                        <label class="block compact-label">地點</label>
+                                        <input type="text" id="form-location" class="compact-input block w-full rounded border shadow-sm" style="width: 100% !important; box-sizing: border-box;">
+                                    </div>
                                 </div>
                                 <div><label class="block compact-label">地址</label><input type="text" id="form-address" class="compact-input block w-full rounded border shadow-sm"></div>
                                 <div><label class="block compact-label">說明</label><textarea id="form-details" rows="4" class="compact-input block w-full rounded border shadow-sm !h-auto"></textarea></div>
@@ -840,5 +845,7 @@
         })();
         window.App.initApp();
     </script>
+</body>
+</html>
 </body>
 </html>
