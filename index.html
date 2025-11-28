@@ -2,9 +2,12 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Trip Compass</title>
+    
     <link rel="icon" type="image/png" href="icon.png">
+    <link rel="apple-touch-icon" href="icon.png">
+    
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -16,30 +19,13 @@
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
         /* --- 容器與佈局 --- */
-        /* 修改: 設定為 162px。因為 Header 底部留白減少變矮了，稍微減少一點點 top padding 讓第一張卡片維持在差不多的視覺位置，不會太高也不會離 Header 太遠 */
-        #app-container { 
-            max-width: 500px; 
-            margin: 0 auto; 
-            min-height: 100vh; 
-            background-color: white; 
-            padding-top: 162px; 
-            padding-bottom: 140px; 
-            position: relative; 
-            box-shadow: 0 0 10px rgba(0,0,0,0.05); 
-        }
+        #app-container { max-width: 500px; margin: 0 auto; min-height: 100vh; background-color: white; padding-top: 162px; padding-bottom: 140px; position: relative; box-shadow: 0 0 10px rgba(0,0,0,0.05); }
         
         /* --- Header 固定區 --- */
         header { position: fixed; top: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 500px; background-color: rgba(255, 255, 255, 0.98); backdrop-filter: blur(5px); z-index: 50; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
         #trip-select { background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%237E92A1' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: right center; background-repeat: no-repeat; background-size: 1.25em 1.25em; -webkit-appearance: none; appearance: none; background-color: transparent; font-weight: 800; color: #4A4B4D; border: none; padding-right: 1.5rem; cursor: pointer; }
         #trip-select:focus { outline: none; }
-
-        /* 日期位置調整 */
-        #header-day-date-container {
-            padding-bottom: 0px;
-            margin-top: 8px; 
-            margin-bottom: 1px; /* 保持極小間距 */
-            line-height: 1.2;
-        }
+        #header-day-date-container { padding-bottom: 0px; margin-top: 8px; margin-bottom: 1px; line-height: 1.2; }
 
         /* --- Footer (底部工具列) --- */
         #combined-bottom-bar { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: 95%; max-width: 480px; background-color: white; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15); z-index: 50; display: flex; flex-direction: column; padding: 0.4rem 0.75rem 0.2rem 0.75rem; border-radius: 24px; border: 1px solid #f0f0f0; }
@@ -49,51 +35,14 @@
         #bar-calc-result { font-size: 0.7rem; font-weight: bold; color: #7E92A1; }
 
         /* --- 行程卡片 (Trip Card) --- */
-        /* 回復: 高度 75px */
         .trip-card { width: 100%; margin-bottom: 0.75rem; position: relative; min-height: 75px; display: flex; }
-        
         .swipe-item-container { position: relative; overflow: hidden; border-radius: 0.375rem; margin-bottom: 0.5rem; touch-action: pan-y; }
         .swipe-item-delete-bg { position: absolute; top: 0; bottom: 0; right: 0; width: 140px; display: flex; align-items: center; justify-content: flex-end; z-index: 1; }
+        .swipe-item-content { position: relative; z-index: 10; background-color: white; transition: transform 0.2s ease-out; transform: translateX(0); width: 100%; display: flex; align-items: stretch; overflow: hidden; }
         
-        .swipe-item-content { 
-            position: relative; 
-            z-index: 10; 
-            background-color: white; 
-            transition: transform 0.2s ease-out; 
-            transform: translateX(0); 
-            width: 100%; 
-            display: flex; 
-            align-items: stretch;
-            overflow: hidden; /* 確保無白邊 */
-        }
-        
-        /* 回復: 右側欄位 padding-top: 10px */
-        .card-right-col {
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-start;
-            align-items: flex-end;
-            min-width: 70px;
-            border-left: 1px solid #f3f4f6;
-            padding-left: 0.25rem;
-            padding-bottom: 0.25rem;
-            padding-top: 10px; /* 回復此數值 */
-            flex-shrink: 0;
-            position: relative;
-        }
-
-        .info-block-content { 
-            display: flex; 
-            flex-direction: column; 
-            justify-content: flex-end; 
-            align-items: flex-start; 
-            gap: 6px; 
-            height: 100%; 
-            width: 100%; 
-            margin-top: 4px;
-        }
+        .card-right-col { display: flex; flex-direction: column; justify-content: flex-start; align-items: flex-end; min-width: 70px; border-left: 1px solid #f3f4f6; padding-left: 0.25rem; padding-bottom: 0.25rem; padding-top: 10px; flex-shrink: 0; position: relative; }
+        .info-block-content { display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-start; gap: 6px; height: 100%; width: 100%; margin-top: 4px; }
         .info-block-content > div { justify-content: flex-start !important; }
-
         .card-static-actions { display: none; gap: 8px; margin-bottom: 4px; padding-left: 0.5rem; width: 100%; justify-content: flex-start; }
         
         @media (min-width: 501px) {
@@ -116,8 +65,7 @@
         .list-tab-inactive { color: #A9A9A9; }
         .shopping-img-box { width: 50px; height: 50px; background-color: #f0f0f0; border-radius: 6px; overflow: hidden; display: flex; justify-content: center; align-items: center; cursor: pointer; border: 1px dashed #ccc; position: relative; }
         .shopping-img-box img { width: 100%; height: 100%; object-fit: cover; }
-        .list-fab-small { position: absolute; bottom: 10px; right: 10px; width: 36px; height: 36px; background-color: #7E92A1; border-radius: 50%; color: white; font-size: 20px; font-weight: bold; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: pointer; z-index: 50; transition: transform 0.1s; }
-        .list-fab-small:active { transform: scale(0.9); }
+        /* FAB removed from global CSS, handled by JS for dynamic positioning */
     </style>
 </head>
 
@@ -134,16 +82,16 @@
                                   <select id="trip-select" class="w-full text-lg truncate font-extrabold"></select>
                              </div>
                              <div class="flex items-center space-x-1 text-[#888888] ml-1 mt-0.5">
-                                 <span class="font-bold text-xs">👫</span>
-                                 <span id="header-members-list" class="truncate text-xs font-bold text-gray-400">...</span>
+                                  <span class="font-bold text-xs">👫</span>
+                                  <span id="header-members-list" class="truncate text-xs font-bold text-gray-400">...</span>
                              </div>
                         </div>
                     </div>
                     
                     <div id="weather-info-container" class="flex flex-col items-center justify-center mr-2 text-[#888888] cursor-pointer">
-                         <div id="header-weather-icon" class="text-3xl leading-none mb-0"></div>
-                         <span id="header-weather-temp" class="text-base font-bold"></span>
-                         <span id="header-location-name" class="text-xs font-bold mt-0.5"></span>
+                          <div id="header-weather-icon" class="text-3xl leading-none mb-0"></div>
+                          <span id="header-weather-temp" class="text-base font-bold"></span>
+                          <span id="header-location-name" class="text-xs font-bold mt-0.5"></span>
                     </div>
 
                     <div class="flex items-center flex-shrink-0">
@@ -167,7 +115,7 @@
     <div id="combined-bottom-bar">
         <div id="currency-display-row" class="flex justify-between w-full border-b border-gray-100 pb-3 mb-2 mt-1.5">
             <div id="rate-display-container" class="w-1/2 flex items-center justify-start border-r border-gray-100 pl-1">
-                <span id="rate-display-label">今日匯率：TWD 1 = TWD 1.00</span> 
+                <span id="rate-display-label">匯率 ≈ ...</span> 
             </div>
             <div class="w-1/2 flex items-center justify-start gap-0.5 pl-2">
                 <select id="bar-calc-currency" class="bg-gray-50 border border-[#E0E0E0] rounded p-0.5 text-[10px] font-bold text-[#5F6368] h-6 w-10 text-center appearance-none cursor-pointer">
@@ -192,60 +140,13 @@
     </div>
 
     <div id="add-schedule-modal" class="modal-overlay hidden">
-        <div class="bg-white rounded-xl shadow-2xl p-3 w-11/12 max-w-sm max-h-[90vh] overflow-y-auto">
-            <h3 class="text-base font-bold mb-2 flex justify-between items-center text-[#4A4B4D]">
-                <span id="add-schedule-modal-title">新增行程</span>
-                <button id="modal-close-btn" class="text-[#A9A9A9] hover:text-[#5F6368] text-xl leading-none">×</button>
-            </h3>
-            <form id="add-schedule-form" class="space-y-2">
-                <div class="grid grid-cols-2 gap-1">
-                    <div><label class="block compact-label">日期</label><input type="date" id="form-date" class="compact-input block w-[93%] rounded border shadow-sm text-center h-6 leading-6 p-2"></div>
-                    <div><label class="block compact-label">時間</label><input type="time" id="form-time" class="compact-input block w-[93%] rounded border shadow-sm text-center h-6 leading-6 p-2"></div>
-                </div>
-                <div class="grid grid-cols-2 gap-1">
-                    <div><label class="block compact-label">類型</label>
-                        <select id="form-type" class="compact-input block w-full rounded border shadow-sm">
-                            <option value="location">📍 景點</option><option value="restaurant">🍽️ 餐廳</option>
-                            <option value="coffee">☕ 咖啡廳</option><option value="accommodation">🛏️ 住宿</option>
-                            <option value="交通">🚗 交通</option><option value="shopping">🛍️ 購物</option>
-                        </select>
-                    </div>
-                    <div><label class="block compact-label">地點</label><input type="text" id="form-location" class="compact-input block w-full rounded border shadow-sm"></div>
-                </div>
-                <div><label class="block compact-label">地址</label><input type="text" id="form-address" class="compact-input block w-full rounded border shadow-sm"></div>
-                <div><label class="block compact-label">說明</label><textarea id="form-details" rows="4" class="compact-input block w-full rounded border shadow-sm !h-auto"></textarea></div>
-                <div class="flex gap-2 items-start">
-                    <div class="flex-grow">
-                        <div class="flex justify-start items-center mb-1 gap-2">
-                            <label class="block compact-label">成員</label>
-                            <button type="button" id="add-member-btn" class="ml-[115px] text-xl font-bold text-[#7E92A1] hover:text-[#64748B] transition-colors leading-none">+</button>
-                        </div>
-                        <div id="form-members-container" class="space-y-1"></div>
-                    </div>
-                    <div class="w-24 flex-shrink-0 flex flex-col gap-1 mt-6">
-                         <div class="flex items-center gap-1">
-                             <label id="form-currency-label" class="text-[10px] text-[#7E92A1] font-bold w-6 text-right">USD</label>
-                             <input type="number" id="form-amount" min="0" placeholder="0" class="w-full p-1 border border-[#E0E0E0] rounded text-right text-[11px] h-7 text-[#5F6368]">
-                         </div>
-                         <div class="flex items-center gap-1">
-                             <span class="text-[10px] text-[#A9A9A9] font-bold w-6 text-right">TWD</span>
-                             <input type="number" id="form-amount-twd" placeholder="0" class="w-full p-1 border border-[#E0E0E0] bg-[#F0F0F0] rounded text-right text-[#7E92A1] font-bold text-[11px] h-7">
-                         </div>
-                    </div>
-                </div>
-                <div class="flex justify-between items-center pt-3 mt-2 border-t border-[#E0E0E0]">
-                    <button type="button" id="modal-delete-btn" class="px-2 py-0.5 h-6 text-white bg-[#CB8572] rounded text-[9px] font-bold flex-shrink-0 hover:bg-[#B56B5A] hidden">刪除</button>
-                    <div class="flex-grow flex justify-end">
-                        <button type="button" id="modal-save-btn" class="px-2 py-0.5 h-6 text-white bg-[#7E92A1] rounded text-[9px] font-bold flex-shrink-0 hover:bg-[#64748B]">儲存</button>
-                    </div>
-                </div>
-            </form>
-        </div>
+        <div class="bg-white rounded-xl shadow-2xl p-3 w-11/12 max-w-sm max-h-[90vh] overflow-y-auto relative">
+            </div>
     </div>
     
-    <div id="lists-modal" class="modal-overlay hidden"><div class="bg-white rounded-xl shadow-2xl p-4 w-11/12 max-w-sm h-[80vh] flex flex-col"><h3 class="text-base font-bold mb-2 flex justify-between items-center flex-shrink-0 text-[#4A4B4D]">清單<button id="lists-modal-close-btn" class="text-[#A9A9A9] hover:text-[#5F6368] text-xl leading-none">×</button></h3><div id="list-tabs" class="flex gap-1 border-b border-gray-100 mb-2 overflow-x-auto no-scrollbar flex-shrink-0"></div><div id="list-content" class="flex-grow overflow-y-auto flex flex-col relative"></div></div></div>
+    <div id="lists-modal" class="modal-overlay hidden"><div class="bg-white rounded-xl shadow-2xl p-4 w-11/12 max-w-sm h-[80vh] flex flex-col relative"><h3 class="text-base font-bold mb-2 flex justify-between items-center flex-shrink-0 text-[#4A4B4D]">清單<button id="lists-modal-close-btn" class="text-[#A9A9A9] hover:text-[#5F6368] text-xl leading-none">×</button></h3><div id="list-tabs" class="flex gap-1 border-b border-gray-100 mb-2 overflow-x-auto no-scrollbar flex-shrink-0"></div><div id="list-content" class="flex-grow overflow-y-auto flex flex-col relative"></div></div></div>
     <div id="image-zoom-modal" class="modal-overlay hidden z-[150] bg-black/80"><img id="zoom-img" class="max-w-[95%] max-h-[90%] rounded shadow-lg object-contain"></div>
-    <div id="settings-modal" class="modal-overlay hidden"><div class="bg-white rounded-xl shadow-2xl p-4 w-11/12 max-w-sm"><h3 class="text-base font-bold mb-3 flex justify-between items-center text-[#4A4B4D]">行程設定<button id="settings-modal-close-btn" class="text-[#A9A9A9] hover:text-[#5F6368] text-xl">×</button></h3><form id="settings-form" class="space-y-3"><div><label class="block text-xs font-medium text-[#7E92A1]">計畫名稱</label><input type="text" id="settings-trip-name" class="compact-input mt-0.5 block w-full rounded border"></div><div><label class="block text-xs font-medium text-[#7E92A1]">國家</label><select id="settings-trip-country" class="compact-input mt-0.5 block w-full rounded border"><option value="USA">🇺🇸 美國</option><option value="JP">🇯🇵 日本</option><option value="KR">🇰🇷 韓國</option><option value="UK">🇬🇧 英國</option><option value="TW">🇹🇼 台灣</option></select></div><div><label class="block text-xs font-medium text-[#7E92A1]">開始日期</label><input type="date" id="settings-start-date" class="compact-input mt-0.5 block w-full rounded border text-center"></div><div><label class="block text-xs font-medium text-[#7E92A1]">總天數</label><input type="number" id="settings-num-days" min="1" class="compact-input mt-0.5 block w-full rounded border"></div><div><label class="block text-xs font-medium text-[#7E92A1]">成員</label><div id="settings-members-container" class="space-y-1"></div><button type="button" id="settings-add-member-btn" class="mt-1 text-[10px] text-[#7E92A1] font-medium">+ 新增成員</button></div><div class="pt-3 flex justify-between items-center"><button type="button" id="new-trip-from-settings-btn" class="px-3 py-1.5 text-xs text-[#7E92A1] bg-[#EBF2FA] rounded hover:bg-[#DCE6F2]">新計畫</button><div class="flex space-x-2"><button type="button" id="delete-trip-btn" class="px-3 py-1.5 text-white bg-[#CB8572] rounded text-xs hover:bg-[#B56B5A]">刪除</button><button type="button" id="settings-modal-save-btn" class="px-3 py-1.5 text-white bg-[#7E92A1] rounded text-xs hover:bg-[#64748B]">儲存</button></div></div></form></div></div>
+    <div id="settings-modal" class="modal-overlay hidden"><div class="bg-white rounded-xl shadow-2xl p-4 w-11/12 max-w-sm"></div></div>
     <div id="new-trip-modal" class="modal-overlay hidden"><div class="bg-white rounded-xl shadow-2xl p-4 w-11/12 max-w-sm"><h3 class="text-base font-bold mb-3 flex justify-between items-center text-[#4A4B4D]">新增旅行計畫<button id="new-trip-modal-close-btn" class="text-[#A9A9A9] hover:text-[#5F6368] text-xl">×</button></h3><form id="new-trip-form" class="space-y-3"><div><label class="block text-xs font-medium text-[#7E92A1]">計畫名稱</label><input type="text" id="new-trip-name" class="compact-input mt-0.5 block w-full rounded border"></div><div><label class="block text-xs font-medium text-[#7E92A1]">國家</label><select id="new-trip-country" class="compact-input mt-0.5 block w-full rounded border"><option value="USA">🇺🇸 美國</option><option value="JP">🇯🇵 日本</option><option value="KR">🇰🇷 韓國</option><option value="UK">🇬🇧 英國</option><option value="TW">🇹🇼 台灣</option></select></div><div><label class="block text-xs font-medium text-[#7E92A1]">開始日期</label><input type="date" id="new-trip-start-date" class="compact-input mt-0.5 block w-full rounded border text-center"></div><div class="pt-3 flex justify-end"><button type="button" id="new-trip-modal-save-btn" class="px-3 py-1.5 text-white bg-[#7E92A1] rounded text-xs hover:bg-[#64748B]">新增</button></div></form></div></div>
     <div id="split-expense-modal" class="modal-overlay hidden"><div class="bg-white rounded-xl shadow-2xl p-4 w-11/12 max-w-sm flex flex-col max-h-[90vh]"><h3 class="text-sm font-bold mb-2 flex justify-between items-center flex-shrink-0 text-[#4A4B4D]">花費<button id="split-expense-close-btn" class="text-[#A9A9A9] hover:text-[#5F6368] text-xl leading-none">×</button></h3><div class="flex-shrink-0 mb-2 bg-[#F9F9F9] p-2 rounded border border-[#E0E0E0]"><div class="flex justify-between items-end mb-1 border-b border-[#E0E0E0] pb-0.5"><span class="text-[#5F6368] font-medium text-xs">總花費</span><span class="text-sm font-extrabold text-[#4A4B4D]">TWD$ <span id="expense-total-amount">0</span></span></div><div id="expense-chart-container" class="h-32 w-full relative flex justify-center items-center"><canvas id="expense-chart"></canvas></div></div><div class="overflow-y-auto flex-grow mb-1 pr-1"><div id="expense-member-list" class="space-y-0.5"></div></div></div></div>
 
@@ -474,13 +375,10 @@
                 const d = getDateFromDayId(trip, currentDayId); if (d) document.getElementById('header-day-date-display').textContent = formatDateForHeader(d);
             }
 
-            // 修改：優化匯率顯示 (1 TWD = 46.68 KRW -> ≈ KRW 46.68)
             async function calculateCurrency() {
                 const code = document.getElementById('bar-calc-currency').value; const amt = parseFloat(document.getElementById('bar-calc-amount').value) || 0;
                 const rate = await fetchExchangeRate(code); const displayRate = rate > 0 ? (1/rate).toFixed(2) : '0.00';
-                
-                // 改用簡短格式： 匯率 ≈ KRW 46.68
-                document.getElementById('rate-display-label').textContent = `匯率 ≈ ${code} ${displayRate}`;
+                document.getElementById('rate-display-label').textContent = `≈ ${code} ${displayRate}`;
                 document.getElementById('bar-calc-result').value = (amt === 0) ? '0' : (amt * rate).toFixed(0);
             }
 
@@ -764,9 +662,6 @@
 
             function initApp() {
                 document.addEventListener('DOMContentLoaded', async () => {
-                    // 1. 立即設定初始匯率顯示文字，避免閃爍舊內容
-                    document.getElementById('rate-display-label').textContent = '匯率 ≈ ...';
-
                     const app = initializeApp(firebaseConfig); db = getFirestore(app); auth = getAuth(app); 
                     const userCred = await signInAnonymously(auth); currentUser = userCred.user;
                     
@@ -932,5 +827,3 @@
         })();
         window.App.initApp();
     </script>
-</body>
-</html>
