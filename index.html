@@ -663,9 +663,23 @@
                 document.getElementById('expense-total-amount').textContent = total.toFixed(0);
                 const ctx = document.getElementById('expense-chart').getContext('2d'); if(expenseChart) expenseChart.destroy();
                 expenseChart = new Chart(ctx, { type:'pie', data:{labels:Object.keys(types).map(k=>CATEGORY_NAMES[k]||k), datasets:[{data:Object.values(types), backgroundColor:Object.keys(types).map(k=>(CATEGORY_COLORS[k]||CATEGORY_COLORS.default).hex), borderWidth:0}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}} });
-                // 修改：調整花費欄位比例，避免手機版跑位 grid-cols-[40%_20%_40%]
-                const l = document.getElementById('expense-member-list'); l.innerHTML = `<div class="grid grid-cols-[40%_20%_40%] border-b border-[#E0E0E0] pb-1 mb-2 font-bold text-[#5F6368] text-[10px]"><span>成員</span><span class="text-center">類別</span><span class="text-right">金額</span></div>`;
-                Object.keys(mems).sort().forEach(n => { let first=true; Object.keys(mems[n].cats).forEach(c => { l.innerHTML += `<div class="grid grid-cols-[40%_20%_40%] py-0.5 text-[10px] border-b border-[#F0F0F0] items-center">${first?`<span class="font-bold">${n}</span>`:''}<span></span><span class="text-center ${(CATEGORY_COLORS[c]||CATEGORY_COLORS.default).text}">${CATEGORY_NAMES[c]}</span><span class="text-right text-[#888888]">$${mems[n].cats[c].toFixed(0)}</span></div>`; first=false; }); l.innerHTML += `<div class="grid grid-cols-[40%_20%_40%] py-1 mb-2 bg-[#F9F9F9] border-b border-[#E0E0E0] text-[10px] font-bold"><span></span><span class="text-center">個人總計</span><span class="text-right">$${mems[n].total.toFixed(0)}</span></div>`; });
+                
+                // 修改：調整花費欄位生成邏輯，確保只有3個子元素對應 40% 20% 40%
+                const l = document.getElementById('expense-member-list'); 
+                l.innerHTML = `<div class="grid grid-cols-[40%_20%_40%] border-b border-[#E0E0E0] pb-1 mb-2 font-bold text-[#5F6368] text-[10px]"><span>成員</span><span class="text-center">類別</span><span class="text-right">金額</span></div>`;
+                
+                Object.keys(mems).sort().forEach(n => { 
+                    let first=true; 
+                    Object.keys(mems[n].cats).forEach(c => { 
+                        l.innerHTML += `<div class="grid grid-cols-[40%_20%_40%] py-0.5 text-[10px] border-b border-[#F0F0F0] items-center">
+                            ${first ? `<span class="font-bold truncate">${n}</span>` : '<span></span>'}
+                            <span class="text-center ${(CATEGORY_COLORS[c]||CATEGORY_COLORS.default).text}">${CATEGORY_NAMES[c]}</span>
+                            <span class="text-right text-[#888888]">$${mems[n].cats[c].toFixed(0)}</span>
+                        </div>`; 
+                        first=false; 
+                    }); 
+                    l.innerHTML += `<div class="grid grid-cols-[40%_20%_40%] py-1 mb-2 bg-[#F9F9F9] border-b border-[#E0E0E0] text-[10px] font-bold"><span></span><span class="text-center">個人總計</span><span class="text-right">$${mems[n].total.toFixed(0)}</span></div>`; 
+                });
                 document.getElementById('split-expense-modal').style.display = 'flex';
             }
 
