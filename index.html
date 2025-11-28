@@ -1,4 +1,144 @@
-<script type="module">
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Trip Compass</title>
+    <link rel="icon" type="image/png" href="icon.png">
+    <link rel="apple-touch-icon" href="icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* --- 全域設定 --- */
+        body { font-family: 'Inter', sans-serif; background-color: #f7f7f7; margin: 0; padding: 0; color: #5F6368; overflow-x: hidden; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* --- 容器與佈局 --- */
+        #app-container { max-width: 500px; margin: 0 auto; min-height: 100vh; background-color: white; padding-top: 162px; padding-bottom: 140px; position: relative; box-shadow: 0 0 10px rgba(0,0,0,0.05); }
+        
+        /* --- Header 固定區 --- */
+        header { position: fixed; top: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 500px; background-color: rgba(255, 255, 255, 0.98); backdrop-filter: blur(5px); z-index: 50; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        #trip-select { background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%237E92A1' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: right center; background-repeat: no-repeat; background-size: 1.25em 1.25em; -webkit-appearance: none; appearance: none; background-color: transparent; font-weight: 800; color: #4A4B4D; border: none; padding-right: 1.5rem; cursor: pointer; }
+        #trip-select:focus { outline: none; }
+        #header-day-date-container { padding-bottom: 0px; margin-top: 8px; margin-bottom: 1px; line-height: 1.2; }
+
+        /* --- Footer (底部工具列) --- */
+        #combined-bottom-bar { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: 95%; max-width: 480px; background-color: white; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15); z-index: 50; display: flex; flex-direction: column; padding: 0.4rem 0.75rem 0.2rem 0.75rem; border-radius: 24px; border: 1px solid #f0f0f0; }
+        .prominent-integrated-btn { width: 30px; height: 30px; background-color: #7E92A1; border-radius: 50%; color: white; font-size: 18px; font-weight: 300; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; transition: transform 0.1s; }
+        .prominent-integrated-btn:active { transform: scale(0.95); }
+        #rate-display-label { font-size: 0.85rem; font-weight: bold; color: #7E92A1; line-height: 20px; }
+        #bar-calc-result { font-size: 0.7rem; font-weight: bold; color: #7E92A1; }
+
+        /* --- 行程卡片 (Trip Card) --- */
+        .trip-card { width: 100%; margin-bottom: 0.75rem; position: relative; min-height: 75px; display: flex; } /* 移除 container 上的 round/overflow，改到 JS 動態添加 */
+        .swipe-item-container { position: relative; overflow: hidden; border-radius: 0.375rem; margin-bottom: 0.5rem; touch-action: pan-y; }
+        .swipe-item-delete-bg { position: absolute; top: 0; bottom: 0; right: 0; width: 140px; display: flex; align-items: center; justify-content: flex-end; z-index: 1; }
+        .swipe-item-content { position: relative; z-index: 10; background-color: white; transition: transform 0.2s ease-out; transform: translateX(0); width: 100%; display: flex; align-items: stretch; overflow: hidden; }
+        
+        .card-right-col { display: flex; flex-direction: column; justify-content: flex-start; align-items: flex-end; min-width: 70px; border-left: 1px solid #f3f4f6; padding-left: 0.25rem; padding-bottom: 0.25rem; padding-top: 10px; flex-shrink: 0; position: relative; }
+        .info-block-content { display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-start; gap: 6px; height: 100%; width: 100%; margin-top: 4px; }
+        .info-block-content > div { justify-content: flex-start !important; }
+        .card-static-actions { display: none; gap: 8px; margin-bottom: 4px; padding-left: 0.5rem; width: 100%; justify-content: flex-start; }
+        
+        @media (min-width: 501px) {
+            .swipe-item-delete-bg { display: none !important; }
+            .trip-card .swipe-item-content { cursor: pointer; } 
+            .card-static-actions { display: flex; }
+            .trip-card .content-text-block { margin-top: 5px; }
+        }
+        @media (max-width: 500px) {
+            .trip-card .content-text-block { margin-top: 8px; }
+        }
+
+        /* --- Modals & Lists --- */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(95, 99, 104, 0.4); display: flex; justify-content: center; align-items: center; z-index: 100; }
+        .compact-input { padding: 0.2rem 0.3rem; font-size: 0.7rem; height: 26px; color: #5F6368; border-color: #E0E0E0; border-width: 1px; }
+        .compact-input:focus { border-color: #7E92A1; outline: none; ring: 1px solid #7E92A1; }
+        .compact-label { font-size: 0.7rem; color: #7E92A1; font-weight: 700; margin-bottom: 0; }
+        input[type="time"], input[type="date"] { text-align: center; }
+        .list-tab-active { border-bottom: 2px solid #7E92A1; color: #7E92A1; font-weight: bold; }
+        .list-tab-inactive { color: #A9A9A9; }
+        .shopping-img-box { width: 50px; height: 50px; background-color: #f0f0f0; border-radius: 6px; overflow: hidden; display: flex; justify-content: center; align-items: center; cursor: pointer; border: 1px dashed #ccc; position: relative; }
+        .shopping-img-box img { width: 100%; height: 100%; object-fit: cover; }
+    </style>
+</head>
+
+<body>
+    <div id="app-container">
+        <header>
+            <div id="header-content-wrapper" class="px-3 pt-3 pb-1">
+                <div class="flex justify-between items-center mb-1">
+                    <div class="flex flex-col justify-center flex-grow min-w-0 mr-2">
+                        <div class="flex flex-col items-start">
+                             <div class="flex items-center w-full">
+                                  <button id="settings-btn" class="p-1 mr-0.5 text-[#888888] hover:text-[#5F6368]" title="行程設定">📅</button>
+                                  <select id="trip-select" class="w-full text-lg truncate font-extrabold"></select>
+                             </div>
+                             <div class="flex items-center space-x-1 text-[#888888] ml-1 mt-0.5">
+                                  <span class="font-bold text-xs">👫</span>
+                                  <span id="header-members-list" class="truncate text-xs font-bold text-gray-400">...</span>
+                             </div>
+                        </div>
+                    </div>
+                    <div id="weather-info-container" class="flex flex-col items-center justify-center mr-2 text-[#888888] cursor-pointer">
+                          <div id="header-weather-icon" class="text-3xl leading-none mb-0"></div>
+                          <span id="header-weather-temp" class="text-base font-bold"></span>
+                          <span id="header-location-name" class="text-xs font-bold mt-0.5"></span>
+                    </div>
+                    <div class="flex items-center flex-shrink-0">
+                        <button id="new-trip-btn" class="px-2 py-1 bg-[#7E92A1] text-white text-xs font-semibold rounded hover:bg-[#64748B] transition-colors hidden">+ 新增</button>
+                    </div>
+                </div>
+                <div id="day-tabs-container" class="flex overflow-x-auto space-x-2 pb-1 no-scrollbar"></div>
+                <div id="header-day-date-container">
+                    <h2 id="header-day-date-display" class="text-sm font-bold text-[#4A4B4D]"></h2>
+                </div>
+            </div>
+        </header>
+        <div id="schedule-list-container" class="px-3 pt-0 pb-4">
+            <div class="p-4 text-center text-[#A9A9A9] text-xs">行程加載中...</div>
+        </div>
+    </div>
+
+    <div id="combined-bottom-bar">
+        <div id="currency-display-row" class="flex justify-between w-full border-b border-gray-100 pb-3 mb-2 mt-1.5">
+            <div id="rate-display-container" class="w-1/2 flex items-center justify-start border-r border-gray-100 pl-1">
+                <span id="rate-display-label">匯率 ≈ ...</span> 
+            </div>
+            <div class="w-1/2 flex items-center justify-start gap-0.5 pl-2">
+                <select id="bar-calc-currency" class="bg-gray-50 border border-[#E0E0E0] rounded p-0.5 text-[10px] font-bold text-[#5F6368] h-6 w-10 text-center appearance-none cursor-pointer">
+                    <option value="USD">USD</option><option value="JPY">JPY</option><option value="KRW">KRW</option><option value="CNY">CNY</option><option value="GBP">GBP</option>
+                </select>
+                <input type="number" id="bar-calc-amount" class="w-20 h-6 text-[10px] p-0.5 border border-[#E0E0E0] rounded text-center font-medium text-[#5F6368]">
+                <span class="text-[1.1rem] font-bold text-[#A9A9A9]">=</span>
+                <span class="text-[0.7rem] font-bold text-[#7E92A1] leading-[26px]">TWD</span>
+                <input type="text" id="bar-calc-result" readonly value="0" class="w-12 h-6 p-0 border-none bg-transparent text-[#7E92A1] font-extrabold text-left focus:outline-none truncate pl-1">
+            </div>
+        </div>
+        <div class="flex justify-around items-center w-full pt-1">
+             <button id="btn-lists" class="flex-1 flex flex-row items-center justify-center gap-1 text-[#888888] hover:text-[#7E92A1] py-1">
+                 <span class="text-base leading-none">📝</span><span class="text-[12px] font-bold leading-none">清單</span>
+             </button>
+             <button id="center-add-btn" class="prominent-integrated-btn">＋</button>
+             <button id="split-expense-btn" class="flex-1 flex flex-row items-center justify-center gap-1 text-[#888888] hover:text-[#8F9E8B] py-1">
+                 <span class="text-base leading-none">💰</span><span class="text-[12px] font-bold leading-none">花費</span>
+             </button>
+        </div>
+    </div>
+
+    <div id="add-schedule-modal" class="modal-overlay hidden">
+        <div class="bg-white rounded-xl shadow-2xl p-3 w-11/12 max-w-sm max-h-[90vh] overflow-y-auto relative"></div>
+    </div>
+    <div id="lists-modal" class="modal-overlay hidden"><div class="bg-white rounded-xl shadow-2xl p-4 w-11/12 max-w-sm h-[80vh] flex flex-col relative"><h3 class="text-base font-bold mb-2 flex justify-between items-center flex-shrink-0 text-[#4A4B4D]">清單<button id="lists-modal-close-btn" class="text-[#A9A9A9] hover:text-[#5F6368] text-xl leading-none">×</button></h3><div id="list-tabs" class="flex gap-1 border-b border-gray-100 mb-2 overflow-x-auto no-scrollbar flex-shrink-0"></div><div id="list-content" class="flex-grow overflow-y-auto flex flex-col relative"></div></div></div>
+    <div id="image-zoom-modal" class="modal-overlay hidden z-[150] bg-black/80"><img id="zoom-img" class="max-w-[95%] max-h-[90%] rounded shadow-lg object-contain"></div>
+    <div id="settings-modal" class="modal-overlay hidden"><div class="bg-white rounded-xl shadow-2xl p-4 w-11/12 max-w-sm"></div></div>
+    <div id="new-trip-modal" class="modal-overlay hidden"><div class="bg-white rounded-xl shadow-2xl p-4 w-11/12 max-w-sm"><h3 class="text-base font-bold mb-3 flex justify-between items-center text-[#4A4B4D]">新增旅行計畫<button id="new-trip-modal-close-btn" class="text-[#A9A9A9] hover:text-[#5F6368] text-xl">×</button></h3><form id="new-trip-form" class="space-y-3"><div><label class="block text-xs font-medium text-[#7E92A1]">計畫名稱</label><input type="text" id="new-trip-name" class="compact-input mt-0.5 block w-full rounded border"></div><div><label class="block text-xs font-medium text-[#7E92A1]">國家</label><select id="new-trip-country" class="compact-input mt-0.5 block w-full rounded border"><option value="USA">🇺🇸 美國</option><option value="JP">🇯🇵 日本</option><option value="KR">🇰🇷 韓國</option><option value="UK">🇬🇧 英國</option><option value="TW">🇹🇼 台灣</option></select></div><div><label class="block text-xs font-medium text-[#7E92A1]">開始日期</label><input type="date" id="new-trip-start-date" class="compact-input mt-0.5 block w-full rounded border text-center"></div><div class="pt-3 flex justify-end"><button type="button" id="new-trip-modal-save-btn" class="px-3 py-1.5 text-white bg-[#7E92A1] rounded text-xs hover:bg-[#64748B]">新增</button></div></form></div></div>
+    <div id="split-expense-modal" class="modal-overlay hidden"><div class="bg-white rounded-xl shadow-2xl p-4 w-11/12 max-w-sm flex flex-col max-h-[90vh]"><h3 class="text-sm font-bold mb-2 flex justify-between items-center flex-shrink-0 text-[#4A4B4D]">花費<button id="split-expense-close-btn" class="text-[#A9A9A9] hover:text-[#5F6368] text-xl leading-none">×</button></h3><div class="flex-shrink-0 mb-2 bg-[#F9F9F9] p-2 rounded border border-[#E0E0E0]"><div class="flex justify-between items-end mb-1 border-b border-[#E0E0E0] pb-0.5"><span class="text-[#5F6368] font-medium text-xs">總花費</span><span class="text-sm font-extrabold text-[#4A4B4D]">TWD$ <span id="expense-total-amount">0</span></span></div><div id="expense-chart-container" class="h-32 w-full relative flex justify-center items-center"><canvas id="expense-chart"></canvas></div></div><div class="overflow-y-auto flex-grow mb-1 pr-1"><div id="expense-member-list" class="space-y-0.5"></div></div></div></div>
+
+    <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, getDocs, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
@@ -25,7 +165,6 @@
             let currentListTabId = null; 
             let pendingTripSwitchId = null; 
 
-            // --- 基礎工具 ---
             function formatDateForHeader(date) { const year = String(date.getFullYear()).slice(-2); const month = String(date.getMonth() + 1).padStart(2, '0'); const day = String(date.getDate()).padStart(2, '0'); const dayOfWeekMap = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']; return `${year}.${month}.${day} ${dayOfWeekMap[date.getDay()]}`; }
             function dateDiffInDays(date2, date1) { return Math.ceil(Math.abs(date2.getTime() - date1.getTime()) / (1000 * 60 * 60 * 24)); }
             function getDateFromDayId(trip, dayId) { if (!trip || !trip.startDate) return null; const d = new Date(trip.startDate); d.setDate(d.getDate() + (parseInt(dayId.replace('Day ', '')) - 1)); return d; }
@@ -34,7 +173,6 @@
             function formatCurrency(value) { if (typeof value !== 'number') value = parseFloat(value); if (isNaN(value) || value === 0) return '0'; return value.toFixed(2).replace(/\.00$/, '').replace(/(\.\d)0$/, '$1'); }
             async function fetchExchangeRate(baseCurrency) { const fallback = { 'USD': 32.5, 'JPY': 0.215, 'KRW': 0.023, 'GBP': 41.2, 'CNY': 4.5, 'TWD': 1 }; if (!baseCurrency || baseCurrency === 'TWD') return 1; try { const r = await fetch(`https://open.er-api.com/v6/latest/${baseCurrency}`); const d = await r.json(); if (d && d.rates && d.rates.TWD) return d.rates.TWD; } catch (e) {} return fallback[baseCurrency] || 1; }
 
-            // --- 核心更新 ---
             async function updateHeaderInfo() {
                 const trip = tripData[currentTripId]; if (!trip) return;
                 const config = COUNTRY_CONFIG[trip.country || 'TW'] || COUNTRY_CONFIG['TW'];
@@ -56,7 +194,6 @@
                 checkAndCreateDefaultLists(tripId); 
             }
 
-            // --- 複製行程 (救援) ---
             async function cloneAndSwitchTrip() {
                 if (!currentTripId || !tripData[currentTripId]) return;
                 const oldTrip = tripData[currentTripId];
@@ -223,12 +360,9 @@
                 const d = getDateFromDayId(trip, currentDayId); if (d) document.getElementById('header-day-date-display').textContent = formatDateForHeader(d);
             }
 
-            // 修改：優化匯率顯示 (1 TWD = 46.68 KRW -> ≈ KRW 46.68)
             async function calculateCurrency() {
                 const code = document.getElementById('bar-calc-currency').value; const amt = parseFloat(document.getElementById('bar-calc-amount').value) || 0;
                 const rate = await fetchExchangeRate(code); const displayRate = rate > 0 ? (1/rate).toFixed(2) : '0.00';
-                
-                // 改用簡短格式： 匯率 ≈ KRW 46.68
                 document.getElementById('rate-display-label').textContent = `匯率 ≈ ${code} ${displayRate}`;
                 document.getElementById('bar-calc-result').value = (amt === 0) ? '0' : (amt * rate).toFixed(0);
             }
@@ -276,7 +410,7 @@
                     const uid = auth.currentUser ? auth.currentUser.uid : null; 
                     const data = { 
                         dayId, 
-                        Date: dateVal, // 保留日期修正
+                        Date: dateVal, 
                         Time: document.getElementById('form-time').value, Location: document.getElementById('form-location').value, 
                         Type: document.getElementById('form-type').value, 說明: document.getElementById('form-details').value, 
                         Address: document.getElementById('form-address').value, Amount: parseFloat(document.getElementById('form-amount').value) || 0, 
@@ -439,7 +573,6 @@
                              delBtnDesktop.onclick = (e) => { e.stopPropagation(); deleteListItem(listData, idx); };
                              c.appendChild(delBtnDesktop);
 
-                             // 修正：Container 設定右內距，把內容往左推
                              c.style.paddingRight = "30px"; 
 
                              c.style.display = 'grid'; 
@@ -462,7 +595,6 @@
                              descInput.onchange = (e) => updateListItem(listData, idx, {desc: e.target.value});
                              midCol.appendChild(nameInput); midCol.appendChild(descInput);
                              
-                             // 修正：地點欄位不再需要 margin-right
                              const locInput = document.createElement('textarea'); 
                              locInput.className = 'compact-input'; 
                              locInput.placeholder = '地點'; 
@@ -489,7 +621,6 @@
                 } catch(e) { }
             }
 
-            // 修改：刪除不需確認
             async function deleteListItem(l, i) { 
                 const ni=l.items.filter((_,x)=>x!==i); 
                 updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Lists/${l.id}`), {items:ni});
@@ -513,44 +644,39 @@
 
             function initApp() {
                 document.addEventListener('DOMContentLoaded', async () => {
-                    // 1. 立即設定初始匯率顯示文字，避免閃爍舊內容
                     document.getElementById('rate-display-label').textContent = '匯率 ≈ ...';
 
                     const app = initializeApp(firebaseConfig); db = getFirestore(app); auth = getAuth(app); 
                     const userCred = await signInAnonymously(auth); currentUser = userCred.user;
                     
-                    // 注入 CSS (控制購物清單電腦版刪除鈕及底部工具列 RWD)
                     const style = document.createElement('style');
                     style.innerHTML = `
                         @media (max-width: 500px) { 
                             .desktop-del-btn { display: none !important; } 
-                            /* 手機版底部工具列佈局修正 */
                             #currency-display-row { flex-wrap: nowrap !important; gap: 5px !important; }
                             #rate-display-container { width: auto !important; flex: 0 0 auto !important; border-right: none !important; }
                             #rate-display-label { font-size: 14px !important; white-space: nowrap !important; }
                             #currency-display-row > div:last-child { width: auto !important; flex: 1 1 auto !important; justify-content: flex-end !important; }
                             #bar-calc-amount { width: 50px !important; }
                             #bar-calc-currency { width: 45px !important; }
-                            
-                            /* New: Increase footer button font size */
                             #btn-lists span:nth-child(2), #split-expense-btn span:nth-child(2) { font-size: 14px !important; }
                         }
                         @media (min-width: 501px) { .desktop-del-btn { display: block !important; } }
                     `;
                     document.head.appendChild(style);
 
-                    // 重寫 Add Schedule Modal HTML (注入 relative 和按鈕絕對定位)
                     const addScheduleModalContent = document.querySelector('#add-schedule-modal > div');
                     if(addScheduleModalContent) {
-                        addScheduleModalContent.style.position = 'relative'; // 讓子元素絕對定位
+                        addScheduleModalContent.style.position = 'relative'; 
                         addScheduleModalContent.innerHTML = `
-                            <h3 class="text-base font-bold mb-2 text-[#4A4B4D] pr-8 truncate"> <span id="add-schedule-modal-title">新增行程</span>
+                            <h3 class="text-base font-bold mb-2 text-[#4A4B4D] pr-8 truncate">
+                                <span id="add-schedule-modal-title">新增行程</span>
                             </h3>
                             <button id="modal-close-btn" class="absolute top-3 right-3 text-[#A9A9A9] hover:text-[#5F6368] text-2xl leading-none w-6 h-6 flex items-center justify-center">×</button>
                             <form id="add-schedule-form" class="space-y-2">
                                 <div class="grid grid-cols-2 gap-2"> 
-                                    <div><label class="block compact-label">日期</label><input type="date" id="form-date" class="compact-input block w-full rounded border shadow-sm text-center h-6 leading-6 p-2" style="width: 100% !important;"></div> 
-                                    <div><label class="block compact-label">時間</label><input type="time" id="form-time" class="compact-input block w-full rounded border shadow-sm text-center h-6 leading-6 p-2" style="width: 100% !important;"></div>
+                                    <div><label class="block compact-label">日期</label><input type="date" id="form-date" class="compact-input block w-full rounded border shadow-sm text-center h-6 leading-6 p-2" style="width: 100% !important; min-width: 100%; box-sizing: border-box;"></div> 
+                                    <div><label class="block compact-label">時間</label><input type="time" id="form-time" class="compact-input block w-full rounded border shadow-sm text-center h-6 leading-6 p-2" style="width: 100% !important; min-width: 100%; box-sizing: border-box;"></div>
                                 </div>
                                 <div class="grid grid-cols-2 gap-1">
                                     <div><label class="block compact-label">類型</label>
@@ -593,7 +719,6 @@
                         `;
                     }
 
-                    // 重寫設定 Modal HTML (三欄並排 + 刪除救援按鈕)
                     const settingsModalContent = document.querySelector('#settings-modal > div');
                     if (settingsModalContent) {
                         settingsModalContent.innerHTML = `
@@ -626,7 +751,6 @@
 
                     loadTripList();
 
-                    // UI Event Bindings
                     document.getElementById('trip-select').onchange = (e) => changeTrip(e.target.value);
                     document.getElementById('bar-calc-currency').onchange = calculateCurrency; document.getElementById('bar-calc-amount').oninput = calculateCurrency;
                     document.getElementById('center-add-btn').onclick = () => { if(!currentTripId) return alert('請先建計畫'); document.getElementById('add-schedule-form').reset(); editingScheduleId=null; document.getElementById('modal-delete-btn').style.display='none'; const t=tripData[currentTripId]; document.getElementById('form-date').value=getDateFromDayId(t, currentDayId).toISOString().split('T')[0]; document.getElementById('form-members-container').innerHTML=''; (t.members||[]).forEach(n=>addMemberInput(n)); if(!(t.members||[]).length){addMemberInput();addMemberInput();} document.getElementById('add-schedule-modal').style.display='flex'; };
@@ -684,3 +808,5 @@
         })();
         window.App.initApp();
     </script>
+</body>
+</html>
