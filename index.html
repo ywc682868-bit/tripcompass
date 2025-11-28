@@ -474,9 +474,12 @@
                 const d = getDateFromDayId(trip, currentDayId); if (d) document.getElementById('header-day-date-display').textContent = formatDateForHeader(d);
             }
 
+            // 修改：優化匯率顯示 (1 TWD = 46.68 KRW -> ≈ KRW 46.68)
             async function calculateCurrency() {
                 const code = document.getElementById('bar-calc-currency').value; const amt = parseFloat(document.getElementById('bar-calc-amount').value) || 0;
                 const rate = await fetchExchangeRate(code); const displayRate = rate > 0 ? (1/rate).toFixed(2) : '0.00';
+                
+                // 改用簡短格式： 匯率 ≈ KRW 46.68
                 document.getElementById('rate-display-label').textContent = `匯率 ≈ ${code} ${displayRate}`;
                 document.getElementById('bar-calc-result').value = (amt === 0) ? '0' : (amt * rate).toFixed(0);
             }
@@ -761,6 +764,9 @@
 
             function initApp() {
                 document.addEventListener('DOMContentLoaded', async () => {
+                    // 1. 立即設定初始匯率顯示文字，避免閃爍舊內容
+                    document.getElementById('rate-display-label').textContent = '匯率 ≈ ...';
+
                     const app = initializeApp(firebaseConfig); db = getFirestore(app); auth = getAuth(app); 
                     const userCred = await signInAnonymously(auth); currentUser = userCred.user;
                     
@@ -791,8 +797,8 @@
                             <button id="modal-close-btn" class="absolute top-3 right-3 text-[#A9A9A9] hover:text-[#5F6368] text-2xl leading-none w-6 h-6 flex items-center justify-center">×</button>
                             <form id="add-schedule-form" class="space-y-2">
                                 <div class="grid grid-cols-2 gap-2"> 
-                                    <div><label class="block compact-label">日期</label><input type="date" id="form-date" class="compact-input block w-full rounded border shadow-sm text-center" style="width: 100% !important; min-width: 100%; box-sizing: border-box;"></div> 
-                                    <div><label class="block compact-label">時間</label><input type="time" id="form-time" class="compact-input block w-full rounded border shadow-sm text-center" style="width: 100% !important; min-width: 100%; box-sizing: border-box;"></div>
+                                    <div><label class="block compact-label">日期</label><input type="date" id="form-date" class="compact-input block w-full rounded border shadow-sm text-center h-6 leading-6 p-2" style="width: 100% !important;"></div> 
+                                    <div><label class="block compact-label">時間</label><input type="time" id="form-time" class="compact-input block w-full rounded border shadow-sm text-center h-6 leading-6 p-2" style="width: 100% !important;"></div>
                                 </div>
                                 <div class="grid grid-cols-2 gap-1">
                                     <div><label class="block compact-label">類型</label>
