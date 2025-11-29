@@ -58,18 +58,19 @@
         content: '';
         position: absolute;
         left: 28px; /* 56px (w-14) 的一半 */
-        top: -20px; 
-        bottom: -20px; 
+        /* --- START OF LENGTH MODIFICATION --- */
+        top: -6px;        /* 向上延伸縮短為 6px (原本是 -20px) */
+        bottom: -6px;     /* 向下延伸縮短為 6px (原本是 -20px) */
+        /* --- END OF LENGTH MODIFICATION --- */
         width: 2px;
-        background-color: #9C8B74; /* 莫蘭迪咖啡色 (與 coffee 類別的顏色一致) */
-        z-index: -10; /* 放在卡片視覺層的後面，成為最下層線條 */
+        background-color: #9C8B74; /* 莫蘭迪咖啡色 */
+        z-index: -1; 
         transform: translateX(-50%);
     }
-    /* 第一張卡片的線不要向上凸出 */
-    .trip-card:first-child::before { top: 42px; }
-    /* 最後一張卡片的線不要向下凸出 */
+    /* 第一張卡片的線不要向上凸出 - 保持不變 */
+    .trip-card:first-child::before { top: 42px; } /* 42px 是卡片高度的一半，確保線從中心點往下拉 */
+    /* 最後一張卡片的線不要向下凸出 - 保持不變 */
     .trip-card:last-child::before { bottom: auto; height: 100%; }
-
     /* 視覺包裹層：不透明白底，遮住中間的線，只讓線在空隙露出 */
     .trip-card-visual-wrapper {
         position: relative;
@@ -957,5 +958,6 @@
     </script>
 </body>
 </html>
+
 
 
