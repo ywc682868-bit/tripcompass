@@ -52,28 +52,27 @@
             position: relative; 
         }
         
-        /* 置中的垂直分隔線 */
+        /* 置中的垂直分隔線 (改回上下留白 15%) */
         .card-right-col::before {
             content: '';
             position: absolute;
             left: 0;
-            top: 0; 
-            bottom: 0;
+            top: 15%;    /* 上方留白 */
+            bottom: 15%; /* 下方留白 */
             width: 1px;
             background-color: #C0C0C0;
         }
 
-        /* 增加間距 gap: 10px */
         .info-block-content { display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-start; gap: 10px; height: 100%; width: 100%; margin-top: 4px; }
         .info-block-content > div { justify-content: flex-start !important; }
         
-        /* 強制在手機版隱藏右側按鈕，使用 !important 確保生效 */
+        /* 手機版強制隱藏右側按鈕 */
         .card-static-actions { display: none !important; gap: 8px; margin-bottom: 4px; padding-left: 0.5rem; width: 100%; justify-content: flex-start; }
         
         @media (min-width: 501px) {
             .swipe-item-delete-bg { display: none !important; }
             .trip-card .swipe-item-content { cursor: pointer; } 
-            .card-static-actions { display: flex !important; } /* 電腦版才顯示 */
+            .card-static-actions { display: flex !important; } /* 電腦版顯示 */
             .trip-card .content-text-block { margin-top: 5px; }
         }
         @media (max-width: 500px) {
@@ -791,7 +790,7 @@
                             </h3>
                             <form id="settings-form" class="space-y-3">
                                 <div><label class="block text-xs font-medium text-[#7E92A1]">計畫名稱</label><input type="text" id="settings-trip-name" class="compact-input mt-0.5 block w-full rounded border"></div>
-                                <div class="grid grid-cols-[1.2fr_1.1fr_0.7fr] gap-2">
+                                <div class="grid grid-cols-[0.75fr_1.6fr_0.65fr] gap-2">
                                     <div><label class="block text-xs font-medium text-[#7E92A1]">國家</label><select id="settings-trip-country" class="compact-input mt-0.5 block w-full rounded border h-[28px]" style="width: 88% !important; min-width: 0;"><option value="USA">🇺🇸 美國</option><option value="JP">🇯🇵 日本</option><option value="KR">🇰🇷 韓國</option><option value="UK">🇬🇧 英國</option><option value="TW">🇹🇼 台灣</option></select></div>
                                     <div><label class="block text-xs font-medium text-[#7E92A1]">開始日期</label><input type="date" id="settings-start-date" class="compact-input mt-0.5 block w-full rounded border text-center h-[28px] text-[10px]" style="width: 88% !important; min-width: 0;"></div>
                                     <div><label class="block text-xs font-medium text-[#7E92A1]">天數</label><input type="number" id="settings-num-days" min="1" class="compact-input mt-0.5 block w-full rounded border text-center h-[32px]" style="width: 88% !important; min-width: 0;"></div>
@@ -819,7 +818,7 @@
                             <h3 class="text-base font-bold mb-3 flex justify-between items-center text-[#4A4B4D]">新增旅行計畫<button id="new-trip-modal-close-btn" class="text-[#A9A9A9] hover:text-[#5F6368] text-xl">×</button></h3>
                             <form id="new-trip-form" class="space-y-3">
                                 <div><label class="block text-xs font-medium text-[#7E92A1]">計畫名稱</label><input type="text" id="new-trip-name" class="compact-input mt-0.5 block w-full rounded border"></div>
-                                <div class="grid grid-cols-[1.2fr_1.1fr_0.7fr] gap-2">
+                                <div class="grid grid-cols-[0.75fr_1.6fr_0.65fr] gap-2">
                                     <div><label class="block text-xs font-medium text-[#7E92A1]">國家</label><select id="new-trip-country" class="compact-input mt-0.5 block w-full rounded border h-[28px]" style="width: 88% !important; min-width: 0;"><option value="USA">🇺🇸 美國</option><option value="JP">🇯🇵 日本</option><option value="KR">🇰🇷 韓國</option><option value="UK">🇬🇧 英國</option><option value="TW">🇹🇼 台灣</option></select></div>
                                     <div><label class="block text-xs font-medium text-[#7E92A1]">開始日期</label><input type="date" id="new-trip-start-date" class="compact-input mt-0.5 block w-full rounded border text-center h-[28px] text-[10px]" style="width: 88% !important; min-width: 0;"></div>
                                     <div><label class="block text-xs font-medium text-[#7E92A1]">天數</label><input type="number" id="new-trip-days" min="1" value="3" class="compact-input mt-0.5 block w-full rounded border text-center h-[32px]" style="width: 88% !important; min-width: 0;"></div>
