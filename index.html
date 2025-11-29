@@ -22,38 +22,46 @@
     margin: 0 auto;
     min-height: 100vh;
     background-color: white;
-    /* ❌ 原始是 165px */
-    padding-top: 0px; /* ✅ 修正: 設為 0，讓 header 內容從最頂部開始 */
+    padding-top: 0px; /* 保持為 0 */
     padding-bottom: 140px;
     position: relative;
     box-shadow: 0 0 10px rgba(0,0,0,0.05);
 }
     #schedule-list-container {
-    padding-top: 220px; /* ✅ 修正：向下推 165px (Header 的高度) */
+    /* 關鍵步驟 1: 設定負邊距，將整個行程列表容器向上拉 (到 Header 的底部) */
+    margin-top: -50px; /* 拉近列表到 Header 的下方，您可能需要調整此數值 */
+    z-index: 1; /* 確保它在 Header 的下方，但仍在父容器內 */
+    position: relative;
+    /* ❌ 移除所有 padding-top */
+    padding-top: 0; 
     padding-bottom: 40px;
-    /* 保留原有的 px-3 pt-0 pb-4 */
-    /* 注意：此處可能會覆蓋您 HTML 元素上的內聯 class，但由於 HTML 中沒有 pt-class，所以此設置優先 */
+}
+
+/* 新增規則: 讓列表裡的第一個卡片有足夠的空間避開 Header */
+#schedule-list-container .trip-card:first-child {
+    /* 關鍵步驟 2: 給第一個卡片一個上邊距，使其顯示在 Header 的底部 */
+    margin-top: 220px; /* 必須與 Header 的總高度匹配，讓它顯示在 Header 下方 */
 }
     /* --- Header 固定區 --- */
     header { 
-    position: fixed; /* ✅ 修正：固定在視窗上 */
+    position: fixed;
     top: 0; 
-    left: 0; /* 確保從左邊緣開始 */
-    right: 0; /* 確保延伸到右邊緣 */
-    /* ❌ 移除 transform: translateX(-50%); */
+    left: 0;
+    right: 0;
     width: 100%; 
     max-width: 500px;
-    margin-left: auto; /* ✅ 確保在 max-width 內置中 */
-    margin-right: auto; /* ✅ 確保在 max-width 內置中 */
-    background-color: #ffffff; /* 純白背景 */
-    z-index: 50; /* 確保浮在行程卡片之上 */
+    margin-left: auto;
+    margin-right: auto;
+    background-color: #ffffff;
+    z-index: 50; /* 確保浮在最上層 */
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-    height: auto;    
 }
         #header-content-wrapper {
-    /* 假設原本的 pt-3 相當於 0.75rem 或 12px */
-    /* 我們將這個 pt-3 替換成動態計算的值 */
-    padding-top: calc(12px + env(safe-area-inset-top)); /* 12px 是基礎留白，加上狀態欄高度 */
+    /* 確保 Header 內容從狀態欄下方開始，並增加額外留白 */
+    padding-top: calc(15px + env(safe-area-inset-top)); /* 15px 是您希望的額外留白 */
+    padding-bottom: 4px; /* 保持 Day Tabs 下方的留白，原是 pb-1 (~4px) */
+    padding-left: 12px; /* 保持 px-3 (~12px) */
+    padding-right: 12px;
 }
     #trip-select { background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%237E92A1' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: right center; background-repeat: no-repeat; background-size: 1.25em 1.25em; -webkit-appearance: none; appearance: none; background-color: transparent; font-weight: 800; color: #4A4B4D; border: none; padding-right: 1.5rem; cursor: pointer; }
     #trip-select:focus { outline: none; }
@@ -1006,6 +1014,7 @@
     </script>
 </body>
 </html>
+
 
 
 
