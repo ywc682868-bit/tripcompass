@@ -19,7 +19,7 @@
         /* --- 容器與佈局 --- */
         #app-container { max-width: 500px; margin: 0 auto; min-height: 100vh; background-color: white; padding-top: 165px; padding-bottom: 140px; position: relative; box-shadow: 0 0 10px rgba(0,0,0,0.05); }
         
-        /* --- Header 固定區 (已修改：純白不透明) --- */
+        /* --- Header 固定區 --- */
         header { 
             position: fixed; 
             top: 0; 
@@ -29,7 +29,7 @@
             max-width: 500px; 
             background-color: #ffffff; /* 純白背景 */
             z-index: 50; 
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); /* 加強一點陰影 */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
         }
         #trip-select { background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%237E92A1' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: right center; background-repeat: no-repeat; background-size: 1.25em 1.25em; -webkit-appearance: none; appearance: none; background-color: transparent; font-weight: 800; color: #4A4B4D; border: none; padding-right: 1.5rem; cursor: pointer; }
         #trip-select:focus { outline: none; }
@@ -50,19 +50,19 @@
             position: relative; 
             min-height: 85px; 
             display: flex; 
-            z-index: 0; /* 確保線條在最底層 */
+            z-index: 0; /* 建立堆疊環境，確保子元素的 z-index -1 不會跑到 body 背景後面 */
         }
 
-        /* 串連線 (Pseudo-element) */
+        /* 串連線 (Pseudo-element) - 修正：加深顏色，確保在下層 */
         .trip-card::before {
             content: '';
             position: absolute;
-            left: 28px; /* w-14 (56px) 的一半 */
-            top: -20px; /* 向上延伸覆蓋間距 */
-            bottom: -20px; /* 向下延伸覆蓋間距 */
+            left: 28px; /* 56px (w-14) 的一半 */
+            top: -20px; 
+            bottom: -20px; 
             width: 2px;
-            background-color: #E0E0E0; /* 線條顏色 */
-            z-index: -1; /* 放在卡片視覺層後面 */
+            background-color: #9CA3AF; /* 改為較深的灰色 (Gray 400) */
+            z-index: -1; /* 放在卡片視覺層的後面 */
             transform: translateX(-50%);
         }
         /* 第一張卡片的線不要向上凸出 */
@@ -70,7 +70,7 @@
         /* 最後一張卡片的線不要向下凸出 */
         .trip-card:last-child::before { bottom: auto; height: 100%; }
 
-        /* 視覺包裹層：負責圓角、陰影與內容裁切 (新增這層) */
+        /* 視覺包裹層：不透明白底，遮住中間的線，只讓線在空隙露出 */
         .trip-card-visual-wrapper {
             position: relative;
             width: 100%;
@@ -78,8 +78,8 @@
             border-radius: 0.75rem; /* rounded-xl */
             overflow: hidden;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* shadow-lg */
-            background-color: white;
-            z-index: 1;
+            background-color: white; /* 必須是實色背景 */
+            z-index: 10; /* 確保在線的上方 */
         }
 
         .swipe-item-container { position: relative; overflow: hidden; border-radius: 0.375rem; margin-bottom: 0.5rem; touch-action: pan-y; }
@@ -87,7 +87,7 @@
         .swipe-item-delete-bg { 
             position: absolute; top: 0; bottom: 0; right: 0; width: 140px; 
             display: flex; align-items: center; justify-content: flex-end; 
-            z-index: 0; /* 在內容之下 */
+            z-index: 0; 
         }
         
         .swipe-item-content { 
@@ -704,19 +704,6 @@
                     } catch (err) { console.error(err); }
                 });
                 container.appendChild(inner);
-            }
-
-            async function updateListItem(l, i, chg) { 
-                try {
-                    const currentItems = Array.isArray(l.items) ? l.items : []; const ni = [...currentItems]; 
-                    if (!ni[i]) ni[i] = {}; ni[i] = {...ni[i], ...chg}; 
-                    await updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Lists/${l.id}`), {items:ni}); 
-                } catch(e) { }
-            }
-
-            async function deleteListItem(l, i) { 
-                const ni=l.items.filter((_,x)=>x!==i); 
-                updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Lists/${l.id}`), {items:ni});
             }
 
             async function loadExpenseSummary() {
