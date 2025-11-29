@@ -27,14 +27,14 @@
     position: relative;
     box-shadow: 0 0 10px rgba(0,0,0,0.05);
 }
-    #schedule-list-container {
-    /* 關鍵步驟 1: 設定負邊距，將整個行程列表容器向上拉 (到 Header 的底部) */
-    margin-top: -50px; /* 拉近列表到 Header 的下方，您可能需要調整此數值 */
-    z-index: 1; /* 確保它在 Header 的下方，但仍在父容器內 */
-    position: relative;
-    /* ❌ 移除所有 padding-top */
-    padding-top: 0; 
+   #schedule-list-container {
+    /* ❌ 移除或註釋掉 margin-top: -50px; 之類的負值設定 */
+    /* 關鍵修復：設置 Padding Top，將所有可滾動內容向下推 */
+    padding-top: 250px; /* ✅ 修正：使用足夠大的數值將內容推到 Header 固定區下方 */
     padding-bottom: 40px;
+    margin-top: 0; /* 確保沒有負邊距 */
+    position: relative; /* 確保定位正確 */
+    z-index: 1; 
 }
 
 /* 新增規則: 讓列表裡的第一個卡片有足夠的空間避開 Header */
@@ -101,7 +101,7 @@
     /* 第一張卡片的線不要向上凸出 - 保持不變 */
     .trip-card:first-child::before { 
     /* 假設 margin-top 是 250px。將 top 設為負值，讓線條向上延伸 250px */
-    top: -250px !important;    /* ✅ 修正：讓線條向上延伸，填滿 Header 下方的空白區域 */
+    top: 42px;    /* ✅ 修正：讓線條向上延伸，填滿 Header 下方的空白區域 */
     bottom: -6px; /* 保持與預設 Timeline 一致，避免與下方卡片間距拉長衝突 */
     height: auto; 
 }
@@ -1017,6 +1017,7 @@
     </script>
 </body>
 </html>
+
 
 
 
