@@ -22,7 +22,7 @@
     margin: 0 auto; 
     min-height: 100vh; 
     background-color: white; 
-    /* 修正: 調整 padding-top 配合新的 Header 高度 120px */
+    /* 設定 padding-top 來騰出 Header 的空間。這裡使用 120px */
     padding-top: 120px; 
     padding-bottom: 140px; 
     position: relative; 
@@ -30,23 +30,23 @@
 }
     /* --- Header 固定區 --- */
     header { 
-    /* 讓 Header 固定在視窗頂部 */
+    /* 關鍵：讓 Header 永久固定在視窗頂部 */
     position: fixed; 
     top: 0; 
     /* 讓 Header 在 max-width: 500px 的中央 */
     left: 50%; 
     transform: translateX(-50%); 
     width: 100%; 
-    max-width: 500px; 
+    max-width: 500px; /* 限制 Header 的寬度在 500px 內 */
     
-    /* 設定 Header 總高度，配合 #app-container 的 padding-top */
+    /* 固定 Header 的高度 */
     height: 120px; 
     
     background-color: #ffffff; /* 純白背景 */
     z-index: 50; 
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-    /* 確保在 Header 內部的內容能夠捲動 (雖然在您的結構中，只有 Day Tabs 需要這個) */
-    overflow-y: hidden; 
+    /* 移除所有動畫過渡效果 */
+    transition: none !important;
 }
 /* 讓 Day Tabs 可以橫向捲動，但整個 Header 固定 */
 #day-tabs-container {
@@ -298,30 +298,7 @@
     <div id="split-expense-modal" class="modal-overlay hidden"><div class="bg-white rounded-xl shadow-2xl p-4 w-11/12 max-w-sm flex flex-col max-h-[90vh]"><h3 class="text-sm font-bold mb-2 flex justify-between items-center flex-shrink-0 text-[#4A4B4D]">花費<button id="split-expense-close-btn" class="text-[#A9A9A9] hover:text-[#5F6368] text-xl leading-none">×</button></h3><div class="flex-shrink-0 mb-2 bg-[#F9F9F9] p-2 rounded border border-[#E0E0E0]"><div class="flex justify-between items-end mb-1 border-b border-[#E0E0E0] pb-0.5"><span class="text-[#5F6368] font-medium text-xs">總花費</span><span class="text-sm font-extrabold text-[#4A4B4D]">TWD$ <span id="expense-total-amount">0</span></span></div><div id="expense-chart-container" class="h-32 w-full relative flex justify-center items-center"><canvas id="expense-chart"></canvas></div></div><div class="overflow-y-auto flex-grow mb-1 pr-1"><div id="expense-member-list" class="space-y-0.5"></div></div></div></div>
 
     <script type="module">
-        function setupScrollShrink() {
-    const headerEl = document.querySelector('header');
-    const appContainer = document.getElementById('app-container');
-    const scrollThreshold = 50; // 捲動超過 50px 開始收縮
-
-    window.addEventListener('scroll', function() {
-        const scrollTop = window.scrollY; // 獲取當前捲動位置
-
-        if (scrollTop > scrollThreshold) {
-            // 捲動超過門檻，套用收縮樣式
-            if (!headerEl.classList.contains('header-scrolled')) {
-                headerEl.classList.add('header-scrolled');
-                appContainer.classList.add('content-scrolled');
-            }
-        } else {
-            // 捲動回到頂端，移除收縮樣式
-            if (headerEl.classList.contains('header-scrolled')) {
-                headerEl.classList.remove('header-scrolled');
-                appContainer.classList.remove('content-scrolled');
-            }
-        }
-    }, { passive: true });
-}
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+                import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, getDocs, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
@@ -951,22 +928,6 @@
                     }
 
                     loadTripList();
-                    setupScrollShrink();
-                    // UI Event Bindings
-                    document.getElementById('trip-select').onchange = (e) => changeTrip(e.target.value);
-                    document.getElementById('bar-calc-currency').onchange = calculateCurrency; document.getElementById('bar-calc-amount').oninput = calculateCurrency;
-                    document.getElementById('center-add-btn').onclick = () => { if(!currentTripId) return alert('請先建計畫'); document.getElementById('add-schedule-form').reset(); editingScheduleId=null; document.getElementById('modal-delete-btn').style.display='none'; document.getElementById('add-schedule-modal-title').textContent = '新增行程'; const t=tripData[currentTripId]; document.getElementById('form-date').value=getDateFromDayId(t, currentDayId).toISOString().split('T')[0]; document.getElementById('form-members-container').innerHTML=''; (t.members||[]).forEach(n=>addMemberInput(n)); if(!(t.members||[]).length){addMemberInput();addMemberInput();} document.getElementById('add-schedule-modal').style.display='flex'; };
-                    document.getElementById('modal-close-btn').onclick = () => document.getElementById('add-schedule-modal').style.display='none'; document.getElementById('modal-save-btn').onclick = submitSchedule; document.getElementById('form-amount').oninput = (e) => document.getElementById('form-amount-twd').value = (e.target.value * currentTripRate).toFixed(0);
-                    
-                    document.getElementById('form-amount-twd').oninput = (e) => {
-                        const twd = parseFloat(e.target.value);
-                        if (!isNaN(twd) && currentTripRate > 0) {
-                            document.getElementById('form-amount').value = (twd / currentTripRate).toFixed(2);
-                        } else if (e.target.value === '') {
-                             document.getElementById('form-amount').value = '';
-                        }
-                    };
-
                     document.getElementById('btn-lists').onclick = loadLists; document.getElementById('lists-modal-close-btn').onclick = () => document.getElementById('lists-modal').style.display='none';
                     document.getElementById('split-expense-btn').onclick = loadExpenseSummary; document.getElementById('split-expense-close-btn').onclick = () => document.getElementById('split-expense-modal').style.display='none';
                     document.getElementById('settings-btn').onclick = () => { 
@@ -1066,6 +1027,7 @@
     </script>
 </body>
 </html>
+
 
 
 
