@@ -39,8 +39,7 @@
 
 /* 新增規則: 讓列表裡的第一個卡片有足夠的空間避開 Header */
 #schedule-list-container .trip-card:first-child {
-    /* 原本可能是 0.75rem，這裡增加到 2rem (約 32px) */
-    margin-bottom: 2rem !important; /* ✅ 修正：增加第一個卡片下方的留白 */
+    margin-top: 250px; 
 }
     /* --- Header 固定區 --- */
     header { 
@@ -100,8 +99,12 @@
         transform: translateX(-50%);
     }
     /* 第一張卡片的線不要向上凸出 - 保持不變 */
-    .trip-card:first-child::before { top: 42px; } /* 42px 是卡片高度的一半，確保線從中心點往下拉 */
-    /* 最後一張卡片的線不要向下凸出 - 保持不變 */
+    .trip-card:first-child::before { 
+    /* 假設 margin-top 是 250px。將 top 設為負值，讓線條向上延伸 250px */
+    top: -250px !important;    /* ✅ 修正：讓線條向上延伸，填滿 Header 下方的空白區域 */
+    bottom: -6px; /* 保持與預設 Timeline 一致，避免與下方卡片間距拉長衝突 */
+    height: auto; 
+}
     .trip-card:last-child::before { bottom: auto; height: 100%; }
 
     /* 視覺包裹層：不透明白底，遮住中間的線，只讓線在空隙露出 */
@@ -1014,6 +1017,7 @@
     </script>
 </body>
 </html>
+
 
 
 
