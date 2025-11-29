@@ -48,34 +48,31 @@
         .trip-card { 
             width: 100%; 
             margin-bottom: 0.75rem; 
-            position: relative; /* 必須是 relative 以便子元素定位 */
+            position: relative; 
             min-height: 85px; 
             display: flex; 
-            overflow: visible; /* 確保線條可以延伸出去 */
+            z-index: 0;
         }
 
-        /* 串連線 (Pseudo-element) - 莫蘭迪咖啡色 */
-        /* 策略：z-index 1，比卡片低，但比背景高 */
+        /* 串連線 (Pseudo-element) */
         .trip-card::before {
             content: '';
             position: absolute;
-            left: 28px; /* 56px (w-14) 的一半 */
+            left: 28px; /* w-14 (56px) 的一半 */
             top: -20px; 
             bottom: -20px; 
             width: 2px;
             background-color: #998A7E; /* 莫蘭迪咖啡色 */
-            z-index: 1; /* 設定為 1 */
+            z-index: 1; /* 設定為 1 (低層) */
             transform: translateX(-50%);
-            pointer-events: none; /* 確保不干擾點擊 */
+            pointer-events: none;
         }
         
-        /* 第一張卡片的線不要向上凸出 */
+        /* 線條頭尾修正 */
         .trip-card:first-child::before { top: 42px; }
-        /* 最後一張卡片的線不要向下凸出 */
         .trip-card:last-child::before { bottom: auto; height: 100%; }
 
-        /* 視覺包裹層：z-index 10 */
-        /* 策略：z-index 10，絕對高於線條 (1)，且有背景色遮擋 */
+        /* 視覺包裹層 (白色卡片本體) */
         .trip-card-visual-wrapper {
             position: relative;
             width: 100%;
@@ -83,8 +80,8 @@
             border-radius: 0.75rem; 
             overflow: hidden;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            background-color: white; /* 不透明背景 */
-            z-index: 10; /* 比線條高 */
+            background-color: white; /* 必須有不透明背景 */
+            z-index: 10; /* 設定為 10 (高層)，絕對會蓋過 z-index: 1 的線 */
         }
 
         .swipe-item-container { position: relative; overflow: hidden; border-radius: 0.375rem; margin-bottom: 0.5rem; touch-action: pan-y; }
@@ -116,7 +113,6 @@
 
         .info-block-content { display: flex; flex-direction: column; justify-content: flex-start; align-items: flex-end; gap: 4px; width: 100%; }
         
-        /* 按鈕靠左緊鄰，gap: 2px */
         .card-static-actions { 
             display: none !important; 
             width: 100%; 
@@ -244,262 +240,735 @@
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, getDocs, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        window.App = (function() {
-            const appId = 'my-trip-app';
-            const firebaseConfig = { apiKey: "AIzaSyDx2yrJ3YUe93A-JdgJPtZChLvylCEht28", authDomain: "mytravelplanner-36283.firebaseapp.com", projectId: "mytravelplanner-36283", storageBucket: "mytravelplanner-36283.appspot.com", messagingSenderId: "86504733738", appId: "1:86504733738:web:5167a6a795eb2066f272d" };
+        // Global variables within the module scope
+        const appId = 'my-trip-app';
+        const firebaseConfig = { apiKey: "AIzaSyDx2yrJ3YUe93A-JdgJPtZChLvylCEht28", authDomain: "mytravelplanner-36283.firebaseapp.com", projectId: "mytravelplanner-36283", storageBucket: "mytravelplanner-36283.appspot.com", messagingSenderId: "86504733738", appId: "1:86504733738:web:5167a6a795eb2066f272d" };
+        
+        const COUNTRY_CONFIG = { 
+            'USA': { name: '美國', currency: 'USD', localName: 'New York', lat: 40.71, lon: -74.00, img: 'usa' }, 
+            'JP': { name: '日本', currency: 'JPY', localName: '東京', lat: 35.68, lon: 139.76, img: 'japan' }, 
+            'KR': { name: '韓國', currency: 'KRW', localName: '서울', lat: 37.56, lon: 126.97, img: 'korea' }, 
+            'UK': { name: '英國', currency: 'GBP', localName: 'London', lat: 51.50, lon: -0.12, img: 'london' }, 
+            'TW': { name: '台灣', currency: 'TWD', localName: '台北', lat: 25.03, lon: 121.56, img: 'taiwan' } 
+        };
+        
+        const CATEGORY_COLORS = { 'coffee': { bg: 'bg-[#9C8B74]', hex: '#9C8B74', text: 'text-[#9C8B74]' }, 'restaurant': { bg: 'bg-[#CB8572]', hex: '#CB8572', text: 'text-[#CB8572]' }, 'location': { bg: 'bg-[#8F9E8B]', hex: '#8F9E8B', text: 'text-[#8F9E8B]' }, '交通': { bg: 'bg-[#7E92A1]', hex: '#7E92A1', text: 'text-[#7E92A1]' }, 'shopping': { bg: 'bg-[#9E869C]', hex: '#9E869C', text: 'text-[#9E869C]' }, 'accommodation': { bg: 'bg-[#A9A9A9]', hex: '#A9A9A9', text: 'text-[#A9A9A9]' }, 'default': { bg: 'bg-[#A9A9A9]', hex: '#A9A9A9', text: 'text-[#A9A9A9]' } };
+        const MEMBER_COLORS = ['text-[#CB8572]', 'text-[#7E92A1]', 'text-[#8F9E8B]', 'text-[#9E869C]', 'text-[#9C8B74]'];
+        const CATEGORY_NAMES = { 'location': '景點', 'restaurant': '餐廳', 'coffee': '咖啡廳', '交通': '交通', 'shopping': '購物', 'accommodation': '住宿', 'default': '未分類' };
+
+        let db, auth, currentUser;
+        let currentTripId = '', currentDayId = 'Day 1', editingScheduleId = null, tripData = {};
+        let unsubscribeSchedule = null, unsubscribeTrips = null, unsubscribeLists = null, expenseChart = null, currentTripRate = 1;
+        let currentListTabId = null; 
+        let pendingTripSwitchId = null; 
+
+        // --- 基礎工具 ---
+        function formatDateForHeader(date) { const year = String(date.getFullYear()).slice(-2); const month = String(date.getMonth() + 1).padStart(2, '0'); const day = String(date.getDate()).padStart(2, '0'); const dayOfWeekMap = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']; return `${year}.${month}.${day} ${dayOfWeekMap[date.getDay()]}`; }
+        function dateDiffInDays(date2, date1) { return Math.ceil(Math.abs(date2.getTime() - date1.getTime()) / (1000 * 60 * 60 * 24)); }
+        function getDateFromDayId(trip, dayId) { if (!trip || !trip.startDate) return null; const d = new Date(trip.startDate); d.setDate(d.getDate() + (parseInt(dayId.replace('Day ', '')) - 1)); return d; }
+        function getCardStyle(type) { const c = CATEGORY_COLORS[type] || CATEGORY_COLORS['default']; const icons = {'coffee':'☕','restaurant':'🍽️','location':'📍','交通':'🚗','shopping':'🛍️','accommodation':'🛏️'}; return { color: c.bg, icon: icons[type] || '❓', hex: c.hex, text: c.text }; }
+        function navigateToMap(input) { if (!input) return; const url = (input.includes('http') || input.includes('maps.')) ? input : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(input)}`; window.open(url, '_blank'); }
+        function formatCurrency(value) { if (typeof value !== 'number') value = parseFloat(value); if (isNaN(value) || value === 0) return '0'; return value.toFixed(2).replace(/\.00$/, '').replace(/(\.\d)0$/, '$1'); }
+        async function fetchExchangeRate(baseCurrency) { const fallback = { 'USD': 32.5, 'JPY': 0.215, 'KRW': 0.023, 'GBP': 41.2, 'CNY': 4.5, 'TWD': 1 }; if (!baseCurrency || baseCurrency === 'TWD') return 1; try { const r = await fetch(`https://open.er-api.com/v6/latest/${baseCurrency}`); const d = await r.json(); if (d && d.rates && d.rates.TWD) return d.rates.TWD; } catch (e) {} return fallback[baseCurrency] || 1; }
+
+        // --- 核心更新 ---
+        async function updateHeaderInfo() {
+            const trip = tripData[currentTripId]; if (!trip) return;
+            const config = COUNTRY_CONFIG[trip.country || 'TW'] || COUNTRY_CONFIG['TW'];
+            document.getElementById('header-location-name').textContent = config.localName;
+            currentTripRate = await fetchExchangeRate(config.currency);
+            const barSelect = document.getElementById('bar-calc-currency'); 
+            if(barSelect) { barSelect.value = config.currency; calculateCurrency(); }
+            document.getElementById('header-members-list').innerHTML = (trip.members && trip.members.length) ? trip.members.map((m, i) => `<span class="${MEMBER_COLORS[i % MEMBER_COLORS.length]} mr-1">${m}</span>`).join('') : '尚未設定';
+            try { const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${config.lat}&longitude=${config.lon}&current=temperature_2m,weather_code&timezone=auto`); const data = await res.json(); let icon = '☀️'; if (data.current.weather_code > 3) icon = '☁️'; if (data.current.weather_code > 50) icon = '🌧️'; document.getElementById('header-weather-icon').textContent = icon; document.getElementById('header-weather-temp').textContent = `${data.current.temperature_2m}°C`; } catch (e) {}
+        }
+
+        function changeTrip(tripId) { 
+            currentTripId = tripId; 
+            currentDayId = 'Day 1'; 
+            currentListTabId = null; 
+            updateHeaderInfo(); 
+            renderDayTabs(); 
+            loadSchedules(currentTripId, currentDayId); 
+            checkAndCreateDefaultLists(tripId); 
+        }
+
+        // 修改後的 createTripCard：增加 visualWrapper 與 Timeline 線條結構
+        function createTripCard(schedule) {
+            const style = getCardStyle(schedule.Type);
+            const config = CATEGORY_COLORS[schedule.Type] || CATEGORY_COLORS['default'];
+            const rate = schedule.Rate || 1;
+            const amountTWD = (schedule.Amount || 0) * rate;
+            let perPersonTWD = 0, specifiedTWD = 0, unspecifiedCount = 0;
+            const members = schedule.members || [];
+            if (amountTWD > 0) {
+                members.forEach(m => { const amt = typeof m === 'string' ? null : m.amount; if(amt !== null && !isNaN(amt)) specifiedTWD += (schedule.isTwdSplit ? amt : amt * rate); else unspecifiedCount++; });
+                perPersonTWD = (unspecifiedCount > 0) ? (amountTWD - specifiedTWD) / unspecifiedCount : (members.length > 0 ? amountTWD / members.length : amountTWD);
+            }
+            const scheduleJson = JSON.stringify({ ...schedule, Amount: schedule.Amount || 0 });
             
-            const COUNTRY_CONFIG = { 
-                'USA': { name: '美國', currency: 'USD', localName: 'New York', lat: 40.71, lon: -74.00, img: 'usa' }, 
-                'JP': { name: '日本', currency: 'JPY', localName: '東京', lat: 35.68, lon: 139.76, img: 'japan' }, 
-                'KR': { name: '韓國', currency: 'KRW', localName: '서울', lat: 37.56, lon: 126.97, img: 'korea' }, 
-                'UK': { name: '英國', currency: 'GBP', localName: 'London', lat: 51.50, lon: -0.12, img: 'london' }, 
-                'TW': { name: '台灣', currency: 'TWD', localName: '台北', lat: 25.03, lon: 121.56, img: 'taiwan' } 
-            };
+            let memberHtml = '';
+            if (members.length > 0) {
+                memberHtml = `<div class="flex flex-wrap justify-end gap-x-1.5 gap-y-0.5 ml-2">`;
+                members.forEach((m, i) => {
+                        memberHtml += `<span class="${MEMBER_COLORS[i % MEMBER_COLORS.length]} text-[10px] font-bold whitespace-nowrap">${typeof m === 'string' ? m : m.name}</span>`;
+                });
+                memberHtml += `</div>`;
+            }
+
+            // 1. 外層容器 (負責 Timeline 線條)
+            const card = document.createElement('div');
+            card.className = 'trip-card flex w-full mb-3 relative min-h-[75px]'; 
             
-            const CATEGORY_COLORS = { 'coffee': { bg: 'bg-[#9C8B74]', hex: '#9C8B74', text: 'text-[#9C8B74]' }, 'restaurant': { bg: 'bg-[#CB8572]', hex: '#CB8572', text: 'text-[#CB8572]' }, 'location': { bg: 'bg-[#8F9E8B]', hex: '#8F9E8B', text: 'text-[#8F9E8B]' }, '交通': { bg: 'bg-[#7E92A1]', hex: '#7E92A1', text: 'text-[#7E92A1]' }, 'shopping': { bg: 'bg-[#9E869C]', hex: '#9E869C', text: 'text-[#9E869C]' }, 'accommodation': { bg: 'bg-[#A9A9A9]', hex: '#A9A9A9', text: 'text-[#A9A9A9]' }, 'default': { bg: 'bg-[#A9A9A9]', hex: '#A9A9A9', text: 'text-[#A9A9A9]' } };
-            const MEMBER_COLORS = ['text-[#CB8572]', 'text-[#7E92A1]', 'text-[#8F9E8B]', 'text-[#9E869C]', 'text-[#9C8B74]'];
-            const CATEGORY_NAMES = { 'location': '景點', 'restaurant': '餐廳', 'coffee': '咖啡廳', '交通': '交通', 'shopping': '購物', 'accommodation': '住宿', 'default': '未分類' };
+            // 2. 視覺包裹層 (負責圓角、陰影、裁切)
+            const visualWrapper = document.createElement('div');
+            visualWrapper.className = 'trip-card-visual-wrapper';
 
-            let db, auth, currentUser;
-            let currentTripId = '', currentDayId = 'Day 1', editingScheduleId = null, tripData = {};
-            let unsubscribeSchedule = null, unsubscribeTrips = null, unsubscribeLists = null, expenseChart = null, currentTripRate = 1;
-            let currentListTabId = null; 
-            let pendingTripSwitchId = null; 
+            const swipeActions = document.createElement('div');
+            swipeActions.className = 'swipe-item-delete-bg';
+            swipeActions.innerHTML = `<button class="px-2 py-1 h-full text-xs font-bold bg-[#7E92A1] text-white" data-action="modify" data-schedule='${scheduleJson}'>修改</button><button class="px-2 py-1 h-full text-xs font-bold bg-[#CB8572] text-white" data-action="delete" data-id="${schedule.id}">刪除</button>`;
+            
+            // 將動作按鈕加入視覺層
+            visualWrapper.appendChild(swipeActions);
 
-            // --- 基礎工具 ---
-            function formatDateForHeader(date) { const year = String(date.getFullYear()).slice(-2); const month = String(date.getMonth() + 1).padStart(2, '0'); const day = String(date.getDate()).padStart(2, '0'); const dayOfWeekMap = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']; return `${year}.${month}.${day} ${dayOfWeekMap[date.getDay()]}`; }
-            function dateDiffInDays(date2, date1) { return Math.ceil(Math.abs(date2.getTime() - date1.getTime()) / (1000 * 60 * 60 * 24)); }
-            function getDateFromDayId(trip, dayId) { if (!trip || !trip.startDate) return null; const d = new Date(trip.startDate); d.setDate(d.getDate() + (parseInt(dayId.replace('Day ', '')) - 1)); return d; }
-            function getCardStyle(type) { const c = CATEGORY_COLORS[type] || CATEGORY_COLORS['default']; const icons = {'coffee':'☕','restaurant':'🍽️','location':'📍','交通':'🚗','shopping':'🛍️','accommodation':'🛏️'}; return { color: c.bg, icon: icons[type] || '❓', hex: c.hex, text: c.text }; }
-            function navigateToMap(input) { if (!input) return; const url = (input.includes('http') || input.includes('maps.')) ? input : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(input)}`; window.open(url, '_blank'); }
-            function formatCurrency(value) { if (typeof value !== 'number') value = parseFloat(value); if (isNaN(value) || value === 0) return '0'; return value.toFixed(2).replace(/\.00$/, '').replace(/(\.\d)0$/, '$1'); }
-            async function fetchExchangeRate(baseCurrency) { const fallback = { 'USD': 32.5, 'JPY': 0.215, 'KRW': 0.023, 'GBP': 41.2, 'CNY': 4.5, 'TWD': 1 }; if (!baseCurrency || baseCurrency === 'TWD') return 1; try { const r = await fetch(`https://open.er-api.com/v6/latest/${baseCurrency}`); const d = await r.json(); if (d && d.rates && d.rates.TWD) return d.rates.TWD; } catch (e) {} return fallback[baseCurrency] || 1; }
-
-            // --- 核心更新 ---
-            async function updateHeaderInfo() {
-                const trip = tripData[currentTripId]; if (!trip) return;
-                const config = COUNTRY_CONFIG[trip.country || 'TW'] || COUNTRY_CONFIG['TW'];
-                document.getElementById('header-location-name').textContent = config.localName;
-                currentTripRate = await fetchExchangeRate(config.currency);
-                const barSelect = document.getElementById('bar-calc-currency'); 
-                if(barSelect) { barSelect.value = config.currency; calculateCurrency(); }
-                document.getElementById('header-members-list').innerHTML = (trip.members && trip.members.length) ? trip.members.map((m, i) => `<span class="${MEMBER_COLORS[i % MEMBER_COLORS.length]} mr-1">${m}</span>`).join('') : '尚未設定';
-                try { const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${config.lat}&longitude=${config.lon}&current=temperature_2m,weather_code&timezone=auto`); const data = await res.json(); let icon = '☀️'; if (data.current.weather_code > 3) icon = '☁️'; if (data.current.weather_code > 50) icon = '🌧️'; document.getElementById('header-weather-icon').textContent = icon; document.getElementById('header-weather-temp').textContent = `${data.current.temperature_2m}°C`; } catch (e) {}
-            }
-
-            function changeTrip(tripId) { 
-                currentTripId = tripId; 
-                currentDayId = 'Day 1'; 
-                currentListTabId = null; 
-                updateHeaderInfo(); 
-                renderDayTabs(); 
-                loadSchedules(currentTripId, currentDayId); 
-                checkAndCreateDefaultLists(tripId); 
-            }
-
-            // 修改後的 createTripCard：增加 visualWrapper 與 Timeline 線條結構
-            function createTripCard(schedule) {
-                const style = getCardStyle(schedule.Type);
-                const config = CATEGORY_COLORS[schedule.Type] || CATEGORY_COLORS['default'];
-                const rate = schedule.Rate || 1;
-                const amountTWD = (schedule.Amount || 0) * rate;
-                let perPersonTWD = 0, specifiedTWD = 0, unspecifiedCount = 0;
-                const members = schedule.members || [];
-                if (amountTWD > 0) {
-                    members.forEach(m => { const amt = typeof m === 'string' ? null : m.amount; if(amt !== null && !isNaN(amt)) specifiedTWD += (schedule.isTwdSplit ? amt : amt * rate); else unspecifiedCount++; });
-                    perPersonTWD = (unspecifiedCount > 0) ? (amountTWD - specifiedTWD) / unspecifiedCount : (members.length > 0 ? amountTWD / members.length : amountTWD);
-                }
-                const scheduleJson = JSON.stringify({ ...schedule, Amount: schedule.Amount || 0 });
-                
-                let memberHtml = '';
-                if (members.length > 0) {
-                    memberHtml = `<div class="flex flex-wrap justify-end gap-x-1.5 gap-y-0.5 ml-2">`;
-                    members.forEach((m, i) => {
-                         memberHtml += `<span class="${MEMBER_COLORS[i % MEMBER_COLORS.length]} text-[10px] font-bold whitespace-nowrap">${typeof m === 'string' ? m : m.name}</span>`;
-                    });
-                    memberHtml += `</div>`;
-                }
-
-                // 1. 外層容器 (負責 Timeline 線條)
-                const card = document.createElement('div');
-                card.className = 'trip-card flex w-full mb-3 relative min-h-[75px]'; 
-                
-                // 2. 視覺包裹層 (負責圓角、陰影、裁切)
-                const visualWrapper = document.createElement('div');
-                visualWrapper.className = 'trip-card-visual-wrapper';
-
-                const swipeActions = document.createElement('div');
-                swipeActions.className = 'swipe-item-delete-bg';
-                swipeActions.innerHTML = `<button class="px-2 py-1 h-full text-xs font-bold bg-[#7E92A1] text-white" data-action="modify" data-schedule='${scheduleJson}'>修改</button><button class="px-2 py-1 h-full text-xs font-bold bg-[#CB8572] text-white" data-action="delete" data-id="${schedule.id}">刪除</button>`;
-                
-                // 將動作按鈕加入視覺層
-                visualWrapper.appendChild(swipeActions);
-
-                const content = document.createElement('div');
-                content.className = 'swipe-item-content flex w-full bg-white relative items-stretch h-full z-10';
-                
-                content.innerHTML = `
-                    <div class="${config.bg} w-14 flex-none flex flex-col items-center justify-start gap-2 text-white relative z-10 h-full py-3">
-                        <span class="text-[10px] font-bold tracking-tight leading-none">${schedule.Time}</span>
-                        <span class="text-2xl leading-none mb-1">${style.icon}</span>
-                        <span class="text-[9px] font-medium opacity-90 leading-none">${CATEGORY_NAMES[schedule.Type] || schedule.Type}</span>
+            const content = document.createElement('div');
+            content.className = 'swipe-item-content flex w-full bg-white relative items-stretch h-full z-10';
+            
+            content.innerHTML = `
+                <div class="${config.bg} w-14 flex-none flex flex-col items-center justify-start gap-2 text-white relative z-10 h-full py-3">
+                    <span class="text-[10px] font-bold tracking-tight leading-none">${schedule.Time}</span>
+                    <span class="text-2xl leading-none mb-1">${style.icon}</span>
+                    <span class="text-[9px] font-medium opacity-90 leading-none">${CATEGORY_NAMES[schedule.Type] || schedule.Type}</span>
+                </div>
+                <div class="flex-grow py-2 pl-2 pr-1 flex flex-col justify-start min-w-0 relative">
+                    <div class="flex justify-between items-start w-full">
+                        <h3 class="text-xs font-bold text-[#4A4B4D] leading-tight mb-0.5 flex-grow"><a href="#" class="location-link map-link hover:underline">${schedule.Location}</a></h3>
+                        ${memberHtml}
                     </div>
-                    <div class="flex-grow py-2 pl-2 pr-1 flex flex-col justify-start min-w-0 relative">
-                        <div class="flex justify-between items-start w-full">
-                            <h3 class="text-xs font-bold text-[#4A4B4D] leading-tight mb-0.5 flex-grow"><a href="#" class="location-link map-link hover:underline">${schedule.Location}</a></h3>
-                            ${memberHtml}
-                        </div>
-                        <p class="text-[#888888] text-[10px] line-clamp-4 whitespace-pre-wrap leading-normal mt-0.5">${schedule.說明 || ''}</p>
-                    </div>
-                    
-                    <div class="card-right-col">
-                        <div class="card-static-actions"> 
-                            <button class="bg-[#7E92A1] text-white modify-btn-static rounded px-1.5 py-0.5 text-[9px] font-bold" data-schedule='${scheduleJson}'>修改</button>
-                            <button class="bg-[#CB8572] text-white delete-btn-static rounded px-1.5 py-0.5 text-[9px] font-bold" data-id="${schedule.id}">刪除</button>
-                        </div>
-                        <div class="flex items-center justify-start w-full"><span class="text-[#8F9E8B] font-bold text-[10px]">💰 TWD$${amountTWD.toFixed(0)}</span></div>
-                        <div class="flex items-center justify-start w-full"><span class="text-[#888888] font-bold text-[10px]">👫 TWD$${formatCurrency(perPersonTWD)}</span></div>
-                    </div>`;
+                    <p class="text-[#888888] text-[10px] line-clamp-4 whitespace-pre-wrap leading-normal mt-0.5">${schedule.說明 || ''}</p>
+                </div>
                 
-                // 將內容層加入視覺層
-                visualWrapper.appendChild(content);
-                // 將視覺層加入外層卡片
-                card.appendChild(visualWrapper);
+                <div class="card-right-col">
+                    <div class="card-static-actions"> 
+                        <button class="bg-[#7E92A1] text-white modify-btn-static rounded px-1.5 py-0.5 text-[9px] font-bold" data-schedule='${scheduleJson}'>修改</button>
+                        <button class="bg-[#CB8572] text-white delete-btn-static rounded px-1.5 py-0.5 text-[9px] font-bold" data-id="${schedule.id}">刪除</button>
+                    </div>
+                    <div class="flex items-center justify-start w-full"><span class="text-[#8F9E8B] font-bold text-[10px]">💰 TWD$${amountTWD.toFixed(0)}</span></div>
+                    <div class="flex items-center justify-start w-full"><span class="text-[#888888] font-bold text-[10px]">👫 TWD$${formatCurrency(perPersonTWD)}</span></div>
+                </div>`;
+            
+            // 將內容層加入視覺層
+            visualWrapper.appendChild(content);
+            // 將視覺層加入外層卡片
+            card.appendChild(visualWrapper);
 
-                card.querySelector('.map-link').onclick = (e) => { e.preventDefault(); navigateToMap(schedule.Address || schedule.Location); };
-                card.querySelector('.modify-btn-static').onclick = () => openEditScheduleModal(scheduleJson);
-                card.querySelector('.delete-btn-static').onclick = () => deleteSchedule(schedule.id);
-                content.onclick = (e) => { if (window.innerWidth > 500 && !e.target.closest('button') && !e.target.classList.contains('map-link')) openEditScheduleModal(scheduleJson); };
-                enableSwipeToDelete(content, swipeActions, 'schedule');
-                return card;
+            card.querySelector('.map-link').onclick = (e) => { e.preventDefault(); navigateToMap(schedule.Address || schedule.Location); };
+            card.querySelector('.modify-btn-static').onclick = () => openEditScheduleModal(scheduleJson);
+            card.querySelector('.delete-btn-static').onclick = () => deleteSchedule(schedule.id);
+            content.onclick = (e) => { if (window.innerWidth > 500 && !e.target.closest('button') && !e.target.classList.contains('map-link')) openEditScheduleModal(scheduleJson); };
+            enableSwipeToDelete(content, swipeActions, 'schedule');
+            return card;
+        }
+
+        const loadSchedules = function(tripId, dayId) {
+            if (unsubscribeSchedule) unsubscribeSchedule();
+            const container = document.getElementById('schedule-list-container'); container.innerHTML = '<div class="p-4 text-center text-[#A9A9A9] text-xs">載入中...</div>';
+            const q = query(collection(db, `artifacts/${appId}/public/data/Trips/${tripId}/Schedules`), where('dayId', '==', dayId), orderBy('Time'));
+            unsubscribeSchedule = onSnapshot(q, (snapshot) => {
+                container.innerHTML = '';
+                const trip = tripData[currentTripId];
+                if (trip && trip.startDate) { const d = getDateFromDayId(trip, dayId); if (d) document.getElementById('header-day-date-display').textContent = formatDateForHeader(d); }
+                if (snapshot.empty) container.innerHTML = `<div class="p-4 text-center text-[#A9A9A9] text-xs">此日暫無行程。</div>`;
+                else snapshot.forEach(doc => container.appendChild(createTripCard({ id: doc.id, ...doc.data() })));
+            }, (error) => {
+                console.error("Load schedules error", error);
+                container.innerHTML = `<div class="p-4 text-center text-red-400 text-xs">載入失敗</div>`;
+            });
+        };
+
+        const loadTripList = async function() {
+            if (unsubscribeTrips) unsubscribeTrips();
+            
+            unsubscribeTrips = onSnapshot(collection(db, `artifacts/${appId}/public/data/Trips`), (snapshot) => {
+                const select = document.getElementById('trip-select'); 
+                select.innerHTML = ''; 
+                tripData = {};
+                let firstId = null;
+
+                snapshot.forEach(doc => { 
+                    const data = doc.data();
+                    tripData[doc.id] = { id: doc.id, ...data }; 
+                    const op = document.createElement('option'); 
+                    op.value = doc.id; 
+                    op.textContent = data.name || '未命名'; 
+                    select.appendChild(op); 
+                    if(!firstId) firstId = doc.id; 
+                });
+                
+                if (snapshot.empty) { 
+                    document.getElementById('settings-btn').style.display = 'none'; 
+                    document.getElementById('new-trip-btn').style.display = 'inline-flex'; 
+                    select.style.display = 'none'; 
+                    currentTripId = ''; 
+                    return; 
+                }
+
+                select.style.display = 'block'; 
+                document.getElementById('settings-btn').style.display = 'inline-flex'; 
+                document.getElementById('new-trip-btn').style.display = 'none';
+
+                if (pendingTripSwitchId && tripData[pendingTripSwitchId]) {
+                    currentTripId = pendingTripSwitchId;
+                    pendingTripSwitchId = null;
+                } else if (!currentTripId || !tripData[currentTripId]) {
+                    currentTripId = firstId;
+                }
+                select.value = currentTripId; 
+                changeTrip(currentTripId);
+            }, (error) => { console.error(error); });
+        };
+
+        function renderDayTabs() {
+            const container = document.getElementById('day-tabs-container'); container.innerHTML = '';
+            const trip = tripData[currentTripId]; if (!trip) return;
+            for (let i = 0; i < (trip.numDays || 1); i++) {
+                const dId = `Day ${i + 1}`; const btn = document.createElement('button'); const isActive = dId === currentDayId;
+                btn.className = `px-3 py-1.5 text-xs font-bold rounded-lg transition duration-150 flex-shrink-0 ${isActive ? 'bg-[#5F6368] text-white shadow-md' : 'bg-[#E4E6E8] text-[#5F6368]'}`;
+                btn.textContent = dId; btn.onclick = () => { currentDayId = dId; renderDayTabs(); loadSchedules(currentTripId, currentDayId); };
+                container.appendChild(btn);
             }
+            const addBtn = document.createElement('button'); addBtn.className = 'px-3 py-1.5 text-xs font-bold rounded-lg bg-[#7E92A1] text-white ml-2 flex-shrink-0'; addBtn.textContent = '+';
+            addBtn.onclick = async () => { try { await updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}`), { numDays: (trip.numDays || 1) + 1 }, { merge: true }); } catch(e) { } };
+            container.appendChild(addBtn);
+            const d = getDateFromDayId(trip, currentDayId); if (d) document.getElementById('header-day-date-display').textContent = formatDateForHeader(d);
+        }
 
-            const loadSchedules = function(tripId, dayId) {
-                if (unsubscribeSchedule) unsubscribeSchedule();
-                const container = document.getElementById('schedule-list-container'); container.innerHTML = '<div class="p-4 text-center text-[#A9A9A9] text-xs">載入中...</div>';
-                const q = query(collection(db, `artifacts/${appId}/public/data/Trips/${tripId}/Schedules`), where('dayId', '==', dayId), orderBy('Time'));
-                unsubscribeSchedule = onSnapshot(q, (snapshot) => {
-                    container.innerHTML = '';
-                    const trip = tripData[currentTripId];
-                    if (trip && trip.startDate) { const d = getDateFromDayId(trip, dayId); if (d) document.getElementById('header-day-date-display').textContent = formatDateForHeader(d); }
-                    if (snapshot.empty) container.innerHTML = `<div class="p-4 text-center text-[#A9A9A9] text-xs">此日暫無行程。</div>`;
-                    else snapshot.forEach(doc => container.appendChild(createTripCard({ id: doc.id, ...doc.data() })));
+        async function calculateCurrency() {
+            const code = document.getElementById('bar-calc-currency').value; const amt = parseFloat(document.getElementById('bar-calc-amount').value) || 0;
+            const rate = await fetchExchangeRate(code); const displayRate = rate > 0 ? (1/rate).toFixed(2) : '0.00';
+            document.getElementById('rate-display-label').textContent = `匯率 ≈ ${code} ${displayRate}`;
+            document.getElementById('bar-calc-result').value = (amt === 0) ? '0' : (amt * rate).toFixed(0);
+        }
+
+        function enableSwipeToDelete(contentEl, actionEl, type) {
+            if (window.innerWidth > 500) return; 
+            let startX = 0, currentTranslate = 0, isSwiping = false;
+            contentEl.addEventListener('touchstart', e => { startX = e.touches[0].clientX; isSwiping = false; }, {passive: true});
+            contentEl.addEventListener('touchmove', e => { const diff = e.touches[0].clientX - startX; if (diff < 0) { isSwiping = true; currentTranslate = Math.max(diff, -140); contentEl.style.transform = `translateX(${currentTranslate}px)`; } else if(currentTranslate < 0) { currentTranslate = Math.min(diff - 140, 0); contentEl.style.transform = `translateX(${currentTranslate}px)`; } }, {passive: true});
+            contentEl.addEventListener('touchend', () => { contentEl.style.transform = (isSwiping && currentTranslate < -70) ? `translateX(-140px)` : `translateX(0)`; });
+            actionEl.querySelectorAll('button').forEach(btn => {
+                btn.onclick = (e) => { e.stopPropagation(); const action = btn.getAttribute('data-action');
+                    if (type === 'schedule') { const s = JSON.parse(btn.closest('.swipe-item-delete-bg').querySelector('[data-action="modify"]').getAttribute('data-schedule')); if (action === 'modify') openEditScheduleModal(JSON.stringify(s)); else deleteSchedule(s.id); } 
+                    else if (type === 'list') { const w = btn.closest('.swipe-item-container'); const l = tripData[currentTripId].lists.find(x => x.id === currentListTabId); if (action === 'delete') deleteListItem(l, parseInt(w.getAttribute('data-index'))); }
+                    contentEl.style.transform = `translateX(0)`;
+                };
+            });
+        }
+
+        function deleteSchedule(id) { 
+            if (confirm("確定刪除？")) {
+                deleteDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`, id));
+            }
+        }
+
+        function openEditScheduleModal(json) {
+            const s = JSON.parse(json); editingScheduleId = s.id;
+            document.getElementById('add-schedule-modal-title').textContent = s.Location; document.getElementById('modal-delete-btn').style.display = 'block'; document.getElementById('modal-delete-btn').onclick = () => deleteSchedule(s.id);
+            ['Date','Time','Location','Type','說明','Address','Amount'].forEach(k => { const el = document.getElementById(`form-${k.toLowerCase().replace('說明','details')}`); if(el) el.value = s[k] || (k==='Amount'?0:''); });
+            document.getElementById('form-currency-label').textContent = tripData[currentTripId].currency || 'TWD';
+            document.getElementById('form-amount-twd').value = ((s.Amount||0) * currentTripRate).toFixed(0);
+            const c = document.getElementById('form-members-container'); c.innerHTML = '';
+            const mems = s.members || []; 
+            if(mems.length) {
+                mems.forEach(m => {
+                    const name = typeof m === 'string' ? m : m.name;
+                    const amt = (typeof m === 'string' || m.amount === null) ? '' : m.amount;
+                    addMemberInput(name, amt);
+                }); 
+            } else { 
+                addMemberInput(); addMemberInput(); 
+            }
+            document.getElementById('add-schedule-modal').style.display = 'flex';
+        }
+        
+        function addMemberInput(name='', amt='') { const d = document.createElement('div'); d.className = 'flex items-center space-x-2 mt-1.5'; d.innerHTML = `<input type="text" name="schedule-member-name" value="${name}" placeholder="名字" class="compact-input w-16 rounded-md"><input type="number" name="schedule-member-amount" value="${amt}" placeholder="金額" class="compact-input w-16 rounded-md"><button type="button" class="text-[#CB8572] font-bold p-1 rm-btn">×</button>`; d.querySelector('.rm-btn').onclick = () => d.remove(); document.getElementById('form-members-container').appendChild(d); }
+
+        async function submitSchedule() {
+            try {
+                const dateVal = document.getElementById('form-date').value; if (!dateVal) return alert("請選日期");
+                const trip = tripData[currentTripId]; const dayId = `Day ${dateDiffInDays(new Date(dateVal), new Date(trip.startDate)) + 1}`;
+                const members = []; const names = document.querySelectorAll('input[name="schedule-member-name"]'); const amts = document.querySelectorAll('input[name="schedule-member-amount"]');
+                names.forEach((n, i) => { if(n.value.trim()) members.push({name: n.value.trim(), amount: amts[i].value ? parseFloat(amts[i].value) : null}); });
+                const uid = auth.currentUser ? auth.currentUser.uid : null; 
+                
+                // ⚠️ 強制處理金額，確保空白為0
+                let rawAmount = parseFloat(document.getElementById('form-amount').value);
+                if (isNaN(rawAmount)) rawAmount = 0;
+
+                const data = { 
+                    dayId, 
+                    Date: dateVal, 
+                    Time: document.getElementById('form-time').value, Location: document.getElementById('form-location').value, 
+                    Type: document.getElementById('form-type').value, 說明: document.getElementById('form-details').value, 
+                    Address: document.getElementById('form-address').value, 
+                    Amount: rawAmount, 
+                    Rate: currentTripRate || 1, members, uid: uid 
+                };
+                const col = collection(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`);
+                if (editingScheduleId) await updateDoc(doc(col, editingScheduleId), data); else await addDoc(col, data);
+                document.getElementById('add-schedule-modal').style.display = 'none'; currentDayId = dayId; renderDayTabs(); loadSchedules(currentTripId, currentDayId);
+            } catch(e) { }
+        }
+
+        async function checkAndCreateDefaultLists(tripId) { 
+            try {
+                const col = collection(db, `artifacts/${appId}/public/data/Trips/${tripId}/Lists`); 
+                const snap = await getDocs(col); 
+                if (snap.empty) { 
+                    const uid = auth.currentUser ? auth.currentUser.uid : null;
+                    await addDoc(col, {name: '物品', type: 'check', order: 1, items:[], uid: uid}); 
+                    await addDoc(col, {name: '購物', type: 'shopping', order: 2, items:[], uid: uid}); 
+                } 
+            } catch(e) {}
+        }
+        
+        function loadLists() {
+            try {
+                if(!currentTripId) return; 
+                const listModal = document.getElementById('lists-modal');
+                if(listModal) listModal.style.display = 'flex'; 
+                if(unsubscribeLists) unsubscribeLists();
+                
+                const q = query(collection(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Lists`), orderBy('order'));
+                unsubscribeLists = onSnapshot(q, (snap) => {
+                    try {
+                        const tabs = document.getElementById('list-tabs'); 
+                        const cont = document.getElementById('list-content'); 
+                        if (!tabs || !cont) return;
+                        tabs.innerHTML = ''; cont.innerHTML = ''; 
+                        const lists = []; snap.forEach(d => lists.push({id: d.id, ...d.data()})); 
+                        if(typeof tripData !== 'undefined' && tripData[currentTripId]) tripData[currentTripId].lists = lists;
+                        if(!lists.length) { cont.innerHTML = '<div class="text-center text-xs p-4 text-gray-400">目前沒有清單</div>'; return; }
+                        
+                        let activeListExists = currentListTabId && lists.some(l => l.id === currentListTabId);
+                        if (!activeListExists) currentListTabId = lists[0].id;
+                        
+                        lists.forEach(l => { 
+                            const t = document.createElement('div'); 
+                            const isActive = l.id === currentListTabId;
+                            t.className = `cursor-pointer px-3 py-1 text-sm flex-shrink-0 transition-colors ${isActive ? 'border-b-2 border-[#7E92A1] text-[#7E92A1] font-bold' : 'text-[#A9A9A9]'}`;
+                            t.textContent = l.name; 
+                            t.onclick = () => { currentListTabId = l.id; loadLists(); }; 
+                            tabs.appendChild(t); 
+                        });
+                        
+                        const targetList = lists.find(l => l.id === currentListTabId);
+                        if (targetList) renderListItems(targetList, cont);
+                    } catch (innerErr) { console.error(innerErr); }
                 }, (error) => {
-                    console.error("Load schedules error", error);
-                    container.innerHTML = `<div class="p-4 text-center text-red-400 text-xs">載入失敗</div>`;
+                    const cont = document.getElementById('list-content'); 
+                    if(cont) cont.innerHTML = '<div class="text-center text-xs p-4 text-red-400">無法讀取清單 (請更新 Firebase 規則)</div>';
                 });
-            };
+            } catch (err) { console.error(err); }
+        }
 
-            const loadTripList = async function() {
-                if (unsubscribeTrips) unsubscribeTrips();
-                
-                unsubscribeTrips = onSnapshot(collection(db, `artifacts/${appId}/public/data/Trips`), (snapshot) => {
-                    const select = document.getElementById('trip-select'); 
-                    select.innerHTML = ''; 
-                    tripData = {};
-                    let firstId = null;
-
-                    snapshot.forEach(doc => { 
-                        const data = doc.data();
-                        tripData[doc.id] = { id: doc.id, ...data }; 
-                        const op = document.createElement('option'); 
-                        op.value = doc.id; 
-                        op.textContent = data.name || '未命名'; 
-                        select.appendChild(op); 
-                        if(!firstId) firstId = doc.id; 
-                    });
-                    
-                    if (snapshot.empty) { 
-                        document.getElementById('settings-btn').style.display = 'none'; 
-                        document.getElementById('new-trip-btn').style.display = 'inline-flex'; 
-                        select.style.display = 'none'; 
-                        currentTripId = ''; 
-                        return; 
-                    }
-
-                    select.style.display = 'block'; 
-                    document.getElementById('settings-btn').style.display = 'inline-flex'; 
-                    document.getElementById('new-trip-btn').style.display = 'none';
-
-                    if (pendingTripSwitchId && tripData[pendingTripSwitchId]) {
-                        currentTripId = pendingTripSwitchId;
-                        pendingTripSwitchId = null;
-                    } else if (!currentTripId || !tripData[currentTripId]) {
-                        currentTripId = firstId;
-                    }
-                    select.value = currentTripId; 
-                    changeTrip(currentTripId);
-                }, (error) => { console.error(error); });
-            };
-
-            function renderDayTabs() {
-                const container = document.getElementById('day-tabs-container'); container.innerHTML = '';
-                const trip = tripData[currentTripId]; if (!trip) return;
-                for (let i = 0; i < (trip.numDays || 1); i++) {
-                    const dId = `Day ${i + 1}`; const btn = document.createElement('button'); const isActive = dId === currentDayId;
-                    btn.className = `px-3 py-1.5 text-xs font-bold rounded-lg transition duration-150 flex-shrink-0 ${isActive ? 'bg-[#5F6368] text-white shadow-md' : 'bg-[#E4E6E8] text-[#5F6368]'}`;
-                    btn.textContent = dId; btn.onclick = () => { currentDayId = dId; renderDayTabs(); loadSchedules(currentTripId, currentDayId); };
-                    container.appendChild(btn);
-                }
-                const addBtn = document.createElement('button'); addBtn.className = 'px-3 py-1.5 text-xs font-bold rounded-lg bg-[#7E92A1] text-white ml-2 flex-shrink-0'; addBtn.textContent = '+';
-                addBtn.onclick = async () => { try { await updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}`), { numDays: (trip.numDays || 1) + 1 }, { merge: true }); } catch(e) { } };
-                container.appendChild(addBtn);
-                const d = getDateFromDayId(trip, currentDayId); if (d) document.getElementById('header-day-date-display').textContent = formatDateForHeader(d);
-            }
-
-            async function calculateCurrency() {
-                const code = document.getElementById('bar-calc-currency').value; const amt = parseFloat(document.getElementById('bar-calc-amount').value) || 0;
-                const rate = await fetchExchangeRate(code); const displayRate = rate > 0 ? (1/rate).toFixed(2) : '0.00';
-                document.getElementById('rate-display-label').textContent = `匯率 ≈ ${code} ${displayRate}`;
-                document.getElementById('bar-calc-result').value = (amt === 0) ? '0' : (amt * rate).toFixed(0);
-            }
-
-            function enableSwipeToDelete(contentEl, actionEl, type) {
-                if (window.innerWidth > 500) return; 
-                let startX = 0, currentTranslate = 0, isSwiping = false;
-                contentEl.addEventListener('touchstart', e => { startX = e.touches[0].clientX; isSwiping = false; }, {passive: true});
-                contentEl.addEventListener('touchmove', e => { const diff = e.touches[0].clientX - startX; if (diff < 0) { isSwiping = true; currentTranslate = Math.max(diff, -140); contentEl.style.transform = `translateX(${currentTranslate}px)`; } else if(currentTranslate < 0) { currentTranslate = Math.min(diff - 140, 0); contentEl.style.transform = `translateX(${currentTranslate}px)`; } }, {passive: true});
-                contentEl.addEventListener('touchend', () => { contentEl.style.transform = (isSwiping && currentTranslate < -70) ? `translateX(-140px)` : `translateX(0)`; });
-                actionEl.querySelectorAll('button').forEach(btn => {
-                    btn.onclick = (e) => { e.stopPropagation(); const action = btn.getAttribute('data-action');
-                        if (type === 'schedule') { const s = JSON.parse(btn.closest('.swipe-item-delete-bg').querySelector('[data-action="modify"]').getAttribute('data-schedule')); if (action === 'modify') openEditScheduleModal(JSON.stringify(s)); else deleteSchedule(s.id); } 
-                        else if (type === 'list') { const w = btn.closest('.swipe-item-container'); const l = tripData[currentTripId].lists.find(x => x.id === currentListTabId); if (action === 'delete') deleteListItem(l, parseInt(w.getAttribute('data-index'))); }
-                        contentEl.style.transform = `translateX(0)`;
-                    };
-                });
-            }
-
-            function deleteSchedule(id) { 
-                if (confirm("確定刪除？")) {
-                    deleteDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`, id));
-                }
-            }
-
-            function openEditScheduleModal(json) {
-                const s = JSON.parse(json); editingScheduleId = s.id;
-                document.getElementById('add-schedule-modal-title').textContent = s.Location; document.getElementById('modal-delete-btn').style.display = 'block'; document.getElementById('modal-delete-btn').onclick = () => deleteSchedule(s.id);
-                ['Date','Time','Location','Type','說明','Address','Amount'].forEach(k => { const el = document.getElementById(`form-${k.toLowerCase().replace('說明','details')}`); if(el) el.value = s[k] || (k==='Amount'?0:''); });
-                document.getElementById('form-currency-label').textContent = tripData[currentTripId].currency || 'TWD';
-                document.getElementById('form-amount-twd').value = ((s.Amount||0) * currentTripRate).toFixed(0);
-                const c = document.getElementById('form-members-container'); c.innerHTML = '';
-                const mems = s.members || []; 
-                if(mems.length) {
-                    mems.forEach(m => {
-                        const name = typeof m === 'string' ? m : m.name;
-                        const amt = (typeof m === 'string' || m.amount === null) ? '' : m.amount;
-                        addMemberInput(name, amt);
-                    }); 
-                } else { 
-                    addMemberInput(); addMemberInput(); 
-                }
-                document.getElementById('add-schedule-modal').style.display = 'flex';
-            }
+        function renderListItems(listData, container) {
+            if (!listData) return;
             
-            function addMemberInput(name='', amt='') { const d = document.createElement('div'); d.className = 'flex items-center space-x-2 mt-1.5'; d.innerHTML = `<input type="text" name="schedule-member-name" value="${name}" placeholder="名字" class="compact-input w-16 rounded-md"><input type="number" name="schedule-member-amount" value="${amt}" placeholder="金額" class="compact-input w-16 rounded-md"><button type="button" class="text-[#CB8572] font-bold p-1 rm-btn">×</button>`; d.querySelector('.rm-btn').onclick = () => d.remove(); document.getElementById('form-members-container').appendChild(d); }
+            const modalBody = container.parentElement; 
+            if (modalBody) modalBody.style.position = 'relative';
 
-            return { initApp };
-        })();
-        window.App.initApp();
+            const oldFab = modalBody.querySelector('.list-fab-dynamic');
+            if(oldFab) oldFab.remove();
+
+            const fab = document.createElement('div');
+            fab.className = 'list-fab-dynamic'; 
+            fab.textContent = '＋';
+            fab.style.cssText = `
+                position: absolute;
+                bottom: 20px;
+                right: 20px;
+                width: 40px;
+                height: 40px;
+                background-color: #7E92A1;
+                border-radius: 50%;
+                color: white;
+                font-size: 24px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+                cursor: pointer;
+                z-index: 50;
+                user-select: none;
+                transition: transform 0.1s;
+            `;
+            fab.onmousedown = () => fab.style.transform = "scale(0.95)";
+            fab.onmouseup = () => fab.style.transform = "scale(1)";
+
+            fab.onclick = async () => { 
+                try {
+                    const newItem = listData.type === 'check' ? { id: Date.now(), text: '', checkedLeft: false, checkedRight: false } : { id: Date.now(), text: '', desc: '', location: '', imageUrl: '' }; 
+                    const currentItems = Array.isArray(listData.items) ? listData.items : [];
+                    await updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Lists/${listData.id}`), { items: [...currentItems, newItem] }); 
+                } catch (e) { }
+            };
+            
+            if (modalBody) modalBody.appendChild(fab);
+            
+            const inner = document.createElement('div'); 
+            if(listData.type === 'check') inner.className = 'grid grid-cols-2 gap-2 pb-12';
+            else inner.className = 'space-y-2 pb-12';
+
+            const items = Array.isArray(listData.items) ? listData.items : [];
+            items.forEach((item, idx) => {
+                try {
+                    if (!item) return;
+                    
+                    const wrap = document.createElement('div'); 
+                    wrap.className = 'swipe-item-container'; 
+                    wrap.setAttribute('data-index', idx);
+                    
+                    const bg = document.createElement('div'); 
+                    bg.className = 'swipe-item-delete-bg'; 
+                    bg.innerHTML = `<button class="px-2 py-1 h-full text-xs font-bold bg-[#CB8572] text-white" data-action="delete">刪除</button>`;
+                    
+                    const c = document.createElement('div'); 
+                    c.className = 'swipe-item-content p-2 border border-gray-100 bg-white relative';
+                    
+                    if(listData.type==='check') {
+                            c.style.cssText = "display:flex; align-items:center; gap:4px; padding:6px; border:1px solid #f0f0f0; border-radius:8px; background:white;";
+                            c.innerHTML = `
+                            <div style="display:flex; gap:4px; flex-shrink:0;">
+                                <input type="checkbox" class="check-left" style="width:15px; height:15px; cursor:pointer;">
+                                <input type="checkbox" class="check-right" style="width:15px; height:15px; cursor:pointer;">
+                            </div>
+                            <input type="text" class="check-text compact-input" style="flex-grow:1; min-width:0; border:none; padding:0 2px; text-align:left; font-size:12px; font-weight:bold; color:#5F6368;" placeholder="物品">
+                            <button class="del-btn text-[#CB8572] hover:text-red-600 font-bold px-1" style="font-size:16px; line-height:1;">×</button>
+                            `;
+                            
+                            const boxL = c.querySelector('.check-left');
+                            const txt = c.querySelector('.check-text');
+                            const boxR = c.querySelector('.check-right');
+                            const delBtn = c.querySelector('.del-btn');
+
+                            if(boxL) { boxL.checked = !!item.checkedLeft; boxL.onchange = (e) => updateListItem(listData, idx, {checkedLeft: e.target.checked}); }
+                            if(txt) { txt.value = item.text || ''; txt.onchange = (e) => updateListItem(listData, idx, {text: e.target.value}); }
+                            if(boxR) { boxR.checked = !!item.checkedRight; boxR.onchange = (e) => updateListItem(listData, idx, {checkedRight: e.target.checked}); }
+                            if(delBtn) { delBtn.onclick = () => deleteListItem(listData, idx); } 
+
+                            inner.appendChild(c);
+
+                    } else {
+                            const delBtnDesktop = document.createElement('div');
+                            delBtnDesktop.className = 'desktop-del-btn';
+                            delBtnDesktop.innerHTML = '×';
+                            delBtnDesktop.style.cssText = "position:absolute; right:5px; top:50%; transform:translateY(-50%); width:15px; height:15px; line-height:15px; text-align:center; color:#CB8572; font-weight:bold; cursor:pointer; font-size:16px; z-index:20;";
+                            delBtnDesktop.onclick = (e) => { e.stopPropagation(); deleteListItem(listData, idx); };
+                            c.appendChild(delBtnDesktop);
+
+                            c.style.paddingRight = "30px"; 
+
+                            c.style.display = 'grid'; 
+                            c.style.gridTemplateColumns = '50px 1fr 80px'; 
+                            c.style.gap = '8px'; 
+                            c.style.alignItems = 'start';
+                            
+                            const imgContainer = document.createElement('div'); imgContainer.className = 'shopping-img-box';
+                            imgContainer.style.cssText = 'width:50px; height:50px; overflow:hidden; border-radius:4px; background:#f0f0f0; display:flex; justify-content:center; align-items:center; cursor:pointer; border:1px dashed #ccc;';
+                            if (item.imageUrl) { const img = document.createElement('img'); img.src = item.imageUrl; img.style.cssText = 'width:100%; height:100%; object-fit:cover;'; imgContainer.appendChild(img); } 
+                            else { const span = document.createElement('span'); span.textContent = '圖'; span.style.cssText = 'font-size:10px; color:#ccc;'; imgContainer.appendChild(span); }
+                            const fileInput = document.createElement('input'); fileInput.type = 'file'; fileInput.accept = 'image/*'; fileInput.style.display = 'none';
+                            imgContainer.onclick = () => { if (item.imageUrl) { document.getElementById('zoom-img').src = item.imageUrl; document.getElementById('image-zoom-modal').style.display = 'flex'; } else { fileInput.click(); } };
+                            fileInput.onchange = (e) => { if(!e.target.files[0]) return; const fr = new FileReader(); fr.onload = (ev) => { const img = new Image(); img.onload = () => { const cvs = document.createElement('canvas'); const scale = 300 / img.width; cvs.width = 300; cvs.height = img.height * scale; cvs.getContext('2d').drawImage(img, 0, 0, cvs.width, cvs.height); updateListItem(listData, idx, {imageUrl: cvs.toDataURL("image/jpeg", 0.7)}); }; img.src = ev.target.result; }; fr.readAsDataURL(e.target.files[0]); };
+
+                            const midCol = document.createElement('div'); midCol.style.cssText = 'display:flex; flex-direction:column; gap:4px; width:100%;';
+                            const nameInput = document.createElement('input'); nameInput.type = 'text'; nameInput.className = 'compact-input'; nameInput.placeholder = '品名'; nameInput.value = item.text || ''; nameInput.style.cssText = 'width:100%; font-weight:bold; border:none; padding:0; height:auto;';
+                            nameInput.onchange = (e) => updateListItem(listData, idx, {text: e.target.value});
+                            const descInput = document.createElement('textarea'); descInput.className = 'compact-input'; descInput.placeholder = '說明'; descInput.value = item.desc || ''; descInput.rows = 2; descInput.style.cssText = 'width:100%; border:none; padding:0; resize:none; font-size:10px; height:auto;';
+                            descInput.onchange = (e) => updateListItem(listData, idx, {desc: e.target.value});
+                            midCol.appendChild(nameInput); midCol.appendChild(descInput);
+                            
+                            const locInput = document.createElement('textarea'); 
+                            locInput.className = 'compact-input'; 
+                            locInput.placeholder = '地點'; 
+                            locInput.value = item.location || ''; 
+                            locInput.rows = 3; 
+                            locInput.style.cssText = 'width:100%; height:54px; border:1px solid #eee; background:#f9f9f9; padding:4px; resize:none; border-radius:4px; font-size:10px; line-height:1.2;';
+                            locInput.onchange = (e) => updateListItem(listData, idx, {location: e.target.value});
+                            
+                            c.appendChild(imgContainer); c.appendChild(midCol); c.appendChild(locInput); c.appendChild(fileInput);
+
+                            wrap.appendChild(bg); wrap.appendChild(c); inner.appendChild(wrap);
+                            try { if (typeof enableSwipeToDelete === 'function') enableSwipeToDelete(c, bg, 'list'); } catch(e){}
+                    }
+                } catch (err) { console.error(err); }
+            });
+            container.appendChild(inner);
+        }
+
+        async function updateListItem(l, i, chg) { 
+            try {
+                const currentItems = Array.isArray(l.items) ? l.items : []; const ni = [...currentItems]; 
+                if (!ni[i]) ni[i] = {}; ni[i] = {...ni[i], ...chg}; 
+                await updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Lists/${l.id}`), {items:ni}); 
+            } catch(e) { }
+        }
+
+        async function deleteListItem(l, i) { 
+            const ni=l.items.filter((_,x)=>x!==i); 
+            updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Lists/${l.id}`), {items:ni});
+        }
+
+        async function loadExpenseSummary() {
+            if(!currentTripId) return; const snap = await getDocs(collection(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`));
+            let total=0, types={}, mems={};
+            snap.forEach(d => {
+                const da = d.data(); const tTWD = (da.Amount||0)*(da.Rate||1);
+                if(tTWD>0) { total+=tTWD; types[da.Type]=(types[da.Type]||0)+tTWD; let spSum=0, unSpUsers=[]; (da.members||[]).forEach(m=>{ const amt = typeof m==='string'?null:m.amount; const name = typeof m==='string'?m:m.name; if(amt!==null && !isNaN(amt)) { spSum+=amt; addMemExp(mems, name, da.Type, amt*(da.Rate||1)); } else unSpUsers.push(name); }); if(unSpUsers.length) { const split = ((da.Amount||0)-spSum)*(da.Rate||1)/unSpUsers.length; unSpUsers.forEach(u=>addMemExp(mems, u, da.Type, split)); } }
+            });
+            function addMemExp(s, n, t, a) { if(!s[n]) s[n]={total:0, cats:{}}; s[n].total+=a; s[n].cats[t]=(s[n].cats[t]||0)+a; }
+            document.getElementById('expense-total-amount').textContent = total.toFixed(0);
+            const ctx = document.getElementById('expense-chart').getContext('2d'); if(expenseChart) expenseChart.destroy();
+            expenseChart = new Chart(ctx, { type:'pie', data:{labels:Object.keys(types).map(k=>CATEGORY_NAMES[k]||k), datasets:[{data:Object.values(types), backgroundColor:Object.keys(types).map(k=>(CATEGORY_COLORS[k]||CATEGORY_COLORS.default).hex), borderWidth:0}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}} });
+            
+            const l = document.getElementById('expense-member-list'); 
+            l.innerHTML = `<div class="grid grid-cols-[40%_20%_40%] border-b border-[#E0E0E0] pb-1 mb-2 font-bold text-[#5F6368] text-[10px]"><span>成員</span><span class="text-center">類別</span><span class="text-right">金額</span></div>`;
+            
+            Object.keys(mems).sort().forEach(n => { 
+                let first=true; 
+                Object.keys(mems[n].cats).forEach(c => { 
+                    l.innerHTML += `<div class="grid grid-cols-[40%_20%_40%] py-0.5 text-[10px] border-b border-[#F0F0F0] items-center">
+                        ${first ? `<span class="font-bold truncate">${n}</span>` : '<span></span>'}
+                        <span class="text-center ${(CATEGORY_COLORS[c]||CATEGORY_COLORS.default).text}">${CATEGORY_NAMES[c]}</span>
+                        <span class="text-right text-[#888888]">$${mems[n].cats[c].toFixed(0)}</span>
+                    </div>`; 
+                    first=false; 
+                }); 
+                l.innerHTML += `<div class="grid grid-cols-[40%_20%_40%] py-1 mb-2 bg-[#F9F9F9] border-b border-[#E0E0E0] text-[10px] font-bold"><span></span><span class="text-center">個人總計</span><span class="text-right">$${mems[n].total.toFixed(0)}</span></div>`; 
+            });
+            document.getElementById('split-expense-modal').style.display = 'flex';
+        }
+
+        // --- 主應用邏輯 ---
+        // 取消了 window.App 包裹，直接作為模組執行
+        function initApp() {
+            document.addEventListener('DOMContentLoaded', async () => {
+                document.getElementById('rate-display-label').textContent = '匯率 ≈ ...';
+
+                const app = initializeApp(firebaseConfig); db = getFirestore(app); auth = getAuth(app); 
+                const userCred = await signInAnonymously(auth); currentUser = userCred.user;
+                
+                document.querySelectorAll('.modal-overlay > div').forEach(el => el.style.position = 'relative');
+
+                const addScheduleModalContent = document.querySelector('#add-schedule-modal > div');
+                if(addScheduleModalContent) {
+                    addScheduleModalContent.innerHTML = `
+                        <h3 class="text-base font-bold mb-2 text-[#4A4B4D] pr-8 truncate"> <span id="add-schedule-modal-title">新增行程</span>
+                        </h3>
+                        <button id="modal-close-btn" class="absolute top-3 right-3 text-[#A9A9A9] hover:text-[#5F6368] text-2xl leading-none w-6 h-6 flex items-center justify-center">×</button>
+                        <form id="add-schedule-form" class="space-y-2">
+                            <div class="grid grid-cols-2 gap-2"> 
+                                <div><label class="block compact-label">日期</label><input type="date" id="form-date" class="compact-input block w-full rounded border shadow-sm text-center h-6 leading-6 p-0 box-border" style="width: 92% !important; min-width: 100%; box-sizing: border-box;"></div> 
+                                <div><label class="block compact-label">時間</label><input type="time" id="form-time" class="compact-input block w-full rounded border shadow-sm text-center h-6 leading-6 p-0 box-border" style="width: 92% !important; min-width: 100%; box-sizing: border-box;"></div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div><label class="block compact-label">類型</label>
+                                    <select id="form-type" class="compact-input block w-full rounded border shadow-sm" style="width: 100% !important; min-width: 0; box-sizing: border-box;">
+                                        <option value="location">📍 景點</option><option value="restaurant">🍽️ 餐廳</option>
+                                        <option value="coffee">☕ 咖啡廳</option><option value="accommodation">🛏️ 住宿</option>
+                                        <option value="交通">🚗 交通</option><option value="shopping">🛍️ 購物</option>
+                                    </select>
+                                </div>
+                                <div><label class="block compact-label">地點</label><input type="text" id="form-location" class="compact-input block w-full rounded border shadow-sm" style="width: 100% !important; min-width: 0; box-sizing: border-box;"></div>
+                            </div>
+                            <div><label class="block compact-label">地址</label><input type="text" id="form-address" class="compact-input block w-full rounded border shadow-sm"></div>
+                            <div><label class="block compact-label">說明</label><textarea id="form-details" rows="4" class="compact-input block w-full rounded border shadow-sm !h-auto leading-normal"></textarea></div>
+                            <div class="flex gap-2 items-start">
+                                <div class="flex-grow">
+                                    <div class="flex justify-start items-center mb-1 gap-2">
+                                        <label class="block compact-label">成員</label>
+                                        <button type="button" id="add-member-btn" class="ml-[115px] text-xl font-bold text-[#7E92A1] hover:text-[#64748B] transition-colors leading-none">+</button>
+                                            <div class="flex items-center ml-4">
+                                            </div>
+                                    </div>
+                                    <div id="form-members-container" class="space-y-1"></div>
+                                </div>
+                                <div class="w-24 flex-shrink-0 flex flex-col gap-1 mt-6">
+                                        <div class="flex items-center gap-1">
+                                            <label id="form-currency-label" class="text-[10px] text-[#7E92A1] font-bold w-6 text-right">USD</label>
+                                            <input type="number" id="form-amount" min="0" placeholder="0" class="w-full p-1 border border-[#E0E0E0] rounded text-right text-[11px] h-7 text-[#5F6368]">
+                                        </div>
+                                        <div class="flex items-center gap-1">
+                                            <span class="text-[10px] text-[#A9A9A9] font-bold w-6 text-right">TWD</span>
+                                            <input type="number" id="form-amount-twd" placeholder="0" class="w-full p-1 border border-[#E0E0E0] bg-[#F0F0F0] rounded text-right text-[11px] h-7">
+                                        </div>
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-center pt-3 mt-2 border-t border-[#E0E0E0]">
+                                <button type="button" id="modal-delete-btn" class="px-2 py-0.5 h-6 text-white bg-[#CB8572] rounded text-[9px] font-bold flex-shrink-0 hover:bg-[#B56B5A] hidden">刪除</button>
+                                <div class="flex-grow flex justify-end">
+                                    <button type="button" id="modal-save-btn" class="px-2 py-0.5 h-6 text-white bg-[#7E92A1] rounded text-[9px] font-bold flex-shrink-0 hover:bg-[#64748B]">儲存</button>
+                                </div>
+                            </div>
+                        </form>
+                    `;
+                }
+
+                const settingsModalContent = document.querySelector('#settings-modal > div');
+                if (settingsModalContent) {
+                    settingsModalContent.innerHTML = `
+                        <h3 class="text-base font-bold mb-3 flex justify-between items-center text-[#4A4B4D]">
+                            計畫設定
+                            <button id="settings-modal-close-btn" class="text-[#A9A9A9] hover:text-[#5F6368] text-xl leading-none">×</button>
+                        </h3>
+                        <form id="settings-form" class="space-y-3">
+                            <div><label class="block text-xs font-medium text-[#7E92A1]">計畫名稱</label><input type="text" id="settings-trip-name" class="compact-input mt-0.5 block w-full rounded border"></div>
+                            <div class="grid grid-cols-[0.8fr_1.5fr_0.7fr] gap-1">
+                                <div><label class="block text-xs font-medium text-[#7E92A1]">國家</label><select id="settings-trip-country" class="compact-input mt-0.5 block w-full rounded border h-[28px]" style="width: 88% !important; min-width: 0;"><option value="USA">🇺🇸 美國</option><option value="JP">🇯🇵 日本</option><option value="KR">🇰🇷 韓國</option><option value="UK">🇬🇧 英國</option><option value="TW">🇹🇼 台灣</option></select></div>
+                                <div><label class="block text-xs font-medium text-[#7E92A1]">開始日期</label><input type="date" id="settings-start-date" class="compact-input mt-0.5 block w-full rounded border text-center h-[28px] text-[10px]" style="width: 88% !important; min-width: 0;"></div>
+                                <div><label class="block text-xs font-medium text-[#7E92A1]">天數</label><input type="number" id="settings-num-days" min="1" class="compact-input mt-0.5 block w-full rounded border text-center h-[32px]" style="width: 88% !important; min-width: 0;"></div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-[#7E92A1] mb-1">成員</label>
+                                <div id="settings-members-container" class="grid grid-cols-3 gap-2"></div>
+                                <button type="button" id="settings-add-member-btn" class="mt-2 text-[10px] text-[#7E92A1] font-medium">+ 新增成員</button>
+                            </div>
+                            <div class="pt-3 flex justify-between items-center border-t border-gray-100 mt-2">
+                                <button type="button" id="new-trip-from-settings-btn" class="px-3 py-1.5 text-xs text-[#7E92A1] bg-[#EBF2FA] rounded hover:bg-[#DCE6F2]">新計畫</button>
+                                <div class="flex space-x-2">
+                                    <button type="button" id="delete-trip-btn" class="px-3 py-1.5 text-white bg-[#CB8572] rounded text-xs hover:bg-[#B56B5A]">刪除</button>
+                                    <button type="button" id="settings-modal-save-btn" class="px-3 py-1.5 text-white bg-[#7E92A1] rounded text-xs hover:bg-[#64748B]">儲存</button>
+                                </div>
+                            </div>
+                        </form>
+                    `;
+                }
+                
+                const newTripModalContent = document.querySelector('#new-trip-modal > div');
+                if (newTripModalContent) {
+                    newTripModalContent.innerHTML = `
+                        <h3 class="text-base font-bold mb-3 flex justify-between items-center text-[#4A4B4D]">新增旅行計畫<button id="new-trip-modal-close-btn" class="text-[#A9A9A9] hover:text-[#5F6368] text-xl">×</button></h3>
+                        <form id="new-trip-form" class="space-y-3">
+                            <div><label class="block text-xs font-medium text-[#7E92A1]">計畫名稱</label><input type="text" id="new-trip-name" class="compact-input mt-0.5 block w-full rounded border"></div>
+                            <div class="grid grid-cols-[0.8fr_1.5fr_0.7fr] gap-1">
+                                <div><label class="block text-xs font-medium text-[#7E92A1]">國家</label><select id="new-trip-country" class="compact-input mt-0.5 block w-full rounded border h-[28px]" style="width: 88% !important; min-width: 0;"><option value="USA">🇺🇸 美國</option><option value="JP">🇯🇵 日本</option><option value="KR">🇰🇷 韓國</option><option value="UK">🇬🇧 英國</option><option value="TW">🇹🇼 台灣</option></select></div>
+                                <div><label class="block text-xs font-medium text-[#7E92A1]">開始日期</label><input type="date" id="new-trip-start-date" class="compact-input mt-0.5 block w-full rounded border text-center h-[28px] text-[10px]" style="width: 88% !important; min-width: 0;"></div>
+                                <div><label class="block text-xs font-medium text-[#7E92A1]">天數</label><input type="number" id="new-trip-days" min="1" value="3" class="compact-input mt-0.5 block w-full rounded border text-center h-[32px]" style="width: 88% !important; min-width: 0;"></div>
+                            </div>
+                            <div class="pt-3 flex justify-end"><button type="button" id="new-trip-modal-save-btn" class="px-3 py-1.5 text-white bg-[#7E92A1] rounded text-xs hover:bg-[#64748B]">新增</button></div>
+                        </form>
+                    `;
+                }
+
+                loadTripList();
+
+                // UI Event Bindings
+                document.getElementById('trip-select').onchange = (e) => changeTrip(e.target.value);
+                document.getElementById('bar-calc-currency').onchange = calculateCurrency; document.getElementById('bar-calc-amount').oninput = calculateCurrency;
+                document.getElementById('center-add-btn').onclick = () => { if(!currentTripId) return alert('請先建計畫'); document.getElementById('add-schedule-form').reset(); editingScheduleId=null; document.getElementById('modal-delete-btn').style.display='none'; document.getElementById('add-schedule-modal-title').textContent = '新增行程'; const t=tripData[currentTripId]; document.getElementById('form-date').value=getDateFromDayId(t, currentDayId).toISOString().split('T')[0]; document.getElementById('form-members-container').innerHTML=''; (t.members||[]).forEach(n=>addMemberInput(n)); if(!(t.members||[]).length){addMemberInput();addMemberInput();} document.getElementById('add-schedule-modal').style.display='flex'; };
+                document.getElementById('modal-close-btn').onclick = () => document.getElementById('add-schedule-modal').style.display='none'; document.getElementById('modal-save-btn').onclick = submitSchedule; document.getElementById('form-amount').oninput = (e) => document.getElementById('form-amount-twd').value = (e.target.value * currentTripRate).toFixed(0);
+                
+                document.getElementById('form-amount-twd').oninput = (e) => {
+                    const twd = parseFloat(e.target.value);
+                    if (!isNaN(twd) && currentTripRate > 0) {
+                        document.getElementById('form-amount').value = (twd / currentTripRate).toFixed(2);
+                    } else if (e.target.value === '') {
+                            document.getElementById('form-amount').value = '';
+                    }
+                };
+
+                document.getElementById('btn-lists').onclick = loadLists; document.getElementById('lists-modal-close-btn').onclick = () => document.getElementById('lists-modal').style.display='none';
+                document.getElementById('split-expense-btn').onclick = loadExpenseSummary; document.getElementById('split-expense-close-btn').onclick = () => document.getElementById('split-expense-modal').style.display='none';
+                document.getElementById('settings-btn').onclick = () => { 
+                    const trip = tripData[currentTripId];
+                    document.getElementById('settings-trip-name').value = trip.name; 
+                    document.getElementById('settings-trip-country').value = trip.country || 'TW';
+                    document.getElementById('settings-start-date').value = trip.startDate;
+                    document.getElementById('settings-num-days').value = trip.numDays;
+                    document.getElementById('settings-modal').style.display = 'flex'; 
+                    document.getElementById('settings-members-container').innerHTML = ''; 
+                    (trip.members||[]).forEach(m => addSettingsMemberInput(m));
+                };
+                
+                document.getElementById('new-trip-btn').onclick = () => document.getElementById('new-trip-modal').style.display='flex';
+                document.getElementById('new-trip-from-settings-btn').onclick = () => { document.getElementById('settings-modal').style.display='none'; document.getElementById('new-trip-from-settings-btn').style.display='none'; document.getElementById('new-trip-modal').style.display='flex'; };
+                document.getElementById('new-trip-modal-close-btn').onclick = () => document.getElementById('new-trip-modal').style.display='none';
+                document.getElementById('new-trip-modal-save-btn').onclick = async () => {
+                    const name = document.getElementById('new-trip-name').value;
+                    const country = document.getElementById('new-trip-country').value;
+                    const start = document.getElementById('new-trip-start-date').value;
+                    const numDays = parseInt(document.getElementById('new-trip-days').value) || 1;
+                    if(!name || !start) return alert("請填寫完整");
+                    const uid = auth.currentUser ? auth.currentUser.uid : null;
+                    const docRef = await addDoc(collection(db, `artifacts/${appId}/public/data/Trips`), { name, country, startDate: start, numDays: numDays, members: [], uid: uid });
+                    pendingTripSwitchId = docRef.id;
+                    document.getElementById('new-trip-modal').style.display='none';
+                };
+
+                document.getElementById('settings-modal-close-btn').onclick = () => document.getElementById('settings-modal').style.display='none'; document.getElementById('image-zoom-modal').onclick = () => document.getElementById('image-zoom-modal').style.display='none';
+                document.getElementById('delete-trip-btn').onclick = async () => { if(confirm("刪除此計畫？")) { await deleteDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}`)); document.getElementById('settings-modal').style.display='none'; } };
+                
+                document.getElementById('settings-add-member-btn').onclick = () => addSettingsMemberInput();
+                
+                const addMemBtn = document.getElementById('add-member-btn');
+                if(addMemBtn) addMemBtn.onclick = () => addMemberInput();
+
+                document.getElementById('settings-modal-save-btn').onclick = async () => {
+                    const newName = document.getElementById('settings-trip-name').value;
+                    const newCountry = document.getElementById('settings-trip-country').value;
+                    const newStart = document.getElementById('settings-start-date').value;
+                    const newDays = parseInt(document.getElementById('settings-num-days').value) || 1;
+                    
+                    const memInputs = document.querySelectorAll('input[name="settings-member-name"]');
+                    const newMembersList = []; 
+                    memInputs.forEach(i => { if(i.value.trim()) newMembersList.push(i.value.trim()); });
+                    
+                    const oldMembers = tripData[currentTripId].members || [];
+                    const addedMembers = newMembersList.filter(m => !oldMembers.includes(m));
+                    const removedMembers = oldMembers.filter(m => !newMembersList.includes(m));
+
+                    await updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}`), { 
+                        name: newName, country: newCountry, startDate: newStart, numDays: newDays, members: newMembersList 
+                    });
+
+                    if (addedMembers.length > 0 || removedMembers.length > 0) {
+                        const originalBtnText = document.getElementById('settings-modal-save-btn').textContent;
+                        document.getElementById('settings-modal-save-btn').textContent = "更新行程中...";
+                        try {
+                            const schedulesRef = collection(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`);
+                            const snapshot = await getDocs(schedulesRef);
+                            const updatePromises = snapshot.docs.map(scheduleDoc => {
+                                const sData = scheduleDoc.data();
+                                let currentSchedMembers = sData.members || [];
+                                
+                                if (removedMembers.length > 0) {
+                                    currentSchedMembers = currentSchedMembers.filter(m => {
+                                        const name = typeof m === 'string' ? m : m.name;
+                                        return !removedMembers.includes(name);
+                                    });
+                                }
+
+                                const membersToAdd = addedMembers.map(name => ({ name: name, amount: null }));
+                                const finalMembers = [...currentSchedMembers, ...membersToAdd];
+
+                                return updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`, scheduleDoc.id), { members: finalMembers });
+                            });
+                            await Promise.all(updatePromises);
+                        } catch (err) { console.error("批次更新失敗", err); }
+                        document.getElementById('settings-modal-save-btn').textContent = originalBtnText;
+                    }
+
+                    document.getElementById('settings-modal').style.display='none';
+                    changeTrip(currentTripId); 
+                };
+            });
+        }
+        
+        function addSettingsMemberInput(val='') { const d=document.createElement('div'); d.className='flex gap-1 items-center'; d.innerHTML=`<input type="text" name="settings-member-name" value="${val}" class="compact-input w-full rounded text-center" placeholder="成員"><button type="button" class="text-red-300 font-bold px-1 rm-btn">×</button>`; d.querySelector('.rm-btn').onclick=()=>d.remove(); document.getElementById('settings-members-container').appendChild(d); }
+
+        // Start the application
+        initApp();
     </script>
 </body>
 </html>
