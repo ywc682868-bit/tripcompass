@@ -39,9 +39,12 @@
         .swipe-item-content { position: relative; z-index: 10; background-color: white; transition: transform 0.2s ease-out; transform: translateX(0); width: 100%; display: flex; align-items: stretch; overflow: hidden; }
         
         .card-right-col { 
-            display: flex; flex-direction: column; 
-            justify-content: space-between; /* 關鍵修改：上下對齊 (按鈕在上，金額在下) */
+            display: flex; 
+            flex-direction: column; 
+            /* 修改重點：改為 flex-start 讓內容靠上，gap 增加間距 */
+            justify-content: flex-start; 
             align-items: flex-end; 
+            gap: 8px; 
             width: 90px; min-width: 90px; max-width: 90px; flex: 0 0 90px;
             border-left: none; padding-left: 0.25rem; padding-bottom: 0.25rem; padding-top: 6px; position: relative; 
         }
@@ -49,7 +52,7 @@
             content: ''; position: absolute; left: 0; top: 15%; bottom: 15%; width: 1px; background-color: #C0C0C0;
         }
 
-        .info-block-content { display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-end; gap: 4px; width: 100%; margin-bottom: 2px; }
+        .info-block-content { display: flex; flex-direction: column; justify-content: flex-start; align-items: flex-end; gap: 4px; width: 100%; }
         .card-static-actions { display: none !important; gap: 4px; margin-bottom: 0; padding-left: 0.5rem; width: 100%; justify-content: flex-end; }
         
         /* --- RWD Adjustments --- */
@@ -229,10 +232,9 @@
                 }
                 const scheduleJson = JSON.stringify({ ...schedule, Amount: schedule.Amount || 0 });
                 
-                // ⚠️ 關鍵修改 1: 成員名單產生
+                // HTML Layout for members (Grid 2 cols, right aligned)
                 let memberHtml = '';
                 if (members.length > 0) {
-                    // Grid 2x2, gap adjusted
                     memberHtml = `<div class="grid grid-cols-2 gap-x-1 gap-y-0.5 ml-2 flex-shrink-0 justify-items-end">`;
                     members.forEach((m, i) => {
                          memberHtml += `<span class="${MEMBER_COLORS[i % MEMBER_COLORS.length]} text-[9px] font-bold truncate max-w-[45px] text-right">${typeof m === 'string' ? m : m.name}</span>`;
