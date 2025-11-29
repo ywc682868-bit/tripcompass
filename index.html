@@ -130,6 +130,8 @@
         </div>
     </div>
 
+    <datalist id="trip-members-list"></datalist>
+
     <div id="combined-bottom-bar">
         <div id="currency-display-row" class="flex justify-between w-full border-b border-gray-100 pb-3 mb-2 mt-1.5">
             <div id="rate-display-container" class="w-1/2 flex items-center justify-start border-r border-gray-100 pl-1">
@@ -165,9 +167,9 @@
     <div id="new-trip-modal" class="modal-overlay hidden"><div class="bg-white rounded-xl shadow-2xl p-4 w-11/12 max-w-sm"><h3 class="text-base font-bold mb-3 flex justify-between items-center text-[#4A4B4D]">新增旅行計畫<button id="new-trip-modal-close-btn" class="text-[#A9A9A9] hover:text-[#5F6368] text-xl">×</button></h3><form id="new-trip-form" class="space-y-3"><div><label class="block text-xs font-medium text-[#7E92A1]">計畫名稱</label><input type="text" id="new-trip-name" class="compact-input mt-0.5 block w-full rounded border"></div>
     
     <div class="grid grid-cols-[0.8fr_1.5fr_0.7fr] gap-1">
-        <div><label class="block text-xs font-medium text-[#7E92A1]">國家</label><select id="new-trip-country" class="compact-input mt-0.5 block w-full rounded border h-[28px]" style="width: 88% !important; min-width: 0;"><option value="USA">🇺🇸 美國</option><option value="JP">🇯🇵 日本</option><option value="KR">🇰🇷 韓國</option><option value="UK">🇬🇧 英國</option><option value="TW">🇹🇼 台灣</option></select></div>
-        <div><label class="block text-xs font-medium text-[#7E92A1]">開始日期</label><input type="date" id="new-trip-start-date" class="compact-input mt-0.5 block w-full rounded border text-center h-[28px] text-[10px]" style="width: 88% !important; min-width: 0;"></div>
-        <div><label class="block text-xs font-medium text-[#7E92A1]">天數</label><input type="number" id="new-trip-days" min="1" value="3" class="compact-input mt-0.5 block w-full rounded border text-center h-[28px]" style="width: 88% !important; min-width: 0;"></div>
+        <div><label class="block text-xs font-medium text-[#7E92A1]">國家</label><select id="new-trip-country" class="compact-input mt-0.5 block w-full rounded border h-[28px]" style="width: 100% !important; min-width: 0;"><option value="USA">🇺🇸 美國</option><option value="JP">🇯🇵 日本</option><option value="KR">🇰🇷 韓國</option><option value="UK">🇬🇧 英國</option><option value="TW">🇹🇼 台灣</option></select></div>
+        <div><label class="block text-xs font-medium text-[#7E92A1]">開始日期</label><input type="date" id="new-trip-start-date" class="compact-input mt-0.5 block w-full rounded border text-center h-[28px] text-[10px]" style="width: 100% !important; min-width: 0;"></div>
+        <div><label class="block text-xs font-medium text-[#7E92A1]">天數</label><input type="number" id="new-trip-days" min="1" value="3" class="compact-input mt-0.5 block w-full rounded border text-center h-[28px]" style="width: 100% !important; min-width: 0;"></div>
     </div>
     
     <div class="pt-3 flex justify-end"><button type="button" id="new-trip-modal-save-btn" class="px-3 py-1.5 text-white bg-[#7E92A1] rounded text-xs hover:bg-[#64748B]">新增</button></div></form></div></div>
@@ -217,6 +219,13 @@
                 currentTripRate = await fetchExchangeRate(config.currency);
                 const barSelect = document.getElementById('bar-calc-currency'); 
                 if(barSelect) { barSelect.value = config.currency; calculateCurrency(); }
+                
+                // 更新 datalist
+                const datalist = document.getElementById('trip-members-list');
+                if (datalist && trip.members) {
+                    datalist.innerHTML = trip.members.map(m => `<option value="${m}">`).join('');
+                }
+
                 document.getElementById('header-members-list').innerHTML = (trip.members && trip.members.length) ? trip.members.map((m, i) => `<span class="${MEMBER_COLORS[i % MEMBER_COLORS.length]} mr-1">${m}</span>`).join('') : '尚未設定';
                 try { const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${config.lat}&longitude=${config.lon}&current=temperature_2m,weather_code&timezone=auto`); const data = await res.json(); let icon = '☀️'; if (data.current.weather_code > 3) icon = '☁️'; if (data.current.weather_code > 50) icon = '🌧️'; document.getElementById('header-weather-icon').textContent = icon; document.getElementById('header-weather-temp').textContent = `${data.current.temperature_2m}°C`; } catch (e) {}
             }
@@ -275,13 +284,28 @@
                 const amountTWD = schedule.isTwdSplit ? (schedule.Amount || 0) : (schedule.Amount || 0) * rate;
                 
                 let perPersonTWD = 0, specifiedTWD = 0, unspecifiedCount = 0;
+                
+                // 邏輯修正：只使用 schedule.members
                 const members = schedule.members || [];
+                
                 if (amountTWD > 0) {
-                    members.forEach(m => { const amt = typeof m === 'string' ? null : m.amount; if(amt !== null && !isNaN(amt)) specifiedTWD += (schedule.isTwdSplit ? amt : amt * rate); else unspecifiedCount++; });
+                    members.forEach(m => { 
+                        const amt = typeof m === 'string' ? null : m.amount; 
+                        if(amt !== null && !isNaN(amt)) {
+                            specifiedTWD += (schedule.isTwdSplit ? amt : amt * rate);
+                        } else {
+                            unspecifiedCount++;
+                        }
+                    });
                     perPersonTWD = (unspecifiedCount > 0) ? (amountTWD - specifiedTWD) / unspecifiedCount : (members.length > 0 ? amountTWD / members.length : amountTWD);
                 }
                 const scheduleJson = JSON.stringify({ ...schedule, Amount: schedule.Amount || 0 });
-                let memberHtml = (members.length > 0) ? members.map((m, i) => `<span class="${MEMBER_COLORS[i % MEMBER_COLORS.length]} text-[9px] font-bold mr-1">${typeof m === 'string' ? m : m.name}</span>`).join('') : '';
+                
+                // 顯示：只顯示 schedule.members
+                let memberHtml = members.map((m, i) => {
+                     const name = typeof m === 'string' ? m : m.name;
+                     return `<span class="${MEMBER_COLORS[i % MEMBER_COLORS.length]} text-[9px] font-bold mr-1">${name}</span>`;
+                }).join('') || '';
 
                 const card = document.createElement('div');
                 card.className = 'trip-card flex w-full mb-3 relative min-h-[90px] rounded-xl overflow-hidden shadow-lg';
@@ -294,9 +318,9 @@
                 const content = document.createElement('div');
                 content.className = 'swipe-item-content flex w-full bg-white overflow-hidden relative items-stretch h-full z-10';
                 
-                // ⚠️ 修正：加入 rounded-l-xl
+                // ⚠️ 修正：移除圓角，讓卡片容器負責裁切，確保滿版，垂直置中
                 content.innerHTML = `
-                    <div class="${config.bg} w-14 flex-none flex flex-col items-center justify-center gap-2 text-white relative z-10 h-full py-4 rounded-l-xl">
+                    <div class="${config.bg} w-14 flex-none flex flex-col items-center justify-center gap-2 text-white relative z-10 h-full py-4">
                         <span class="text-[10px] font-bold tracking-tight leading-none">${schedule.Time}</span>
                         <span class="text-2xl leading-none mb-1">${style.icon}</span>
                         <span class="text-[9px] font-medium opacity-90 leading-none">${CATEGORY_NAMES[schedule.Type] || schedule.Type}</span>
@@ -429,6 +453,7 @@
                 }
             }
 
+            // ⚠️ 修正：openEditScheduleModal 優先使用 schedule.members，若無則預設為 trip.members
             function openEditScheduleModal(json) {
                 const s = JSON.parse(json); editingScheduleId = s.id;
                 document.getElementById('add-schedule-modal-title').textContent = s.Location; document.getElementById('modal-delete-btn').style.display = 'block'; document.getElementById('modal-delete-btn').onclick = () => deleteSchedule(s.id);
@@ -436,16 +461,35 @@
                 document.getElementById('form-currency-label').textContent = tripData[currentTripId].currency || 'TWD';
                 document.getElementById('form-amount-twd').value = ((s.Amount||0) * currentTripRate).toFixed(0);
                 
-                // 設置「以台幣分帳」Checkbox 狀態
-                const isTwdCheckbox = document.getElementById('form-member-is-twd');
-                if(isTwdCheckbox) isTwdCheckbox.checked = s.isTwdSplit || false;
-
+                isEditingTwd = false;
+                if (s.isTwdSplit) {
+                    document.getElementById('form-amount').value = ''; 
+                    document.getElementById('form-amount-twd').value = s.Amount;
+                } else {
+                    document.getElementById('form-amount').value = s.Amount;
+                    document.getElementById('form-amount-twd').value = ((s.Amount||0) * currentTripRate).toFixed(0);
+                }
+                
                 const c = document.getElementById('form-members-container'); c.innerHTML = '';
-                const mems = s.members || []; if(mems.length) mems.forEach(m => addMemberInput(typeof m==='string'?m:m.name, typeof m==='string'?'':m.amount)); else { addMemberInput(); addMemberInput(); }
+                
+                const trip = tripData[currentTripId];
+                // 邏輯：如果 schedule.members 有資料（長度>0），就用它；否則（新行程）用 trip.members 當預設值
+                const targetMembers = (s.members && s.members.length > 0) ? s.members : (trip ? (trip.members || []) : []);
+                
+                targetMembers.forEach(m => {
+                     const name = typeof m === 'string' ? m : m.name;
+                     const amount = typeof m === 'string' ? null : m.amount;
+                     addMemberInput(name, amount !== null ? amount : '');
+                });
+
+                // 如果列表是空的（例如新行程且無 Trip 成員），顯示兩個空欄位
+                if(targetMembers.length === 0) { 
+                    addMemberInput(); addMemberInput(); 
+                }
                 document.getElementById('add-schedule-modal').style.display = 'flex';
             }
             
-            function addSettingsMemberInput(val='') { const d=document.createElement('div'); d.className='flex gap-1 items-center'; d.innerHTML=`<input type="text" name="settings-member-name" value="${val}" class="compact-input w-full rounded text-center" placeholder="成員"><button type="button" class="text-red-300 font-bold px-1 rm-btn">×</button>`; d.querySelector('.rm-btn').onclick=()=>d.remove(); document.getElementById('settings-members-container').appendChild(d); }
+            function addMemberInput(name='', amt='') { const d = document.createElement('div'); d.className = 'flex items-center space-x-2 mt-1.5'; d.innerHTML = `<input type="text" list="trip-members-list" name="schedule-member-name" value="${name}" placeholder="名字" class="compact-input w-16 rounded-md"><input type="number" name="schedule-member-amount" value="${amt}" placeholder="金額" class="compact-input w-16 rounded-md"><button type="button" class="text-[#CB8572] font-bold p-1 rm-btn">×</button>`; d.querySelector('.rm-btn').onclick = () => d.remove(); document.getElementById('form-members-container').appendChild(d); }
 
             return { initApp };
         })();
