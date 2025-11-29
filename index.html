@@ -17,19 +17,35 @@
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     
     /* --- 容器與佈局 --- */
-    #app-container { max-width: 500px; margin: 0 auto; min-height: 100vh; background-color: white; padding-top: 165px; padding-bottom: 140px; position: relative; box-shadow: 0 0 10px rgba(0,0,0,0.05); }
-    
+    #app-container {
+    max-width: 500px;
+    margin: 0 auto;
+    min-height: 100vh;
+    background-color: white;
+    /* ❌ 移除或大幅減少這個 padding-top，它原本是用來為 fixed header 騰出空間 */
+    /* padding-top: 165px; */
+    padding-top: 0px; /* ✅ 修正：改為 0，讓 header 內容從頂部開始 */
+    padding-bottom: 140px;
+    position: relative;
+    box-shadow: 0 0 10px rgba(0,0,0,0.05);
+}
+    #schedule-list-container {
+    padding-top: 165px; /* 根據 Header 總高度設置，將內容推到 Header 下方 */
+    padding-bottom: 40px; /* 保留原來的底部邊距或根據需要調整 */
+}
     /* --- Header 固定區 --- */
-    header { 
-    position: static; /* ✅ 修正：改為靜態，允許內容滾到其上方 */ 
-    top: 0; 
-    left: 50%; 
-    transform: translateX(-50%); 
-    width: 100%; 
-    max-width: 500px; 
-    background-color: #ffffff; /* 純白背景 */
-    z-index: 50; 
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    header { 
+    /* position: static; */ /* ❌ 原本是 static，會被內容蓋住 */
+    position: fixed; /* ✅ 修正：改為 fixed，將 header 固定在視窗頂部 */
+    top: 0; 
+    /* left: 50%; */ /* ❌ 移除，改用 margin auto 搭配 max-width */
+    /* transform: translateX(-50%); */ /* ❌ 移除 */
+    width: 100%; 
+    max-width: 500px;
+    margin: 0 auto; /* ✅ 修正：使用 margin auto 在 fixed/absolute 時置中 */
+    background-color: #ffffff; /* 純白背景 */
+    z-index: 50; 
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 }
     #trip-select { background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%237E92A1' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: right center; background-repeat: no-repeat; background-size: 1.25em 1.25em; -webkit-appearance: none; appearance: none; background-color: transparent; font-weight: 800; color: #4A4B4D; border: none; padding-right: 1.5rem; cursor: pointer; }
     #trip-select:focus { outline: none; }
@@ -982,3 +998,4 @@
     </script>
 </body>
 </html>
+
