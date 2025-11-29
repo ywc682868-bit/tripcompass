@@ -33,8 +33,8 @@
         #bar-calc-result { font-size: 0.7rem; font-weight: bold; color: #7E92A1; }
 
         /* --- 行程卡片 (Trip Card) --- */
-        /* overflow-hidden 確保左側色塊的直角被卡片的圓角裁切 */
-        .trip-card { width: 100%; margin-bottom: 0.75rem; position: relative; min-height: 90px; display: flex; overflow: hidden; } 
+        /* overflow-hidden: 確保內部的絕對定位色塊被卡片圓角裁切，達成滿版且圓角的效果 */
+        .trip-card { width: 100%; margin-bottom: 0.75rem; position: relative; min-height: 90px; display: flex; overflow: hidden; }
         .swipe-item-container { position: relative; overflow: hidden; border-radius: 0.375rem; margin-bottom: 0.5rem; touch-action: pan-y; }
         .swipe-item-delete-bg { position: absolute; top: 0; bottom: 0; right: 0; width: 140px; display: flex; align-items: center; justify-content: flex-end; z-index: 1; }
         .swipe-item-content { position: relative; z-index: 10; background-color: white; transition: transform 0.2s ease-out; transform: translateX(0); width: 100%; display: flex; align-items: stretch; overflow: hidden; }
@@ -168,9 +168,9 @@
     <div id="new-trip-modal" class="modal-overlay hidden"><div class="bg-white rounded-xl shadow-2xl p-4 w-11/12 max-w-sm"><h3 class="text-base font-bold mb-3 flex justify-between items-center text-[#4A4B4D]">新增旅行計畫<button id="new-trip-modal-close-btn" class="text-[#A9A9A9] hover:text-[#5F6368] text-xl">×</button></h3><form id="new-trip-form" class="space-y-3"><div><label class="block text-xs font-medium text-[#7E92A1]">計畫名稱</label><input type="text" id="new-trip-name" class="compact-input mt-0.5 block w-full rounded border"></div>
     
     <div class="grid grid-cols-[0.85fr_1.45fr_0.7fr] gap-1">
-        <div><label class="block text-xs font-medium text-[#7E92A1]">國家</label><select id="new-trip-country" class="compact-input mt-0.5 block w-full rounded border h-[28px]" style="width: 88% !important; min-width: 0;"><option value="USA">🇺🇸 美國</option><option value="JP">🇯🇵 日本</option><option value="KR">🇰🇷 韓國</option><option value="UK">🇬🇧 英國</option><option value="TW">🇹🇼 台灣</option></select></div>
-        <div><label class="block text-xs font-medium text-[#7E92A1]">開始日期</label><input type="date" id="new-trip-start-date" class="compact-input mt-0.5 block w-full rounded border text-center h-[28px] text-[10px]" style="width: 88% !important; min-width: 0;"></div>
-        <div><label class="block text-xs font-medium text-[#7E92A1]">天數</label><input type="number" id="new-trip-days" min="1" value="3" class="compact-input mt-0.5 block w-full rounded border text-center h-[28px]" style="width: 88% !important; min-width: 0;"></div>
+        <div><label class="block text-xs font-medium text-[#7E92A1]">國家</label><select id="new-trip-country" class="compact-input mt-0.5 block w-full rounded border h-[28px]" style="width: 100% !important; min-width: 0;"><option value="USA">🇺🇸 美國</option><option value="JP">🇯🇵 日本</option><option value="KR">🇰🇷 韓國</option><option value="UK">🇬🇧 英國</option><option value="TW">🇹🇼 台灣</option></select></div>
+        <div><label class="block text-xs font-medium text-[#7E92A1]">開始日期</label><input type="date" id="new-trip-start-date" class="compact-input mt-0.5 block w-full rounded border text-center h-[28px] text-[10px]" style="width: 100% !important; min-width: 0;"></div>
+        <div><label class="block text-xs font-medium text-[#7E92A1]">天數</label><input type="number" id="new-trip-days" min="1" value="3" class="compact-input mt-0.5 block w-full rounded border text-center h-[28px]" style="width: 100% !important; min-width: 0;"></div>
     </div>
     
     <div class="pt-3 flex justify-end"><button type="button" id="new-trip-modal-save-btn" class="px-3 py-1.5 text-white bg-[#7E92A1] rounded text-xs hover:bg-[#64748B]">新增</button></div></form></div></div>
@@ -184,7 +184,6 @@
         window.App = (function() {
             const appId = 'my-trip-app';
             const firebaseConfig = { apiKey: "AIzaSyDx2yrJ3YUe93A-JdgJPtZChLvylCEht28", authDomain: "mytravelplanner-36283.firebaseapp.com", projectId: "mytravelplanner-36283", storageBucket: "mytravelplanner-36283.appspot.com", messagingSenderId: "86504733738", appId: "1:86504733738:web:5167a6a795eb2066f272d" };
-            
             const COUNTRY_CONFIG = { 
                 'USA': { name: '美國', currency: 'USD', localName: 'New York', lat: 40.71, lon: -74.00, img: 'usa' }, 
                 'JP': { name: '日本', currency: 'JPY', localName: '東京', lat: 35.68, lon: 139.76, img: 'japan' }, 
@@ -286,14 +285,39 @@
                 const amountTWD = schedule.isTwdSplit ? (schedule.Amount || 0) : (schedule.Amount || 0) * rate;
                 
                 let perPersonTWD = 0, specifiedTWD = 0, unspecifiedCount = 0;
-                const members = schedule.members || [];
+                
+                // 邏輯修正：整合 Trip 成員與 Schedule 成員，確保即使沒金額也會顯示
+                const trip = tripData[currentTripId];
+                const tripMembers = trip ? (trip.members || []) : [];
+                const scheduleMemberMap = {};
+                
+                (schedule.members || []).forEach(m => {
+                    const name = typeof m === 'string' ? m : m.name;
+                    const amount = typeof m === 'string' ? null : m.amount;
+                    scheduleMemberMap[name] = amount;
+                });
+
+                const allDisplayMembers = new Set([...tripMembers, ...Object.keys(scheduleMemberMap)]);
+                const sortedMembers = Array.from(allDisplayMembers).sort();
+                
                 if (amountTWD > 0) {
-                    members.forEach(m => { const amt = typeof m === 'string' ? null : m.amount; if(amt !== null && !isNaN(amt)) specifiedTWD += (schedule.isTwdSplit ? amt : amt * rate); else unspecifiedCount++; });
-                    perPersonTWD = (unspecifiedCount > 0) ? (amountTWD - specifiedTWD) / unspecifiedCount : (members.length > 0 ? amountTWD / members.length : amountTWD);
+                    sortedMembers.forEach(name => { 
+                        const amt = scheduleMemberMap[name]; 
+                        if(amt !== null && amt !== undefined && !isNaN(amt)) {
+                            specifiedTWD += (schedule.isTwdSplit ? amt : amt * rate);
+                        } else {
+                            unspecifiedCount++;
+                        }
+                    });
+                    perPersonTWD = (unspecifiedCount > 0) ? (amountTWD - specifiedTWD) / unspecifiedCount : (sortedMembers.length > 0 ? amountTWD / sortedMembers.length : amountTWD);
                 }
+                
                 const scheduleJson = JSON.stringify({ ...schedule, Amount: schedule.Amount || 0 });
                 
-                let memberHtml = (members.length > 0) ? members.map((m, i) => `<span class="${MEMBER_COLORS[i % MEMBER_COLORS.length]} text-[9px] font-bold mr-1">${typeof m === 'string' ? m : m.name}</span>`).join('') : '';
+                // 顯示所有成員
+                let memberHtml = sortedMembers.map((name, i) => {
+                     return `<span class="${MEMBER_COLORS[i % MEMBER_COLORS.length]} text-[9px] font-bold mr-1">${name}</span>`;
+                }).join('') || '';
 
                 const card = document.createElement('div');
                 card.className = 'trip-card flex w-full mb-3 relative min-h-[90px] display: flex; overflow: hidden;'; 
@@ -306,7 +330,7 @@
                 const content = document.createElement('div');
                 content.className = 'swipe-item-content flex w-full bg-white overflow-hidden relative items-stretch h-full z-10';
                 
-                // ⚠️ 修改：使用 absolute 定位來製作滿版色塊
+                // ⚠️ 滿版設定：absolute 填滿左側，justify-start 靠上，pt-5 下移
                 content.innerHTML = `
                     <div class="absolute top-0 bottom-0 left-0 w-14 ${config.bg} text-white flex flex-col items-center justify-start pt-5 z-10">
                         <span class="text-[10px] font-bold tracking-tight leading-none">${schedule.Time}</span>
@@ -458,12 +482,21 @@
                 
                 const c = document.getElementById('form-members-container'); c.innerHTML = '';
                 
-                const currentMembers = s.members || [];
-                
-                if(currentMembers.length > 0) {
-                    currentMembers.forEach(m => {
-                        const name = typeof m === 'string' ? m : m.name;
-                        const amount = typeof m === 'string' ? '' : m.amount;
+                // 整合 Trip 成員與 Schedule 既有成員
+                const trip = tripData[currentTripId];
+                const tripMembers = trip ? (trip.members || []) : [];
+                const scheduleMemberMap = {};
+                (s.members || []).forEach(m => {
+                    const name = typeof m === 'string' ? m : m.name;
+                    const amount = typeof m === 'string' ? null : m.amount;
+                    scheduleMemberMap[name] = amount;
+                });
+                const allDisplayMembers = new Set([...tripMembers, ...Object.keys(scheduleMemberMap)]);
+                const sortedMembers = Array.from(allDisplayMembers).sort();
+
+                if(sortedMembers.length) {
+                    sortedMembers.forEach(name => {
+                        const amount = scheduleMemberMap[name] !== undefined && scheduleMemberMap[name] !== null ? scheduleMemberMap[name] : '';
                         addMemberInput(name, amount);
                     });
                 } else { 
