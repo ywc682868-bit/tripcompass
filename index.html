@@ -39,17 +39,18 @@
         .swipe-item-content { position: relative; z-index: 10; background-color: white; transition: transform 0.2s ease-out; transform: translateX(0); width: 100%; display: flex; align-items: stretch; overflow: hidden; }
         
         .card-right-col { 
-            display: flex; flex-direction: column; justify-content: flex-start; align-items: flex-end; 
+            display: flex; flex-direction: column; 
+            justify-content: space-between; /* 關鍵修改：上下對齊 (按鈕在上，金額在下) */
+            align-items: flex-end; 
             width: 90px; min-width: 90px; max-width: 90px; flex: 0 0 90px;
-            border-left: none; padding-left: 0.25rem; padding-bottom: 0.25rem; padding-top: 10px; position: relative; 
+            border-left: none; padding-left: 0.25rem; padding-bottom: 0.25rem; padding-top: 6px; position: relative; 
         }
         .card-right-col::before {
             content: ''; position: absolute; left: 0; top: 15%; bottom: 15%; width: 1px; background-color: #C0C0C0;
         }
 
-        .info-block-content { display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-start; gap: 10px; height: 100%; width: 100%; margin-top: 4px; }
-        .info-block-content > div { justify-content: flex-start !important; }
-        .card-static-actions { display: none !important; gap: 8px; margin-bottom: 4px; padding-left: 0.5rem; width: 100%; justify-content: flex-start; }
+        .info-block-content { display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-end; gap: 4px; width: 100%; margin-bottom: 2px; }
+        .card-static-actions { display: none !important; gap: 4px; margin-bottom: 0; padding-left: 0.5rem; width: 100%; justify-content: flex-end; }
         
         /* --- RWD Adjustments --- */
         @media (min-width: 501px) {
@@ -228,12 +229,13 @@
                 }
                 const scheduleJson = JSON.stringify({ ...schedule, Amount: schedule.Amount || 0 });
                 
-                // HTML Layout for members (Grid 2 cols, right aligned)
+                // ⚠️ 關鍵修改 1: 成員名單產生
                 let memberHtml = '';
                 if (members.length > 0) {
-                    memberHtml = `<div class="grid grid-cols-2 gap-x-1 gap-y-0.5 mt-1 self-end justify-items-end">`;
+                    // Grid 2x2, gap adjusted
+                    memberHtml = `<div class="grid grid-cols-2 gap-x-1 gap-y-0.5 ml-2 flex-shrink-0 justify-items-end">`;
                     members.forEach((m, i) => {
-                         memberHtml += `<span class="${MEMBER_COLORS[i % MEMBER_COLORS.length]} text-[9px] font-bold truncate max-w-[50px] text-right">${typeof m === 'string' ? m : m.name}</span>`;
+                         memberHtml += `<span class="${MEMBER_COLORS[i % MEMBER_COLORS.length]} text-[9px] font-bold truncate max-w-[45px] text-right">${typeof m === 'string' ? m : m.name}</span>`;
                     });
                     memberHtml += `</div>`;
                 }
@@ -255,21 +257,21 @@
                         <span class="text-2xl leading-none mb-1">${style.icon}</span>
                         <span class="text-[9px] font-medium opacity-90 leading-none">${CATEGORY_NAMES[schedule.Type] || schedule.Type}</span>
                     </div>
-                    <div class="flex-grow py-0.36 pl-1.5 pr-2 flex flex-row items-stretch relative bg-white z-10 h-full">
-                        <div class="flex-grow flex flex-col justify-start min-w-0 pr-2 content-text-block relative">
-                            <h3 class="text-xs font-bold text-[#4A4B4D] leading-tight mb-0.5"><a href="#" class="location-link map-link hover:underline">${schedule.Location}</a></h3>
-                            <p class="text-[#888888] text-[10px] line-clamp-4 whitespace-pre-wrap leading-normal">${schedule.說明 || ''}</p>
+                    <div class="flex-grow py-2 pl-2 pr-1 flex flex-col justify-start min-w-0 relative">
+                        <div class="flex justify-between items-start w-full">
+                            <h3 class="text-xs font-bold text-[#4A4B4D] leading-tight mb-0.5 flex-grow"><a href="#" class="location-link map-link hover:underline">${schedule.Location}</a></h3>
                             ${memberHtml}
                         </div>
-                        <div class="card-right-col">
-                            <div class="card-static-actions"> 
-                                <button class="bg-[#7E92A1] text-white modify-btn-static rounded px-1.5 py-0.5 text-[9px] font-bold" data-schedule='${scheduleJson}'>修改</button>
-                                <button class="bg-[#CB8572] text-white delete-btn-static rounded px-1.5 py-0.5 text-[9px] font-bold" data-id="${schedule.id}">刪除</button>
-                            </div>
-                            <div class="info-block-content">
-                                <div class="flex items-center justify-end leading-none w-full"><span class="text-[#8F9E8B] font-bold text-[10px]">💰 TWD$${amountTWD.toFixed(0)}</span></div>
-                                <div class="flex items-center justify-end leading-none w-full"><span class="text-[#888888] font-bold text-[10px]">👫 TWD$${formatCurrency(perPersonTWD)}</span></div>
-                            </div>
+                        <p class="text-[#888888] text-[10px] line-clamp-4 whitespace-pre-wrap leading-normal mt-0.5">${schedule.說明 || ''}</p>
+                    </div>
+                    <div class="card-right-col">
+                        <div class="card-static-actions"> 
+                            <button class="bg-[#7E92A1] text-white modify-btn-static rounded px-1.5 py-0.5 text-[9px] font-bold" data-schedule='${scheduleJson}'>修改</button>
+                            <button class="bg-[#CB8572] text-white delete-btn-static rounded px-1.5 py-0.5 text-[9px] font-bold" data-id="${schedule.id}">刪除</button>
+                        </div>
+                        <div class="info-block-content">
+                            <div class="flex items-center justify-end leading-none w-full"><span class="text-[#8F9E8B] font-bold text-[10px]">💰 TWD$${amountTWD.toFixed(0)}</span></div>
+                            <div class="flex items-center justify-end leading-none w-full"><span class="text-[#888888] font-bold text-[10px]">👫 TWD$${formatCurrency(perPersonTWD)}</span></div>
                         </div>
                     </div>`;
                 card.appendChild(content);
