@@ -46,12 +46,17 @@ header { 
     left: 50%; 
     transform: translateX(-50%); 
     width: 100%; 
-    max-width: 500px; /* 限制寬度為手機比例 */
+    max-width: 500px; 
     height: 130px; 
-    background-color: #ffffff; /* 純白背景 */
+    background-color: #ffffff; 
     z-index: 50; 
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     transition: none !important;
+    
+    /* ***** 新增：確保內容垂直對齊在頂部 ***** */
+    display: flex; 
+    flex-direction: column; 
+    justify-content: flex-start; /* 讓內容從頂部開始堆疊 */
 }
 /* 讓 Day Tabs 可以橫向捲動，但整個 Header 固定 */
 #day-tabs-container {
@@ -1010,6 +1015,7 @@ header { 
     </script>
 </body>
 </html>
+
 
 
 
