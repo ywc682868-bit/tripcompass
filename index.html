@@ -33,7 +33,7 @@
         #bar-calc-result { font-size: 0.7rem; font-weight: bold; color: #7E92A1; }
 
         /* --- 行程卡片 (Trip Card) --- */
-        .trip-card { width: 100%; margin-bottom: 0.75rem; position: relative; min-height: 75px; display: flex; overflow: hidden; } /* 加入 overflow: hidden 確保色塊不超出圓角 */
+        .trip-card { width: 100%; margin-bottom: 0.75rem; position: relative; min-height: 90px; display: flex; }
         .swipe-item-container { position: relative; overflow: hidden; border-radius: 0.375rem; margin-bottom: 0.5rem; touch-action: pan-y; }
         .swipe-item-delete-bg { position: absolute; top: 0; bottom: 0; right: 0; width: 140px; display: flex; align-items: center; justify-content: flex-end; z-index: 1; }
         .swipe-item-content { position: relative; z-index: 10; background-color: white; transition: transform 0.2s ease-out; transform: translateX(0); width: 100%; display: flex; align-items: stretch; overflow: hidden; }
@@ -52,13 +52,13 @@
             position: relative; 
         }
         
-        /* 置中的垂直分隔線 (上下留白 15%) */
+        /* 置中的垂直分隔線 (維持上下留白 15%) */
         .card-right-col::before {
             content: '';
             position: absolute;
             left: 0;
-            top: 15%;    /* 上方留白 */
-            bottom: 15%; /* 下方留白 */
+            top: 15%;    
+            bottom: 15%; 
             width: 1px;
             background-color: #C0C0C0;
         }
@@ -282,7 +282,7 @@
                 let memberHtml = (members.length > 0) ? members.map((m, i) => `<span class="${MEMBER_COLORS[i % MEMBER_COLORS.length]} text-[9px] font-bold mr-1">${typeof m === 'string' ? m : m.name}</span>`).join('') : '';
 
                 const card = document.createElement('div');
-                card.className = 'trip-card flex w-full mb-3 relative min-h-[75px] rounded-xl overflow-hidden shadow-lg';
+                card.className = 'trip-card flex w-full mb-3 relative min-h-[90px] rounded-xl overflow-hidden shadow-lg';
                 
                 const swipeActions = document.createElement('div');
                 swipeActions.className = 'swipe-item-delete-bg';
@@ -292,9 +292,9 @@
                 const content = document.createElement('div');
                 content.className = 'swipe-item-content flex w-full bg-white overflow-hidden relative items-stretch h-full z-10';
                 
-                // ⚠️ 修正：移除圓角設定，讓卡片容器負責裁切
+                // ⚠️ 修正：加入 rounded-l-xl，確保左側圓角
                 content.innerHTML = `
-                    <div class="${config.bg} w-14 flex-none flex flex-col items-center justify-center gap-2 text-white relative z-10 h-full py-4">
+                    <div class="${config.bg} w-14 flex-none flex flex-col items-center justify-center gap-2 text-white relative z-10 h-full py-4 rounded-l-xl">
                         <span class="text-[10px] font-bold tracking-tight leading-none">${schedule.Time}</span>
                         <span class="text-2xl leading-none mb-1">${style.icon}</span>
                         <span class="text-[9px] font-medium opacity-90 leading-none">${CATEGORY_NAMES[schedule.Type] || schedule.Type}</span>
