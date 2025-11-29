@@ -38,22 +38,28 @@
         .swipe-item-delete-bg { position: absolute; top: 0; bottom: 0; right: 0; width: 140px; display: flex; align-items: center; justify-content: flex-end; z-index: 1; }
         .swipe-item-content { position: relative; z-index: 10; background-color: white; transition: transform 0.2s ease-out; transform: translateX(0); width: 100%; display: flex; align-items: stretch; overflow: hidden; }
         
+        /* ⚠️ 關鍵修改：右側欄位樣式 */
         .card-right-col { 
             display: flex; 
             flex-direction: column; 
-            /* 修改重點：改為 flex-start 讓內容靠上，gap 增加間距 */
-            justify-content: flex-start; 
-            align-items: flex-end; 
-            gap: 8px; 
-            width: 90px; min-width: 90px; max-width: 90px; flex: 0 0 90px;
-            border-left: none; padding-left: 0.25rem; padding-bottom: 0.25rem; padding-top: 6px; position: relative; 
+            justify-content: flex-start; /* 靠上對齊 */
+            align-items: flex-start; /* 靠左對齊 (靠垂直線) */
+            gap: 8px; /* 三列之間的等距 */
+            width: 95px; min-width: 95px; max-width: 95px; flex: 0 0 95px; /*稍微加寬一點點以容納按鈕*/
+            border-left: none; padding-left: 6px; padding-bottom: 0.25rem; padding-top: 12px; position: relative; 
         }
         .card-right-col::before {
-            content: ''; position: absolute; left: 0; top: 15%; bottom: 15%; width: 1px; background-color: #C0C0C0;
+            content: ''; position: absolute; left: 0; top: 8%; bottom: 8%; width: 1px; background-color: #C0C0C0;
         }
 
-        .info-block-content { display: flex; flex-direction: column; justify-content: flex-start; align-items: flex-end; gap: 4px; width: 100%; }
-        .card-static-actions { display: none !important; gap: 4px; margin-bottom: 0; padding-left: 0.5rem; width: 100%; justify-content: flex-end; }
+        /* ⚠️ 關鍵修改：按鈕列樣式 */
+        .card-static-actions { 
+            display: none !important; 
+            width: 100%; 
+            justify-content: space-between !important; /* 分兩欄：一個靠左、一個靠右 */
+            padding: 0; 
+            margin: 0; 
+        }
         
         /* --- RWD Adjustments --- */
         @media (min-width: 501px) {
@@ -266,15 +272,14 @@
                         </div>
                         <p class="text-[#888888] text-[10px] line-clamp-4 whitespace-pre-wrap leading-normal mt-0.5">${schedule.說明 || ''}</p>
                     </div>
+                    
                     <div class="card-right-col">
                         <div class="card-static-actions"> 
                             <button class="bg-[#7E92A1] text-white modify-btn-static rounded px-1.5 py-0.5 text-[9px] font-bold" data-schedule='${scheduleJson}'>修改</button>
                             <button class="bg-[#CB8572] text-white delete-btn-static rounded px-1.5 py-0.5 text-[9px] font-bold" data-id="${schedule.id}">刪除</button>
                         </div>
-                        <div class="info-block-content">
-                            <div class="flex items-center justify-end leading-none w-full"><span class="text-[#8F9E8B] font-bold text-[10px]">💰 TWD$${amountTWD.toFixed(0)}</span></div>
-                            <div class="flex items-center justify-end leading-none w-full"><span class="text-[#888888] font-bold text-[10px]">👫 TWD$${formatCurrency(perPersonTWD)}</span></div>
-                        </div>
+                        <div class="flex items-center justify-start w-full"><span class="text-[#8F9E8B] font-bold text-[10px]">💰 TWD$${amountTWD.toFixed(0)}</span></div>
+                        <div class="flex items-center justify-start w-full"><span class="text-[#888888] font-bold text-[10px]">👫 TWD$${formatCurrency(perPersonTWD)}</span></div>
                     </div>`;
                 card.appendChild(content);
 
