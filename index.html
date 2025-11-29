@@ -429,38 +429,55 @@
                 }
             }
 
+            // --- 修改後的 openEditScheduleModal ---
             function openEditScheduleModal(json) {
-                const s = JSON.parse(json); editingScheduleId = s.id;
-                document.getElementById('add-schedule-modal-title').textContent = s.Location; document.getElementById('modal-delete-btn').style.display = 'block'; document.getElementById('modal-delete-btn').onclick = () => deleteSchedule(s.id);
-                ['Date','Time','Location','Type','說明','Address','Amount'].forEach(k => { const el = document.getElementById(`form-${k.toLowerCase().replace('說明','details')}`); if(el) el.value = s[k] || (k==='Amount'?0:''); });
+                const s = JSON.parse(json); 
+                editingScheduleId = s.id;
+                
+                // 設定標題與刪除按鈕
+                document.getElementById('add-schedule-modal-title').textContent = s.Location || '編輯行程'; 
+                document.getElementById('modal-delete-btn').style.display = 'block'; 
+                document.getElementById('modal-delete-btn').onclick = () => deleteSchedule(s.id);
+                
+                // 填入基本欄位
+                ['Date','Time','Location','Type','說明','Address','Amount'].forEach(k => { 
+                    const el = document.getElementById(`form-${k.toLowerCase().replace('說明','details')}`); 
+                    if(el) el.value = s[k] || (k==='Amount'?0:''); 
+                });
+                
+                // 設定金額顯示
                 document.getElementById('form-currency-label').textContent = tripData[currentTripId].currency || 'TWD';
                 document.getElementById('form-amount-twd').value = ((s.Amount||0) * currentTripRate).toFixed(0);
-                const c = document.getElementById('form-members-container'); c.innerHTML = '';
-                const mems = s.members || []; if(mems.length) mems.forEach(m => addMemberInput(typeof m==='string'?m:m.name, typeof m==='string'?'':m.amount)); else { addMemberInput(); addMemberInput(); }
-                document.getElementById('add-schedule-modal').style.display = 'flex';
-            }
-            
-            function addMemberInput(name='', amt='') { const d = document.createElement('div'); d.className = 'flex items-center space-x-2 mt-1.5'; d.innerHTML = `<input type="text" name="schedule-member-name" value="${name}" placeholder="名字" class="compact-input w-16 rounded-md"><input type="number" name="schedule-member-amount" value="${amt}" placeholder="金額" class="compact-input w-16 rounded-md"><button type="button" class="text-[#CB8572] font-bold p-1 rm-btn">×</button>`; d.querySelector('.rm-btn').onclick = () => d.remove(); document.getElementById('form-members-container').appendChild(d); }
+                
+                // --- 關鍵修改開始：合併全域成員與行程成員 ---
+                const container = document.getElementById('form-members-container'); 
+                container.innerHTML = '';
+                
+                const tripMembers = tripData[currentTripId].members || []; // 全域成員清單
+                const scheduleMembers = s.members || []; // 該行程已儲存的成員資料
+                
+                // 1. 先列出所有「全域成員」
+                // 如果這個人在行程裡已有紀錄(有金額)，就填入金額；否則留白
+                tripMembers.forEach(globalName => {
+                    // 在已儲存的行程中找這個人
+                    const match = scheduleMembers.find(m => (typeof m === 'string' ? m : m.name) === globalName);
+                    // 如果有找到且有金額，就填入；否則為空字串
+                    const amt = match ? (match.amount !== null && match.amount !== undefined ? match.amount : '') : '';
+                    addMemberInput(globalName, amt);
+                });
 
-            async function submitSchedule() {
-                try {
-                    const dateVal = document.getElementById('form-date').value; if (!dateVal) return alert("請選日期");
-                    const trip = tripData[currentTripId]; const dayId = `Day ${dateDiffInDays(new Date(dateVal), new Date(trip.startDate)) + 1}`;
-                    const members = []; const names = document.querySelectorAll('input[name="schedule-member-name"]'); const amts = document.querySelectorAll('input[name="schedule-member-amount"]');
-                    names.forEach((n, i) => { if(n.value.trim()) members.push({name: n.value.trim(), amount: amts[i].value ? parseFloat(amts[i].value) : null}); });
-                    const uid = auth.currentUser ? auth.currentUser.uid : null; 
-                    const data = { 
-                        dayId, 
-                        Date: dateVal, 
-                        Time: document.getElementById('form-time').value, Location: document.getElementById('form-location').value, 
-                        Type: document.getElementById('form-type').value, 說明: document.getElementById('form-details').value, 
-                        Address: document.getElementById('form-address').value, Amount: parseFloat(document.getElementById('form-amount').value) || 0, 
-                        Rate: currentTripRate || 1, members, uid: uid 
-                    };
-                    const col = collection(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`);
-                    if (editingScheduleId) await updateDoc(doc(col, editingScheduleId), data); else await addDoc(col, data);
-                    document.getElementById('add-schedule-modal').style.display = 'none'; currentDayId = dayId; renderDayTabs(); loadSchedules(currentTripId, currentDayId);
-                } catch(e) { }
+                // 2. (選用) 檢查是否有「不在全域清單」但在「行程紀錄」裡的人 (防止舊資料遺失)
+                scheduleMembers.forEach(m => {
+                    const name = typeof m === 'string' ? m : m.name;
+                    // 如果這個人不在剛剛的全域清單裡，還是要補顯示出來
+                    if (!tripMembers.includes(name)) {
+                         const amt = (typeof m !== 'string' && m.amount !== null) ? m.amount : '';
+                         addMemberInput(name, amt);
+                    }
+                });
+                // --- 關鍵修改結束 ---
+
+                document.getElementById('add-schedule-modal').style.display = 'flex';
             }
 
             async function checkAndCreateDefaultLists(tripId) { 
@@ -840,7 +857,37 @@
                     // UI Event Bindings
                     document.getElementById('trip-select').onchange = (e) => changeTrip(e.target.value);
                     document.getElementById('bar-calc-currency').onchange = calculateCurrency; document.getElementById('bar-calc-amount').oninput = calculateCurrency;
-                    document.getElementById('center-add-btn').onclick = () => { if(!currentTripId) return alert('請先建計畫'); document.getElementById('add-schedule-form').reset(); editingScheduleId=null; document.getElementById('modal-delete-btn').style.display='none'; const t=tripData[currentTripId]; document.getElementById('form-date').value=getDateFromDayId(t, currentDayId).toISOString().split('T')[0]; document.getElementById('form-members-container').innerHTML=''; (t.members||[]).forEach(n=>addMemberInput(n)); if(!(t.members||[]).length){addMemberInput();addMemberInput();} document.getElementById('add-schedule-modal').style.display='flex'; };
+                    // --- 修改後的 center-add-btn 點擊事件 ---
+                    document.getElementById('center-add-btn').onclick = () => { 
+                        if(!currentTripId) return alert('請先建計畫'); 
+                        
+                        document.getElementById('add-schedule-form').reset(); 
+                        editingScheduleId = null; 
+                        document.getElementById('modal-delete-btn').style.display='none'; 
+                        document.getElementById('add-schedule-modal-title').textContent = '新增行程'; // 重置標題
+                        
+                        const t = tripData[currentTripId]; 
+                        // 設定日期為當前選取的日期
+                        if(currentDayId) {
+                            const targetDate = getDateFromDayId(t, currentDayId);
+                            if(targetDate) document.getElementById('form-date').value = targetDate.toISOString().split('T')[0];
+                        }
+
+                        // 載入最新的全域成員
+                        const container = document.getElementById('form-members-container');
+                        container.innerHTML = '';
+                        
+                        const members = t.members || [];
+                        if (members.length > 0) {
+                            members.forEach(n => addMemberInput(n, ''));
+                        } else {
+                            // 如果完全沒成員，預設給兩個空位
+                            addMemberInput();
+                            addMemberInput();
+                        }
+                        
+                        document.getElementById('add-schedule-modal').style.display='flex'; 
+                    };
                     document.getElementById('modal-close-btn').onclick = () => document.getElementById('add-schedule-modal').style.display='none'; document.getElementById('modal-save-btn').onclick = submitSchedule; document.getElementById('form-amount').oninput = (e) => document.getElementById('form-amount-twd').value = (e.target.value * currentTripRate).toFixed(0);
                     
                     // 修改：新增台幣輸入反算邏輯
@@ -911,3 +958,4 @@
     </script>
 </body>
 </html>
+
