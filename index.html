@@ -39,8 +39,8 @@
 
 /* 新增規則: 讓列表裡的第一個卡片有足夠的空間避開 Header */
 #schedule-list-container .trip-card:first-child {
-    /* 假設 Header 實際高度比 220px 略高，嘗試增加 10px */
-    margin-top:250px; /* ✅ 修正：增加 margin-top 的值 */
+    /* 原本可能是 0.75rem，這裡增加到 2rem (約 32px) */
+    margin-bottom: 2rem !important; /* ✅ 修正：增加第一個卡片下方的留白 */
 }
     /* --- Header 固定區 --- */
     header { 
@@ -1014,6 +1014,7 @@
     </script>
 </body>
 </html>
+
 
 
 
