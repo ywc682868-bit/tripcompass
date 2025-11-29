@@ -228,7 +228,7 @@
                 }
                 const scheduleJson = JSON.stringify({ ...schedule, Amount: schedule.Amount || 0 });
                 
-                // ⚠️ 修改成員顯示 HTML 生成邏輯：改為 Grid Layout，一列兩個
+                // HTML Layout for members (Grid 2 cols, right aligned)
                 let memberHtml = '';
                 if (members.length > 0) {
                     memberHtml = `<div class="grid grid-cols-2 gap-x-1 gap-y-0.5 mt-1 self-end justify-items-end">`;
@@ -269,7 +269,7 @@
                             <div class="info-block-content">
                                 <div class="flex items-center justify-end leading-none w-full"><span class="text-[#8F9E8B] font-bold text-[10px]">💰 TWD$${amountTWD.toFixed(0)}</span></div>
                                 <div class="flex items-center justify-end leading-none w-full"><span class="text-[#888888] font-bold text-[10px]">👫 TWD$${formatCurrency(perPersonTWD)}</span></div>
-                                </div>
+                            </div>
                         </div>
                     </div>`;
                 card.appendChild(content);
@@ -823,7 +823,7 @@
                     const addMemBtn = document.getElementById('add-member-btn');
                     if(addMemBtn) addMemBtn.onclick = () => addMemberInput();
 
-                    // --- 關鍵修改：設定儲存按鈕 (自動更新所有行程成員) ---
+                    // --- 關鍵修改：設定儲存按鈕 (自動更新所有行程成員：新增/刪除) ---
                     document.getElementById('settings-modal-save-btn').onclick = async () => {
                         const newName = document.getElementById('settings-trip-name').value;
                         const newCountry = document.getElementById('settings-trip-country').value;
@@ -836,12 +836,13 @@
                         
                         const oldMembers = tripData[currentTripId].members || [];
                         const addedMembers = newMembersList.filter(m => !oldMembers.includes(m));
+                        const removedMembers = oldMembers.filter(m => !newMembersList.includes(m));
 
                         await updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}`), { 
                             name: newName, country: newCountry, startDate: newStart, numDays: newDays, members: newMembersList 
                         });
 
-                        if (addedMembers.length > 0) {
+                        if (addedMembers.length > 0 || removedMembers.length > 0) {
                             const originalBtnText = document.getElementById('settings-modal-save-btn').textContent;
                             document.getElementById('settings-modal-save-btn').textContent = "更新行程中...";
                             try {
@@ -849,9 +850,21 @@
                                 const snapshot = await getDocs(schedulesRef);
                                 const updatePromises = snapshot.docs.map(scheduleDoc => {
                                     const sData = scheduleDoc.data();
-                                    const currentSchedMembers = sData.members || [];
+                                    let currentSchedMembers = sData.members || [];
+                                    
+                                    // 1. 處理刪除：過濾掉被移除的成員
+                                    if (removedMembers.length > 0) {
+                                        currentSchedMembers = currentSchedMembers.filter(m => {
+                                            const name = typeof m === 'string' ? m : m.name;
+                                            return !removedMembers.includes(name);
+                                        });
+                                    }
+
+                                    // 2. 處理新增：加入新成員
                                     const membersToAdd = addedMembers.map(name => ({ name: name, amount: null }));
-                                    return updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`, scheduleDoc.id), { members: [...currentSchedMembers, ...membersToAdd] });
+                                    const finalMembers = [...currentSchedMembers, ...membersToAdd];
+
+                                    return updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`, scheduleDoc.id), { members: finalMembers });
                                 });
                                 await Promise.all(updatePromises);
                             } catch (err) { console.error("批次更新失敗", err); }
