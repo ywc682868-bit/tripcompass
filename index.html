@@ -52,15 +52,15 @@
             position: relative; 
         }
         
-        /* 置中的垂直分隔線 (調整：top 15%, bottom 15% -> 上下留白置中) */
+        /* 置中的垂直分隔線 */
         .card-right-col::before {
             content: '';
             position: absolute;
             left: 0;
-            top: 15%;    
-            bottom: 15%; 
+            top: 0; 
+            bottom: 0;
             width: 1px;
-            background-color: #C0C0C0; 
+            background-color: #C0C0C0;
         }
 
         /* 增加間距 gap: 10px */
@@ -181,7 +181,6 @@
         window.App = (function() {
             const appId = 'my-trip-app';
             const firebaseConfig = { apiKey: "AIzaSyDx2yrJ3YUe93A-JdgJPtZChLvylCEht28", authDomain: "mytravelplanner-36283.firebaseapp.com", projectId: "mytravelplanner-36283", storageBucket: "mytravelplanner-36283.appspot.com", messagingSenderId: "86504733738", appId: "1:86504733738:web:5167a6a795eb2066f272d" };
-            
             const COUNTRY_CONFIG = { 
                 'USA': { name: '美國', currency: 'USD', localName: 'New York', lat: 40.71, lon: -74.00, img: 'usa' }, 
                 'JP': { name: '日本', currency: 'JPY', localName: '東京', lat: 35.68, lon: 139.76, img: 'japan' }, 
@@ -275,8 +274,16 @@
                 const amountTWD = (schedule.Amount || 0) * rate;
                 let perPersonTWD = 0, specifiedTWD = 0, unspecifiedCount = 0;
                 const members = schedule.members || [];
+                // 修改：如果 isTwdSplit 為 true，成員分帳金額視為台幣 (不乘匯率)，否則視為外幣 (乘匯率)
                 if (amountTWD > 0) {
-                    members.forEach(m => { const amt = typeof m === 'string' ? null : m.amount; if(amt !== null && !isNaN(amt)) specifiedTWD += amt * rate; else unspecifiedCount++; });
+                    members.forEach(m => { 
+                        const amt = typeof m === 'string' ? null : m.amount; 
+                        if(amt !== null && !isNaN(amt)) {
+                            specifiedTWD += (schedule.isTwdSplit ? amt : amt * rate);
+                        } else {
+                            unspecifiedCount++;
+                        }
+                    });
                     perPersonTWD = (unspecifiedCount > 0) ? (amountTWD - specifiedTWD) / unspecifiedCount : (members.length > 0 ? amountTWD / members.length : amountTWD);
                 }
                 const scheduleJson = JSON.stringify({ ...schedule, Amount: schedule.Amount || 0 });
@@ -434,6 +441,11 @@
                 ['Date','Time','Location','Type','說明','Address','Amount'].forEach(k => { const el = document.getElementById(`form-${k.toLowerCase().replace('說明','details')}`); if(el) el.value = s[k] || (k==='Amount'?0:''); });
                 document.getElementById('form-currency-label').textContent = tripData[currentTripId].currency || 'TWD';
                 document.getElementById('form-amount-twd').value = ((s.Amount||0) * currentTripRate).toFixed(0);
+                
+                // 設置「以台幣分帳」Checkbox 狀態
+                const isTwdCheckbox = document.getElementById('form-member-is-twd');
+                if(isTwdCheckbox) isTwdCheckbox.checked = s.isTwdSplit || false;
+
                 const c = document.getElementById('form-members-container'); c.innerHTML = '';
                 const mems = s.members || []; if(mems.length) mems.forEach(m => addMemberInput(typeof m==='string'?m:m.name, typeof m==='string'?'':m.amount)); else { addMemberInput(); addMemberInput(); }
                 document.getElementById('add-schedule-modal').style.display = 'flex';
@@ -447,6 +459,8 @@
                     const trip = tripData[currentTripId]; const dayId = `Day ${dateDiffInDays(new Date(dateVal), new Date(trip.startDate)) + 1}`;
                     const members = []; const names = document.querySelectorAll('input[name="schedule-member-name"]'); const amts = document.querySelectorAll('input[name="schedule-member-amount"]');
                     names.forEach((n, i) => { if(n.value.trim()) members.push({name: n.value.trim(), amount: amts[i].value ? parseFloat(amts[i].value) : null}); });
+                    
+                    const isTwdSplit = document.getElementById('form-member-is-twd').checked; // 讀取 Checkbox 狀態
                     const uid = auth.currentUser ? auth.currentUser.uid : null; 
                     const data = { 
                         dayId, 
@@ -454,7 +468,8 @@
                         Time: document.getElementById('form-time').value, Location: document.getElementById('form-location').value, 
                         Type: document.getElementById('form-type').value, 說明: document.getElementById('form-details').value, 
                         Address: document.getElementById('form-address').value, Amount: parseFloat(document.getElementById('form-amount').value) || 0, 
-                        Rate: currentTripRate || 1, members, uid: uid 
+                        Rate: currentTripRate || 1, members, uid: uid,
+                        isTwdSplit: isTwdSplit // 儲存 Checkbox 狀態
                     };
                     const col = collection(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`);
                     if (editingScheduleId) await updateDoc(doc(col, editingScheduleId), data); else await addDoc(col, data);
@@ -674,7 +689,11 @@
                 let total=0, types={}, mems={};
                 snap.forEach(d => {
                     const da = d.data(); const tTWD = (da.Amount||0)*(da.Rate||1);
-                    if(tTWD>0) { total+=tTWD; types[da.Type]=(types[da.Type]||0)+tTWD; let spSum=0, unSpUsers=[]; (da.members||[]).forEach(m=>{ const amt = typeof m==='string'?null:m.amount; const name = typeof m==='string'?m:m.name; if(amt!==null && !isNaN(amt)) { spSum+=amt; addMemExp(mems, name, da.Type, amt*(da.Rate||1)); } else unSpUsers.push(name); }); if(unSpUsers.length) { const split = ((da.Amount||0)-spSum)*(da.Rate||1)/unSpUsers.length; unSpUsers.forEach(u=>addMemExp(mems, u, da.Type, split)); } }
+                    if(tTWD>0) { total+=tTWD; types[da.Type]=(types[da.Type]||0)+tTWD; let spSum=0, unSpUsers=[]; (da.members||[]).forEach(m=>{ const amt = typeof m==='string'?null:m.amount; const name = typeof m==='string'?m:m.name; if(amt!==null && !isNaN(amt)) { 
+                        // 修改：判斷 isTwdSplit 決定是否要乘匯率
+                        const finalAmt = (da.isTwdSplit ? amt : amt * (da.Rate||1));
+                        spSum+=finalAmt; addMemExp(mems, name, da.Type, finalAmt); 
+                    } else unSpUsers.push(name); }); if(unSpUsers.length) { const split = ((da.Amount||0)*(da.Rate||1)-spSum)/unSpUsers.length; unSpUsers.forEach(u=>addMemExp(mems, u, da.Type, split)); } }
                 });
                 function addMemExp(s, n, t, a) { if(!s[n]) s[n]={total:0, cats:{}}; s[n].total+=a; s[n].cats[t]=(s[n].cats[t]||0)+a; }
                 document.getElementById('expense-total-amount').textContent = total.toFixed(0);
@@ -758,6 +777,10 @@
                                         <div class="flex justify-start items-center mb-1 gap-2">
                                             <label class="block compact-label">成員</label>
                                             <button type="button" id="add-member-btn" class="ml-[115px] text-xl font-bold text-[#7E92A1] hover:text-[#64748B] transition-colors leading-none">+</button>
+                                             <div class="flex items-center ml-4">
+                                                <input type="checkbox" id="form-member-is-twd" class="w-3 h-3 text-[#7E92A1] rounded border-gray-300 focus:ring-[#7E92A1]">
+                                                <label for="form-member-is-twd" class="ml-1 text-[10px] text-[#7E92A1] font-bold">以台幣分帳</label>
+                                            </div>
                                         </div>
                                         <div id="form-members-container" class="space-y-1"></div>
                                     </div>
