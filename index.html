@@ -17,6 +17,7 @@
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
         /* --- 容器與佈局 --- */
+        /* Padding-top 預留給 Header，確保內容不被遮擋 */
         #app-container { max-width: 500px; margin: 0 auto; min-height: 100vh; background-color: white; padding-top: 165px; padding-bottom: 140px; position: relative; box-shadow: 0 0 10px rgba(0,0,0,0.05); }
         
         /* --- Header 固定區 --- */
@@ -63,7 +64,6 @@
             .trip-card .content-text-block { margin-top: 8px; }
             .desktop-del-btn { display: none !important; } 
             
-            /* Footer RWD Fixes */
             #currency-display-row { flex-wrap: nowrap !important; gap: 5px !important; }
             #rate-display-container { width: auto !important; flex: 0 0 auto !important; border-right: none !important; }
             #rate-display-label { font-size: 14px !important; white-space: nowrap !important; }
@@ -384,7 +384,11 @@
                 const c = document.getElementById('form-members-container'); c.innerHTML = '';
                 const mems = s.members || []; 
                 if(mems.length) {
-                    mems.forEach(m => addMemberInput(typeof m==='string'?m:m.name, typeof m==='string'?'':m.amount)); 
+                    mems.forEach(m => {
+                        const name = typeof m === 'string' ? m : m.name;
+                        const amt = (typeof m === 'string' || m.amount === null) ? '' : m.amount;
+                        addMemberInput(name, amt);
+                    }); 
                 } else { 
                     addMemberInput(); addMemberInput(); 
                 }
@@ -807,7 +811,11 @@
                     
                     document.getElementById('settings-add-member-btn').onclick = () => addSettingsMemberInput();
                     
-                    // --- 儲存設定並同步成員 ---
+                    // --- 補上：行程視窗中的新增成員按鈕監聽器 ---
+                    const addMemBtn = document.getElementById('add-member-btn');
+                    if(addMemBtn) addMemBtn.onclick = () => addMemberInput();
+
+                    // --- 關鍵修改：設定儲存按鈕 (自動更新所有行程成員) ---
                     document.getElementById('settings-modal-save-btn').onclick = async () => {
                         const newName = document.getElementById('settings-trip-name').value;
                         const newCountry = document.getElementById('settings-trip-country').value;
