@@ -165,7 +165,8 @@
     <div class="grid grid-cols-[1.1fr_1.1fr_0.7fr] gap-2">
         <div><label class="block text-xs font-medium text-[#7E92A1]">國家</label><select id="new-trip-country" class="compact-input mt-0.5 block w-full rounded border h-[28px]" style="width: 88% !important; min-width: 0;"><option value="USA">🇺🇸 美國</option><option value="JP">🇯🇵 日本</option><option value="KR">🇰🇷 韓國</option><option value="UK">🇬🇧 英國</option><option value="TW">🇹🇼 台灣</option></select></div>
         <div><label class="block text-xs font-medium text-[#7E92A1]">開始日期</label><input type="date" id="new-trip-start-date" class="compact-input mt-0.5 block w-full rounded border text-center h-[28px] text-[10px]" style="width: 88% !important; min-width: 0;"></div>
-        <div><label class="block text-xs font-medium text-[#7E92A1]">天數</label><input type="number" id="new-trip-days" min="1" value="3" class="compact-input mt-0.5 block w-full rounded border text-center h-[32px]" style="width: 88% !important; min-width: 0;"></div> </div>
+        <div><label class="block text-xs font-medium text-[#7E92A1]">天數</label><input type="number" id="new-trip-days" min="1" value="3" class="compact-input mt-0.5 block w-full rounded border text-center h-[28px]" style="width: 88% !important; min-width: 0;"></div>
+    </div>
     
     <div class="pt-3 flex justify-end"><button type="button" id="new-trip-modal-save-btn" class="px-3 py-1.5 text-white bg-[#7E92A1] rounded text-xs hover:bg-[#64748B]">新增</button></div></form></div></div>
     <div id="split-expense-modal" class="modal-overlay hidden"><div class="bg-white rounded-xl shadow-2xl p-4 w-11/12 max-w-sm flex flex-col max-h-[90vh]"><h3 class="text-sm font-bold mb-2 flex justify-between items-center flex-shrink-0 text-[#4A4B4D]">花費<button id="split-expense-close-btn" class="text-[#A9A9A9] hover:text-[#5F6368] text-xl leading-none">×</button></h3><div class="flex-shrink-0 mb-2 bg-[#F9F9F9] p-2 rounded border border-[#E0E0E0]"><div class="flex justify-between items-end mb-1 border-b border-[#E0E0E0] pb-0.5"><span class="text-[#5F6368] font-medium text-xs">總花費</span><span class="text-sm font-extrabold text-[#4A4B4D]">TWD$ <span id="expense-total-amount">0</span></span></div><div id="expense-chart-container" class="h-32 w-full relative flex justify-center items-center"><canvas id="expense-chart"></canvas></div></div><div class="overflow-y-auto flex-grow mb-1 pr-1"><div id="expense-member-list" class="space-y-0.5"></div></div></div></div>
@@ -747,7 +748,7 @@
                                     <div><label class="block compact-label">地點</label><input type="text" id="form-location" class="compact-input block w-full rounded border shadow-sm" style="width: 100% !important; min-width: 0; box-sizing: border-box;"></div>
                                 </div>
                                 <div><label class="block compact-label">地址</label><input type="text" id="form-address" class="compact-input block w-full rounded border shadow-sm"></div>
-                                <div><label class="block compact-label">說明</label><textarea id="form-details" rows="4" class="compact-input block w-full rounded border shadow-sm !h-auto leading-tight"></textarea></div>
+                                <div><label class="block compact-label">說明</label><textarea id="form-details" rows="4" class="compact-input block w-full rounded border shadow-sm !h-auto leading-normal"></textarea></div>
                                 <div class="flex gap-2 items-start">
                                     <div class="flex-grow">
                                         <div class="flex justify-start items-center mb-1 gap-2">
@@ -790,7 +791,7 @@
                                 <div class="grid grid-cols-[1.1fr_1.1fr_0.7fr] gap-2">
                                     <div><label class="block text-xs font-medium text-[#7E92A1]">國家</label><select id="settings-trip-country" class="compact-input mt-0.5 block w-full rounded border h-[28px]" style="width: 88% !important; min-width: 0;"><option value="USA">🇺🇸 美國</option><option value="JP">🇯🇵 日本</option><option value="KR">🇰🇷 韓國</option><option value="UK">🇬🇧 英國</option><option value="TW">🇹🇼 台灣</option></select></div>
                                     <div><label class="block text-xs font-medium text-[#7E92A1]">開始日期</label><input type="date" id="settings-start-date" class="compact-input mt-0.5 block w-full rounded border text-center h-[28px] text-[10px]" style="width: 88% !important; min-width: 0;"></div>
-                                    <div><label class="block text-xs font-medium text-[#7E92A1]">天數</label><input type="number" id="settings-num-days" min="1" class="compact-input mt-0.5 block w-full rounded border text-center h-[32px]" style="width: 88% !important; min-width: 0;"></div>
+                                    <div><label class="block text-xs font-medium text-[#7E92A1]">天數</label><input type="number" id="settings-num-days" min="1" class="compact-input mt-0.5 block w-full rounded border text-center h-[28px]" style="width: 88% !important; min-width: 0;"></div>
                                 </div>
                                 <div>
                                     <label class="block text-xs font-medium text-[#7E92A1] mb-1">成員</label>
@@ -818,7 +819,7 @@
                                 <div class="grid grid-cols-[1.1fr_1.1fr_0.7fr] gap-2">
                                     <div><label class="block text-xs font-medium text-[#7E92A1]">國家</label><select id="new-trip-country" class="compact-input mt-0.5 block w-full rounded border h-[28px]" style="width: 88% !important; min-width: 0;"><option value="USA">🇺🇸 美國</option><option value="JP">🇯🇵 日本</option><option value="KR">🇰🇷 韓國</option><option value="UK">🇬🇧 英國</option><option value="TW">🇹🇼 台灣</option></select></div>
                                     <div><label class="block text-xs font-medium text-[#7E92A1]">開始日期</label><input type="date" id="new-trip-start-date" class="compact-input mt-0.5 block w-full rounded border text-center h-[28px] text-[10px]" style="width: 88% !important; min-width: 0;"></div>
-                                    <div><label class="block text-xs font-medium text-[#7E92A1]">天數</label><input type="number" id="new-trip-days" min="1" value="3" class="compact-input mt-0.5 block w-full rounded border text-center h-[32px]" style="width: 88% !important; min-width: 0;"></div>
+                                    <div><label class="block text-xs font-medium text-[#7E92A1]">天數</label><input type="number" id="new-trip-days" min="1" value="3" class="compact-input mt-0.5 block w-full rounded border text-center h-[28px]" style="width: 88% !important; min-width: 0;"></div>
                                 </div>
                                 <div class="pt-3 flex justify-end"><button type="button" id="new-trip-modal-save-btn" class="px-3 py-1.5 text-white bg-[#7E92A1] rounded text-xs hover:bg-[#64748B]">新增</button></div>
                             </form>
