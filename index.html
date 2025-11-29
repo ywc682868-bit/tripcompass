@@ -33,7 +33,6 @@
         #bar-calc-result { font-size: 0.7rem; font-weight: bold; color: #7E92A1; }
 
         /* --- 行程卡片 (Trip Card) --- */
-        /* 修改：min-height 設為 85px (適中高度) */
         .trip-card { width: 100%; margin-bottom: 0.75rem; position: relative; min-height: 85px; display: flex; }
         .swipe-item-container { position: relative; overflow: hidden; border-radius: 0.375rem; margin-bottom: 0.5rem; touch-action: pan-y; }
         .swipe-item-delete-bg { position: absolute; top: 0; bottom: 0; right: 0; width: 140px; display: flex; align-items: center; justify-content: flex-end; z-index: 1; }
@@ -53,13 +52,13 @@
             position: relative; 
         }
         
-        /* 置中的垂直分隔線 (維持上下留白 15%) */
+        /* 置中的垂直分隔線 (上下留白 15%) */
         .card-right-col::before {
             content: '';
             position: absolute;
             left: 0;
-            top: 15%;    
-            bottom: 15%; 
+            top: 15%;    /* 上方留白 */
+            bottom: 15%; /* 下方留白 */
             width: 1px;
             background-color: #C0C0C0;
         }
@@ -166,9 +165,9 @@
     <div id="new-trip-modal" class="modal-overlay hidden"><div class="bg-white rounded-xl shadow-2xl p-4 w-11/12 max-w-sm"><h3 class="text-base font-bold mb-3 flex justify-between items-center text-[#4A4B4D]">新增旅行計畫<button id="new-trip-modal-close-btn" class="text-[#A9A9A9] hover:text-[#5F6368] text-xl">×</button></h3><form id="new-trip-form" class="space-y-3"><div><label class="block text-xs font-medium text-[#7E92A1]">計畫名稱</label><input type="text" id="new-trip-name" class="compact-input mt-0.5 block w-full rounded border"></div>
     
     <div class="grid grid-cols-[0.85fr_1.45fr_0.7fr] gap-1">
-        <div><label class="block text-xs font-medium text-[#7E92A1]">國家</label><select id="new-trip-country" class="compact-input mt-0.5 block w-full rounded border h-[28px]" style="width: 88% !important; min-width: 0;"><option value="USA">🇺🇸 美國</option><option value="JP">🇯🇵 日本</option><option value="KR">🇰🇷 韓國</option><option value="UK">🇬🇧 英國</option><option value="TW">🇹🇼 台灣</option></select></div>
-        <div><label class="block text-xs font-medium text-[#7E92A1]">開始日期</label><input type="date" id="new-trip-start-date" class="compact-input mt-0.5 block w-full rounded border text-center h-[28px] text-[10px]" style="width: 88% !important; min-width: 0;"></div>
-        <div><label class="block text-xs font-medium text-[#7E92A1]">天數</label><input type="number" id="new-trip-days" min="1" value="3" class="compact-input mt-0.5 block w-full rounded border text-center h-[32px]" style="width: 88% !important; min-width: 0;"></div>
+        <div><label class="block text-xs font-medium text-[#7E92A1]">國家</label><select id="new-trip-country" class="compact-input mt-0.5 block w-full rounded border h-[28px]" style="width: 100% !important; min-width: 0;"><option value="USA">🇺🇸 美國</option><option value="JP">🇯🇵 日本</option><option value="KR">🇰🇷 韓國</option><option value="UK">🇬🇧 英國</option><option value="TW">🇹🇼 台灣</option></select></div>
+        <div><label class="block text-xs font-medium text-[#7E92A1]">開始日期</label><input type="date" id="new-trip-start-date" class="compact-input mt-0.5 block w-full rounded border text-center h-[28px] text-[10px]" style="width: 100% !important; min-width: 0;"></div>
+        <div><label class="block text-xs font-medium text-[#7E92A1]">天數</label><input type="number" id="new-trip-days" min="1" value="3" class="compact-input mt-0.5 block w-full rounded border text-center h-[28px]" style="width: 100% !important; min-width: 0;"></div>
     </div>
     
     <div class="pt-3 flex justify-end"><button type="button" id="new-trip-modal-save-btn" class="px-3 py-1.5 text-white bg-[#7E92A1] rounded text-xs hover:bg-[#64748B]">新增</button></div></form></div></div>
@@ -283,7 +282,7 @@
                 let memberHtml = (members.length > 0) ? members.map((m, i) => `<span class="${MEMBER_COLORS[i % MEMBER_COLORS.length]} text-[9px] font-bold mr-1">${typeof m === 'string' ? m : m.name}</span>`).join('') : '';
 
                 const card = document.createElement('div');
-                card.className = 'trip-card flex w-full mb-3 relative min-h-[75px] rounded-xl overflow-hidden shadow-lg';
+                card.className = 'trip-card flex w-full mb-3 relative min-h-[85px] rounded-xl overflow-hidden shadow-lg';
                 
                 const swipeActions = document.createElement('div');
                 swipeActions.className = 'swipe-item-delete-bg';
@@ -293,7 +292,8 @@
                 const content = document.createElement('div');
                 content.className = 'swipe-item-content flex w-full bg-white overflow-hidden relative items-stretch h-full z-10';
                 
-                // ⚠️ 修正：改回 justify-start (靠上)，保留 py-3，確保文字位置不變
+                // ⚠️ 修正：移除圓角設定，讓卡片容器負責裁切，確保滿版
+                // ⚠️ 修正：justify-start + py-3 確保文字靠上不跑版
                 content.innerHTML = `
                     <div class="${config.bg} w-14 flex-none flex flex-col items-center justify-start gap-2 text-white relative z-10 h-full py-3">
                         <span class="text-[10px] font-bold tracking-tight leading-none">${schedule.Time}</span>
@@ -434,6 +434,11 @@
                 ['Date','Time','Location','Type','說明','Address','Amount'].forEach(k => { const el = document.getElementById(`form-${k.toLowerCase().replace('說明','details')}`); if(el) el.value = s[k] || (k==='Amount'?0:''); });
                 document.getElementById('form-currency-label').textContent = tripData[currentTripId].currency || 'TWD';
                 document.getElementById('form-amount-twd').value = ((s.Amount||0) * currentTripRate).toFixed(0);
+                
+                // 設置「以台幣分帳」Checkbox 狀態
+                const isTwdCheckbox = document.getElementById('form-member-is-twd');
+                if(isTwdCheckbox) isTwdCheckbox.checked = s.isTwdSplit || false;
+
                 const c = document.getElementById('form-members-container'); c.innerHTML = '';
                 const mems = s.members || []; if(mems.length) mems.forEach(m => addMemberInput(typeof m==='string'?m:m.name, typeof m==='string'?'':m.amount)); else { addMemberInput(); addMemberInput(); }
                 document.getElementById('add-schedule-modal').style.display = 'flex';
@@ -447,6 +452,8 @@
                     const trip = tripData[currentTripId]; const dayId = `Day ${dateDiffInDays(new Date(dateVal), new Date(trip.startDate)) + 1}`;
                     const members = []; const names = document.querySelectorAll('input[name="schedule-member-name"]'); const amts = document.querySelectorAll('input[name="schedule-member-amount"]');
                     names.forEach((n, i) => { if(n.value.trim()) members.push({name: n.value.trim(), amount: amts[i].value ? parseFloat(amts[i].value) : null}); });
+                    
+                    const isTwdSplit = document.getElementById('form-member-is-twd').checked; // 讀取 Checkbox 狀態
                     const uid = auth.currentUser ? auth.currentUser.uid : null; 
                     const data = { 
                         dayId, 
@@ -454,7 +461,8 @@
                         Time: document.getElementById('form-time').value, Location: document.getElementById('form-location').value, 
                         Type: document.getElementById('form-type').value, 說明: document.getElementById('form-details').value, 
                         Address: document.getElementById('form-address').value, Amount: parseFloat(document.getElementById('form-amount').value) || 0, 
-                        Rate: currentTripRate || 1, members, uid: uid 
+                        Rate: currentTripRate || 1, members, uid: uid,
+                        isTwdSplit: isTwdSplit // 儲存 Checkbox 狀態
                     };
                     const col = collection(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`);
                     if (editingScheduleId) await updateDoc(doc(col, editingScheduleId), data); else await addDoc(col, data);
@@ -799,7 +807,7 @@
                                 <div class="grid grid-cols-[0.8fr_1.5fr_0.7fr] gap-1">
                                     <div><label class="block text-xs font-medium text-[#7E92A1]">國家</label><select id="settings-trip-country" class="compact-input mt-0.5 block w-full rounded border h-[28px]" style="width: 88% !important; min-width: 0;"><option value="USA">🇺🇸 美國</option><option value="JP">🇯🇵 日本</option><option value="KR">🇰🇷 韓國</option><option value="UK">🇬🇧 英國</option><option value="TW">🇹🇼 台灣</option></select></div>
                                     <div><label class="block text-xs font-medium text-[#7E92A1]">開始日期</label><input type="date" id="settings-start-date" class="compact-input mt-0.5 block w-full rounded border text-center h-[28px] text-[10px]" style="width: 88% !important; min-width: 0;"></div>
-                                    <div><label class="block text-xs font-medium text-[#7E92A1]">天數</label><input type="number" id="settings-num-days" min="1" class="compact-input mt-0.5 block w-full rounded border text-center h-[32px]" style="width: 88% !important; min-width: 0;"></div>
+                                    <div><label class="block text-xs font-medium text-[#7E92A1]">天數</label><input type="number" id="settings-num-days" min="1" class="compact-input mt-0.5 block w-full rounded border text-center h-[28px]" style="width: 88% !important; min-width: 0;"></div>
                                 </div>
                                 <div>
                                     <label class="block text-xs font-medium text-[#7E92A1] mb-1">成員</label>
@@ -827,7 +835,7 @@
                                 <div class="grid grid-cols-[0.8fr_1.5fr_0.7fr] gap-1">
                                     <div><label class="block text-xs font-medium text-[#7E92A1]">國家</label><select id="new-trip-country" class="compact-input mt-0.5 block w-full rounded border h-[28px]" style="width: 88% !important; min-width: 0;"><option value="USA">🇺🇸 美國</option><option value="JP">🇯🇵 日本</option><option value="KR">🇰🇷 韓國</option><option value="UK">🇬🇧 英國</option><option value="TW">🇹🇼 台灣</option></select></div>
                                     <div><label class="block text-xs font-medium text-[#7E92A1]">開始日期</label><input type="date" id="new-trip-start-date" class="compact-input mt-0.5 block w-full rounded border text-center h-[28px] text-[10px]" style="width: 88% !important; min-width: 0;"></div>
-                                    <div><label class="block text-xs font-medium text-[#7E92A1]">天數</label><input type="number" id="new-trip-days" min="1" value="3" class="compact-input mt-0.5 block w-full rounded border text-center h-[32px]" style="width: 88% !important; min-width: 0;"></div>
+                                    <div><label class="block text-xs font-medium text-[#7E92A1]">天數</label><input type="number" id="new-trip-days" min="1" value="3" class="compact-input mt-0.5 block w-full rounded border text-center h-[28px]" style="width: 88% !important; min-width: 0;"></div>
                                 </div>
                                 <div class="pt-3 flex justify-end"><button type="button" id="new-trip-modal-save-btn" class="px-3 py-1.5 text-white bg-[#7E92A1] rounded text-xs hover:bg-[#64748B]">新增</button></div>
                             </form>
@@ -867,7 +875,7 @@
                     };
                     
                     document.getElementById('new-trip-btn').onclick = () => document.getElementById('new-trip-modal').style.display='flex';
-                    document.getElementById('new-trip-from-settings-btn').onclick = () => { document.getElementById('settings-modal').style.display='none'; document.getElementById('new-trip-from-settings-btn').style.display='none'; document.getElementById('new-trip-modal').style.display='flex'; };
+                    document.getElementById('new-trip-from-settings-btn').onclick = () => { document.getElementById('settings-modal').style.display='none'; document.getElementById('new-trip-modal').style.display='flex'; };
                     document.getElementById('new-trip-modal-close-btn').onclick = () => document.getElementById('new-trip-modal').style.display='none';
                     document.getElementById('new-trip-modal-save-btn').onclick = async () => {
                         const name = document.getElementById('new-trip-name').value;
