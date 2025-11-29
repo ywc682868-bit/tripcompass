@@ -29,7 +29,7 @@
     box-shadow: 0 0 10px rgba(0,0,0,0.05);
 }
     #schedule-list-container {
-    padding-top: 185px; /* ✅ 修正：向下推 165px (Header 的高度) */
+    padding-top: 220px; /* ✅ 修正：向下推 165px (Header 的高度) */
     padding-bottom: 40px;
     /* 保留原有的 px-3 pt-0 pb-4 */
     /* 注意：此處可能會覆蓋您 HTML 元素上的內聯 class，但由於 HTML 中沒有 pt-class，所以此設置優先 */
@@ -48,6 +48,13 @@
     background-color: #ffffff; /* 純白背景 */
     z-index: 50; /* 確保浮在行程卡片之上 */
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    height: auto;    
+}
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+        #header-content-wrapper {
+    /* 假設原本的 pt-3 相當於 0.75rem 或 12px */
+    /* 我們將這個 pt-3 替換成動態計算的值 */
+    padding-top: calc(12px + env(safe-area-inset-top)); /* 12px 是基礎留白，加上狀態欄高度 */
 }
     #trip-select { background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%237E92A1' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: right center; background-repeat: no-repeat; background-size: 1.25em 1.25em; -webkit-appearance: none; appearance: none; background-color: transparent; font-weight: 800; color: #4A4B4D; border: none; padding-right: 1.5rem; cursor: pointer; }
     #trip-select:focus { outline: none; }
@@ -178,7 +185,7 @@
 <body>
     <div id="app-container">
         <header>
-            <div id="header-content-wrapper" class="px-3 pt-10 pb-1">
+            <div id="header-content-wrapper" class="px-3 pb-1" style="padding-top: calc(15px + env(safe-area-inset-top));">
                 <div class="flex justify-between items-center mb-1">
                     <div class="flex flex-col justify-center flex-grow min-w-0 mr-2">
                         <div class="flex flex-col items-start">
@@ -1000,6 +1007,7 @@
     </script>
 </body>
 </html>
+
 
 
 
