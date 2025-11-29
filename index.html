@@ -12,27 +12,9 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
     /* --- 全域設定 --- */
-    body { 
-        font-family: 'Inter', sans-serif; 
-        background-color: #f7f7f7; 
-        margin: 0; 
-        padding: 0; 
-        color: #5F6368; 
-        overflow-x: hidden; 
-    }
+    body { font-family: 'Inter', sans-serif; background-color: #f7f7f7; margin: 0; padding: 0; color: #5F6368; overflow-x: hidden; }
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-    /* ✅ 修正：定義安全區域變數，並計算 Header 內容區高度 */
-    :root {
-        /* 獲取狀態列高度，如果不存在則默認 20px */
-        --safe-top: constant(safe-area-inset-top, 20px);
-        --safe-top-var: env(safe-area-inset-top, 20px);
-        --content-height: 120px; /* Header 內容區的估計高度 */
-        /* Header 總高度 = 內容高度 + 狀態列高度 */
-        --header-total-height: calc(var(--content-height) + var(--safe-top-var));
-        --header-total-height-fallback: calc(var(--content-height) + var(--safe-top));
-    }
     
     /* --- 容器與佈局 --- */
     #app-container { 
@@ -40,9 +22,8 @@
         margin: 0 auto; 
         min-height: 100vh; 
         background-color: white; 
-        /* ✅ 修正：padding-top 應為 Header 總高度 */
-        padding-top: var(--header-total-height);
-        padding-top: var(--header-total-height-fallback);
+        /* 修正：增加頂部填充以避免內容被 Header 遮擋 (原 165px) */
+        padding-top: 185px; 
         padding-bottom: 140px; 
         position: relative; 
         box-shadow: 0 0 10px rgba(0,0,0,0.05); 
@@ -53,14 +34,14 @@
     position: fixed; 
     top: 0; 
     
-    /* ✅ 修正置中：使用 left/right/margin 確保置中 */
+    /* ✅ 修正置中：改用 left/right/margin 方式，避免與 transform 衝突 */
     left: 0; 
     right: 0; 
     margin: 0 auto;
     
     width: 100%; 
     max-width: 500px; 
-    background-color: #ffffff; /* 純白背景 (白色狀態列的關鍵) */
+    background-color: #ffffff; /* 純白背景 */
     z-index: 50; 
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 
@@ -69,31 +50,7 @@
     transform: translate3d(0, 0, 0); 
     -webkit-backface-visibility: hidden;
     backface-visibility: hidden;
-
-    /* ✅ 修正：Header 總高度 */
-    height: var(--header-total-height);
-    height: var(--header-total-height-fallback);
-}
-
-    /* Header 內容包裹層：用於確保內容從安全區開始顯示 */
-    #header-content-wrapper {
-        padding-right: 0.75rem; /* px-3 */
-        padding-left: 0.75rem; /* px-3 */
-        padding-bottom: 0.25rem; /* pb-1 */
-        
-        /* ✅ 修正：讓 Header 內容從安全區下方開始 */
-        position: absolute;
-        top: var(--safe-top-var);
-        top: var(--safe-top);
-        left: 0;
-        right: 0;
-        bottom: 0;
-        overflow: visible;
-
-        /* 確保 Tailwind 的 pt-3 class 被覆蓋 */
-        padding-top: 12px !important; /* 確保內容有合理的頂部內邊距 */
-        box-sizing: border-box; 
-    }
+    }
 
     #trip-select { background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%237E92A1' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: right center; background-repeat: no-repeat; background-size: 1.25em 1.25em; -webkit-appearance: none; appearance: none; background-color: transparent; font-weight: 800; color: #4A4B4D; border: none; padding-right: 1.5rem; cursor: pointer; }
     #trip-select:focus { outline: none; }
@@ -117,7 +74,7 @@
         z-index: 0; /* 建立堆疊環境，確保子元素的 z-index -1 不會跑到 body 背景後面 */
     }
 
-    /* 串連線 (Pseudo-element) - 修正：莫蘭迪咖啡色，並保持最下層，縮短長度 */
+    /* 串連線 (Pseudo-element) - ✅ 修正：改為莫蘭迪咖啡色，並保持最下層，縮短長度 */
     .trip-card::before {
         content: '';
         position: absolute;
@@ -222,7 +179,7 @@
 <body>
     <div id="app-container">
         <header>
-                        <div id="header-content-wrapper" class="flex flex-col">
+                        <div id="header-content-wrapper" class="px-3 pt-8 pb-1">
                 <div class="flex justify-between items-center mb-1">
                     <div class="flex flex-col justify-center flex-grow min-w-0 mr-2">
                         <div class="flex flex-col items-start">
@@ -271,6 +228,23 @@
                 <input type="text" id="bar-calc-result" readonly value="0" class="w-12 h-6 p-0 border-none bg-transparent text-[#7E92A1] font-extrabold text-left focus:outline-none truncate pl-1">
             </div>
         </div>
+
+        <div class="flex justify-between items-center w-full px-2 py-1.5">
+             <button id="btn-lists" class="flex-1 flex flex-row items-center justify-center gap-2 text-[#888888] hover:text-[#7E92A1]">
+                 <span class="text-xl leading-none">📝</span>
+                 <span class="text-[12px] font-bold leading-none">清單</span>
+             </button>
+             
+             <div class="flex-none px-4">
+                 <button id="center-add-btn" class="prominent-integrated-btn shadow-md">＋</button>
+             </div>
+             
+             <button id="split-expense-btn" class="flex-1 flex flex-row items-center justify-center gap-2 text-[#888888] hover:text-[#8F9E8B]">
+                 <span class="text-xl leading-none">💰</span>
+                 <span class="text-[12px] font-bold leading-none">花費</span>
+             </button>
+        </div>
+    </div>
 
     <div id="add-schedule-modal" class="modal-overlay hidden">
         <div class="bg-white rounded-xl shadow-2xl p-3 w-11/12 max-w-sm max-h-[90vh] overflow-y-auto relative"></div>
@@ -796,6 +770,7 @@
                     if(addScheduleModalContent) {
                         addScheduleModalContent.innerHTML = `
                             <h3 class="text-base font-bold mb-2 text-[#4A4B4D] pr-8 truncate"> <span id="add-schedule-modal-title">新增行程</span>
+        146
                             </h3>
                             <button id="modal-close-btn" class="absolute top-3 right-3 text-[#A9A9A9] hover:text-[#5F6368] text-2xl leading-none w-6 h-6 flex items-center justify-center">×</button>
                             <form id="add-schedule-form" class="space-y-2">
