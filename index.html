@@ -20,25 +20,25 @@
     #app-container { max-width: 500px; margin: 0 auto; min-height: 100vh; background-color: white; padding-top: 165px; padding-bottom: 140px; position: relative; box-shadow: 0 0 10px rgba(0,0,0,0.05); }
     
     /* --- Header 固定區 --- */
-    header {
-    position: fixed;
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 100%;
-    max-width: 500px;
-    background-color: #ffffff; /* 純白背景 */
-    z-index: 50;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    header { 
+    position: fixed; 
+    top: 0; 
+    left: 50%; 
     
-    /* === 修正 PWA 模式浮動/抖動的關鍵新增屬性 === */
-    /* 強制 GPU 加速，提升 fixed 元素在滾動時的穩定性 */
-    -webkit-transform: translate3d(0, 0, 0); 
-    transform: translate3d(0, 0, 0); 
-    /* 針對 WebKit 優化，防止背面圖形閃爍或渲染錯誤 */
+    /* === 修正：合併置中與 GPU 加速的 transform 屬性 === */
+    /* 確保置中 (-50%) 和 GPU 加速 (translate3d(0, 0, 0)) 同時生效 */
+    -webkit-transform: translateX(-50%) translate3d(0, 0, 0); 
+    transform: translateX(-50%) translate3d(0, 0, 0); 
+
+    width: 100%; 
+    max-width: 500px; 
+    background-color: #ffffff; /* 純白背景 */
+    z-index: 50; 
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+
+    /* WebKit 優化 */
     -webkit-backface-visibility: hidden;
     backface-visibility: hidden;
-    /* ======================================= */
 }
     #trip-select { background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%237E92A1' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: right center; background-repeat: no-repeat; background-size: 1.25em 1.25em; -webkit-appearance: none; appearance: none; background-color: transparent; font-weight: 800; color: #4A4B4D; border: none; padding-right: 1.5rem; cursor: pointer; }
     #trip-select:focus { outline: none; }
@@ -967,6 +967,7 @@
     </script>
 </body>
 </html>
+
 
 
 
