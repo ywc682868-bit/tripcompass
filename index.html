@@ -655,7 +655,7 @@
                 
                 const inner = document.createElement('div'); 
                 if(listData.type === 'check') inner.className = 'grid grid-cols-2 gap-2 pb-12';
-                else inner.className = 'space-y-2 pb-12';
+                else inner.className = 'space-y-1 pb-12';
 
                 const items = Array.isArray(listData.items) ? listData.items : [];
                 items.forEach((item, idx) => {
@@ -1014,6 +1014,7 @@
     </script>
 </body>
 </html>
+
 
 
 
