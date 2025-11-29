@@ -52,13 +52,13 @@
             position: relative; 
         }
         
-        /* 置中的垂直分隔線 */
+        /* 置中的垂直分隔線 (上下留白 15%) */
         .card-right-col::before {
             content: '';
             position: absolute;
             left: 0;
-            top: 0; 
-            bottom: 0;
+            top: 15%;    /* 上方留白 */
+            bottom: 15%; /* 下方留白 */
             width: 1px;
             background-color: #C0C0C0;
         }
@@ -300,9 +300,9 @@
                 const content = document.createElement('div');
                 content.className = 'swipe-item-content flex w-full bg-white overflow-hidden relative items-stretch h-full z-10';
                 
-                // ⚠️ 關鍵修正：直接在 element 上強制加入 border-radius 樣式，確保圓角顯示正確
+                // ⚠️ 移除左側圓角，確保完全貼合
                 content.innerHTML = `
-                    <div class="${config.bg} w-14 flex-none flex flex-col items-center justify-start gap-2 text-white relative z-10 h-full py-3" style="border-top-left-radius: 0.75rem; border-bottom-left-radius: 0.75rem;">
+                    <div class="${config.bg} w-14 flex-none flex flex-col items-center justify-start gap-2 text-white relative z-10 h-full py-3">
                         <span class="text-[10px] font-bold tracking-tight leading-none">${schedule.Time}</span>
                         <span class="text-2xl leading-none mb-1">${style.icon}</span>
                         <span class="text-[9px] font-medium opacity-90 leading-none">${CATEGORY_NAMES[schedule.Type] || schedule.Type}</span>
@@ -689,11 +689,7 @@
                 let total=0, types={}, mems={};
                 snap.forEach(d => {
                     const da = d.data(); const tTWD = (da.Amount||0)*(da.Rate||1);
-                    if(tTWD>0) { total+=tTWD; types[da.Type]=(types[da.Type]||0)+tTWD; let spSum=0, unSpUsers=[]; (da.members||[]).forEach(m=>{ const amt = typeof m==='string'?null:m.amount; const name = typeof m==='string'?m:m.name; if(amt!==null && !isNaN(amt)) { 
-                        // 修改：判斷 isTwdSplit 決定是否要乘匯率
-                        const finalAmt = (da.isTwdSplit ? amt : amt * (da.Rate||1));
-                        spSum+=finalAmt; addMemExp(mems, name, da.Type, finalAmt); 
-                    } else unSpUsers.push(name); }); if(unSpUsers.length) { const split = ((da.Amount||0)*(da.Rate||1)-spSum)/unSpUsers.length; unSpUsers.forEach(u=>addMemExp(mems, u, da.Type, split)); } }
+                    if(tTWD>0) { total+=tTWD; types[da.Type]=(types[da.Type]||0)+tTWD; let spSum=0, unSpUsers=[]; (da.members||[]).forEach(m=>{ const amt = typeof m==='string'?null:m.amount; const name = typeof m==='string'?m:m.name; if(amt!==null && !isNaN(amt)) { spSum+=amt; addMemExp(mems, name, da.Type, amt*(da.Rate||1)); } else unSpUsers.push(name); }); if(unSpUsers.length) { const split = ((da.Amount||0)-spSum)*(da.Rate||1)/unSpUsers.length; unSpUsers.forEach(u=>addMemExp(mems, u, da.Type, split)); } }
                 });
                 function addMemExp(s, n, t, a) { if(!s[n]) s[n]={total:0, cats:{}}; s[n].total+=a; s[n].cats[t]=(s[n].cats[t]||0)+a; }
                 document.getElementById('expense-total-amount').textContent = total.toFixed(0);
