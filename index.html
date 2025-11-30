@@ -374,9 +374,8 @@
                     memberHtml += `</div>`;
                 }
 
-                // ✅ 修改 1: 必去標籤 HTML
-                // 使用 mt-auto (自動置底) 和 justify-end (靠右對齊)
-                const mustGoHtml = schedule.MustGo ? `<div class="mt-auto w-full flex justify-end"><span class="text-[9px] text-[#CB8572] border border-[#CB8572] px-1 rounded-[2px] leading-none font-normal">必去</span></div>` : '';
+                // ✅ 修正調整：加入 mb-1 (底部留白) 和 mr-1 (右側留白)，讓標籤不要貼死邊緣
+                const mustGoHtml = schedule.MustGo ? `<div class="mt-auto w-full flex justify-end mb-1 mr-1"><span class="text-[9px] text-[#CB8572] border border-[#CB8572] px-1 rounded-[2px] leading-none font-normal">必去</span></div>` : '';
 
                 const card = document.createElement('div');
                 card.className = 'trip-card flex w-full mb-3 relative min-h-[75px]'; 
@@ -1072,6 +1071,7 @@
     </script>
 </body>
 </html>
+
 
 
 
