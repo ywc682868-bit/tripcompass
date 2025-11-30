@@ -709,7 +709,8 @@
                         bg.innerHTML = `<button class="px-2 py-1 h-full text-xs font-bold bg-[#CB8572] text-white" data-action="delete">刪除</button>`;
                         
                         const c = document.createElement('div'); 
-                        c.className = 'swipe-item-content p-2 border border-gray-100 bg-white relative';
+                        // ✅ 修改 1: 減少內距 padding (p-2 -> p-1.5)
+                        c.className = 'swipe-item-content p-1.5 border border-gray-100 bg-white relative';
                         
                         if(listData.type==='check') {
                              c.style.cssText = "display:flex; align-items:center; gap:4px; padding:6px; border:1px solid #f0f0f0; border-radius:8px; background:white;";
@@ -757,7 +758,8 @@
                              imgContainer.onclick = () => { if (item.imageUrl) { document.getElementById('zoom-img').src = item.imageUrl; document.getElementById('image-zoom-modal').style.display = 'flex'; } else { fileInput.click(); } };
                              fileInput.onchange = (e) => { if(!e.target.files[0]) return; const fr = new FileReader(); fr.onload = (ev) => { const img = new Image(); img.onload = () => { const cvs = document.createElement('canvas'); const scale = 300 / img.width; cvs.width = 300; cvs.height = img.height * scale; cvs.getContext('2d').drawImage(img, 0, 0, cvs.width, cvs.height); updateListItem(listData, idx, {imageUrl: cvs.toDataURL("image/jpeg", 0.7)}); }; img.src = ev.target.result; }; fr.readAsDataURL(e.target.files[0]); };
 
-                             const midCol = document.createElement('div'); midCol.style.cssText = 'display:flex; flex-direction:column; gap:4px; width:100%;';
+                             // ✅ 修改 2: 減少中間欄位的文字間距 (gap:4px -> gap:2px)
+                             const midCol = document.createElement('div'); midCol.style.cssText = 'display:flex; flex-direction:column; gap:2px; width:100%;';
                              const nameInput = document.createElement('input'); nameInput.type = 'text'; nameInput.className = 'compact-input'; nameInput.placeholder = '品名'; nameInput.value = item.text || ''; nameInput.style.cssText = 'width:100%; font-weight:bold; border:none; padding:0; height:auto;';
                              nameInput.onchange = (e) => updateListItem(listData, idx, {text: e.target.value});
                              const descInput = document.createElement('textarea'); descInput.className = 'compact-input'; descInput.placeholder = '說明'; descInput.value = item.desc || ''; descInput.rows = 2; descInput.style.cssText = 'width:100%; border:none; padding:0; resize:none; font-size:10px; height:auto;';
@@ -769,7 +771,8 @@
                              locInput.placeholder = '地點'; 
                              locInput.value = item.location || ''; 
                              locInput.rows = 3; 
-                             locInput.style.cssText = 'width:100%; height:54px; border:1px solid #eee; background:#f9f9f9; padding:4px; resize:none; border-radius:4px; font-size:10px; line-height:1.2;';
+                             // ✅ 修改 3: 縮小地點欄位高度 (54px -> 50px)，跟左邊圖片高度一樣，消除下方留白
+                             locInput.style.cssText = 'width:100%; height:50px; border:1px solid #eee; background:#f9f9f9; padding:4px; resize:none; border-radius:4px; font-size:10px; line-height:1.2;';
                              locInput.onchange = (e) => updateListItem(listData, idx, {location: e.target.value});
                              
                              c.appendChild(imgContainer); c.appendChild(midCol); c.appendChild(locInput); c.appendChild(fileInput);
@@ -781,7 +784,6 @@
                 });
                 container.appendChild(inner);
             }
-
             async function updateListItem(l, i, chg) { 
                 try {
                     const currentItems = Array.isArray(l.items) ? l.items : []; const ni = [...currentItems]; 
@@ -1078,6 +1080,7 @@
     </script>
 </body>
 </html>
+
 
 
 
