@@ -133,7 +133,7 @@
     /* 第一張卡片的線不要向上凸出 - 保持不變 */
     .trip-card:first-child::before { 
     /* 假設 margin-top 是 250px。將 top 設為負值，讓線條向上延伸 250px */
-    top: 0px;    /* ✅ 修正：讓線條向上延伸，填滿 Header 下方的空白區域 */
+    top: -60px;    /* ✅ 修正：讓線條向上延伸，填滿 Header 下方的空白區域 */
     bottom: -6px; /* 保持與預設 Timeline 一致，避免與下方卡片間距拉長衝突 */
     height: auto; 
 }
@@ -1062,6 +1062,7 @@
     </script>
 </body>
 </html>
+
 
 
 
