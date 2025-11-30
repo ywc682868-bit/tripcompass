@@ -374,10 +374,9 @@
                     memberHtml += `</div>`;
                 }
 
-                // 必去標籤 HTML
-                const mustGoBadge = schedule.MustGo 
-                    ? `<span class="ml-1.5 inline-block text-[9px] text-[#CB8572] border border-[#CB8572] rounded px-1 py-[0px] font-normal leading-normal whitespace-nowrap self-center" style="transform: translateY(-1px);">必去</span>` 
-                    : '';
+                // ✅ 修正 1: 統一使用 'schedule.MustGo' (資料庫欄位)，而非 'isMustGo'
+                // 並且刪除了您原本代碼中重複定義的 mustGoBadge
+                const mustGoHtml = schedule.MustGo ? `<span class="text-[8px] text-[#CB8572] border border-[#CB8572] px-1 rounded-[2px] ml-1 whitespace-nowrap font-normal self-center">必去</span>` : '';
 
                 const card = document.createElement('div');
                 card.className = 'trip-card flex w-full mb-3 relative min-h-[75px]'; 
@@ -401,13 +400,18 @@
                         <span class="text-[9px] font-medium opacity-90 leading-none">${CATEGORY_NAMES[schedule.Type] || schedule.Type}</span>
                     </div>
                     <div class="flex-grow py-2 pl-2 pr-1 flex flex-col justify-start min-w-0 relative">
+                        
                         <div class="flex justify-between items-start w-full">
-                            <h3 class="text-xs font-bold text-[#4A4B4D] leading-tight mb-0.5 flex-grow flex items-center flex-wrap">
-                                <a href="#" class="location-link map-link hover:underline mr-0.5">${schedule.Location}</a>
-                                ${mustGoBadge}
-                            </h3>
+                            <div class="flex flex-wrap items-center flex-grow mr-1">
+                                <h3 class="text-xs font-bold text-[#4A4B4D] leading-tight mb-0">
+                                    <a href="#" class="location-link map-link hover:underline">${schedule.Location}</a>
+                                </h3>
+                                ${mustGoHtml}
+                            </div>
+
                             ${memberHtml}
                         </div>
+                        
                         <p class="text-[#888888] text-[10px] line-clamp-4 whitespace-pre-wrap leading-normal mt-0.5">${schedule.說明 || ''}</p>
                     </div>
                     
@@ -1072,4 +1076,5 @@
     </script>
 </body>
 </html>
+
 
