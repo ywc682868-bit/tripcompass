@@ -36,8 +36,25 @@
     position: relative; /* 確保定位正確 */
     z-index: 1; 
 }
-
-/* 新增規則: 讓列表裡的第一個卡片有足夠的空間避開 Header */
+    #schedule-list-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    /* 高度設定：必須大於 padding-top (250px) + 第一張卡片的 margin-top */
+    /* 因為您的代碼中 padding-top 是 250px 且第一張卡片 margin-top 也是 250px，總空隙很大，設 600px 確保覆蓋 */
+    height: 600px; 
+    background-color: white;
+    
+    /* 關鍵：z-index 設為 -2 */
+    /* 因為 Timeline 線條是 -1，卡片是 0。設為 -2 可以確保線條顯示在白色背景上 */
+    z-index: -2; 
+    
+    /* (選用) 如果希望白色背景底部有漸層消失到灰色，可改用下面這行，否則保留 background-color: white 即可 */
+    /* background: linear-gradient(to bottom, #ffffff 90%, rgba(247,247,247,0) 100%); */
+}    
+    /* 新增規則: 讓列表裡的第一個卡片有足夠的空間避開 Header */
 #schedule-list-container .trip-card:first-child {
     margin-top: 250px; 
 }
@@ -1017,6 +1034,7 @@
     </script>
 </body>
 </html>
+
 
 
 
