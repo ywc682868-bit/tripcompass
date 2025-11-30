@@ -374,9 +374,9 @@
                     memberHtml += `</div>`;
                 }
 
-                // ✅ 修正 1: 統一使用 'schedule.MustGo' (資料庫欄位)，而非 'isMustGo'
-                // 並且刪除了您原本代碼中重複定義的 mustGoBadge
-                const mustGoHtml = schedule.MustGo ? `<span class="text-[8px] text-[#CB8572] border border-[#CB8572] px-1 rounded-[2px] ml-1 whitespace-nowrap font-normal self-center">必去</span>` : '';
+                // ✅ 修改 1: 必去標籤 HTML (外層加 mt-auto 讓它自動置底)
+                // 修正讀取變數為 schedule.MustGo
+                const mustGoHtml = schedule.MustGo ? `<div class="mt-auto pt-1"><span class="text-[9px] text-[#CB8572] border border-[#CB8572] px-1 rounded-[2px] inline-block leading-none font-normal">必去</span></div>` : '';
 
                 const card = document.createElement('div');
                 card.className = 'trip-card flex w-full mb-3 relative min-h-[75px]'; 
@@ -399,20 +399,19 @@
                         <span class="text-2xl leading-none mb-1">${style.icon}</span>
                         <span class="text-[9px] font-medium opacity-90 leading-none">${CATEGORY_NAMES[schedule.Type] || schedule.Type}</span>
                     </div>
+                    
                     <div class="flex-grow py-2 pl-2 pr-1 flex flex-col justify-start min-w-0 relative">
                         
                         <div class="flex justify-between items-start w-full">
-                            <div class="flex flex-wrap items-center flex-grow mr-1">
-                                <h3 class="text-xs font-bold text-[#4A4B4D] leading-tight mb-0">
-                                    <a href="#" class="location-link map-link hover:underline">${schedule.Location}</a>
-                                </h3>
-                                ${mustGoHtml}
-                            </div>
-
+                            <h3 class="text-xs font-bold text-[#4A4B4D] leading-tight mb-0.5 flex-grow mr-1">
+                                <a href="#" class="location-link map-link hover:underline">${schedule.Location}</a>
+                            </h3>
                             ${memberHtml}
                         </div>
                         
                         <p class="text-[#888888] text-[10px] line-clamp-4 whitespace-pre-wrap leading-normal mt-0.5">${schedule.說明 || ''}</p>
+                        
+                        ${mustGoHtml}
                     </div>
                     
                     <div class="card-right-col">
@@ -434,7 +433,6 @@
                 enableSwipeToDelete(content, swipeActions, 'schedule');
                 return card;
             }
-
             const loadSchedules = function(tripId, dayId) {
                 if (unsubscribeSchedule) unsubscribeSchedule();
                 const container = document.getElementById('schedule-list-container'); container.innerHTML = '<div class="p-4 text-center text-[#A9A9A9] text-xs">載入中...</div>';
@@ -1076,5 +1074,6 @@
     </script>
 </body>
 </html>
+
 
 
