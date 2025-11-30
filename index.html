@@ -11,6 +11,16 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
+    html {
+    /* 開啟 Y 軸的滾動吸附，proximity 代表「接近時才吸附」，比較自然 */
+    scroll-snap-type: y proximity;
+    
+    /* 讓吸附點偏移 240px，剛好避開 Header 區域 */
+    scroll-padding-top: 240px;
+    
+    /* 讓滾動更滑順 */
+    scroll-behavior: smooth;
+}
     /* --- 全域設定 --- */
     body { font-family: 'Inter', sans-serif; background-color: #f7f7f7; margin: 0; padding: 0; color: #5F6368; overflow-x: hidden; }
     .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -99,7 +109,12 @@
         min-height: 85px; 
         display: flex; 
         z-index: 0; /* 建立堆疊環境，確保子元素的 z-index -1 不會跑到 body 背景後面 */
-    }
+    /* 新增：告訴瀏覽器這張卡片的頂端是吸附點 */
+    scroll-snap-align: start;
+    
+    /* 新增：多留一點點緩衝空間，不要吸得太死 */
+    scroll-margin-top: 10px;
+}
 
     /* 串連線 (Pseudo-element) - 修正：改為莫蘭迪咖啡色，並保持最下層 */
     .trip-card::before {
@@ -1034,6 +1049,7 @@
     </script>
 </body>
 </html>
+
 
 
 
