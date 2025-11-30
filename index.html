@@ -367,8 +367,6 @@
                 
                 let memberHtml = '';
                 if (members.length > 0) {
-                    // ✅ 修改 1: 成員名單不換行 (flex-nowrap)，超出則隱藏 (overflow-hidden)
-                    // 這樣保證高度不會被成員名單撐開
                     memberHtml = `<div class="flex flex-nowrap overflow-hidden justify-end gap-x-1.5 ml-2 max-w-[120px]">`;
                     members.forEach((m, i) => {
                          memberHtml += `<span class="${MEMBER_COLORS[i % MEMBER_COLORS.length]} text-[10px] font-bold whitespace-nowrap">${typeof m === 'string' ? m : m.name}</span>`;
@@ -376,17 +374,16 @@
                     memberHtml += `</div>`;
                 }
 
-                // ✅ 修改 2: 必去標籤設定
-                // justify-start: 靠左對齊 (對齊金額)
-                // mb-1.5: 稍微往上墊一點，不要貼到底部邊緣
                 const mustGoHtml = schedule.MustGo ? `<div class="mt-auto w-full flex justify-start mb-1.5"><span class="text-[9px] text-[#CB8572] border border-[#CB8572] px-1 rounded-[2px] leading-none font-normal bg-white">必去</span></div>` : '';
 
                 const card = document.createElement('div');
-                // ✅ 修改 3: 設定固定高度 h-[100px] (原本是 min-h)，並加上 overflow-hidden
-                // 這確保了卡片永遠是 100px 高，左側色塊永遠填滿，不會有白邊
-                card.className = 'trip-card flex w-full mb-3 relative h-[100px] overflow-hidden'; 
+                
+                // ✅ 關鍵修正：這裡移除了 'overflow-hidden'
+                // 保留 'h-[100px]' 確保高度固定，但允許線條(::before)和陰影顯示在框外
+                card.className = 'trip-card flex w-full mb-3 relative h-[100px]'; 
                 
                 const visualWrapper = document.createElement('div');
+                // 內層 wrapper 已經有 CSS class 設定 overflow: hidden，所以內容不會跑出來
                 visualWrapper.className = 'trip-card-visual-wrapper';
 
                 const swipeActions = document.createElement('div');
@@ -396,7 +393,6 @@
                 visualWrapper.appendChild(swipeActions);
 
                 const content = document.createElement('div');
-                // 確保內容層也是 100% 高度
                 content.className = 'swipe-item-content flex w-full bg-white relative items-stretch h-full z-10';
                 
                 content.innerHTML = `
@@ -1082,6 +1078,7 @@
     </script>
 </body>
 </html>
+
 
 
 
