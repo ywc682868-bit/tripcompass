@@ -712,7 +712,7 @@
                         c.className = 'swipe-item-content p-1.5 border border-gray-100 bg-white relative';
                         
                         if(listData.type==='check') {
-                             // --- 檢查清單 (維持不變) ---
+                             // --- 檢查清單 (保持不變) ---
                              c.style.cssText = "display:flex; align-items:center; gap:4px; padding:6px; border:1px solid #f0f0f0; border-radius:8px; background:white;";
                              c.innerHTML = `
                                 <div style="display:flex; gap:4px; flex-shrink:0;">
@@ -733,15 +733,17 @@
                              inner.appendChild(c);
 
                         } else {
-                             // --- 購物清單 (主要修改處) ---
+                             // --- 購物清單 (修改重點) ---
                              
-                             // 1. 設定 4 欄位 Grid 佈局: 圖片(50px) | 文字(自動) | 地點(65px) | 刪除鈕(25px)
+                             // 1. Grid 設定: 
+                             // 50px(圖) | 1fr(文) | 80px(地點變寬) | 20px(叉叉)
                              c.style.display = 'grid'; 
-                             c.style.gridTemplateColumns = '50px 1fr 65px 25px'; 
+                             c.style.gridTemplateColumns = '50px 1fr 80px 20px'; 
                              c.style.gap = '4px'; 
-                             c.style.alignItems = 'center'; // 垂直置中
+                             c.style.alignItems = 'center'; // ✅ 垂直置中 (讓叉叉下移到中間)
+                             c.style.paddingRight = '2px';  // ✅ 右側留白縮小 (讓叉叉靠右)
                              
-                             // 2. 圖片區塊
+                             // 2. 圖片
                              const imgContainer = document.createElement('div'); imgContainer.className = 'shopping-img-box';
                              imgContainer.style.cssText = 'width:50px; height:50px; overflow:hidden; border-radius:4px; background:#f0f0f0; display:flex; justify-content:center; align-items:center; cursor:pointer; border:1px dashed #ccc;';
                              if (item.imageUrl) { const img = document.createElement('img'); img.src = item.imageUrl; img.style.cssText = 'width:100%; height:100%; object-fit:cover;'; imgContainer.appendChild(img); } 
@@ -750,41 +752,37 @@
                              imgContainer.onclick = () => { if (item.imageUrl) { document.getElementById('zoom-img').src = item.imageUrl; document.getElementById('image-zoom-modal').style.display = 'flex'; } else { fileInput.click(); } };
                              fileInput.onchange = (e) => { if(!e.target.files[0]) return; const fr = new FileReader(); fr.onload = (ev) => { const img = new Image(); img.onload = () => { const cvs = document.createElement('canvas'); const scale = 300 / img.width; cvs.width = 300; cvs.height = img.height * scale; cvs.getContext('2d').drawImage(img, 0, 0, cvs.width, cvs.height); updateListItem(listData, idx, {imageUrl: cvs.toDataURL("image/jpeg", 0.7)}); }; img.src = ev.target.result; }; fr.readAsDataURL(e.target.files[0]); };
 
-                             // 3. 中間文字區塊 (固定高度 50px，內容上下分佈)
+                             // 3. 中間文字
                              const midCol = document.createElement('div'); 
                              midCol.style.cssText = 'display:flex; flex-direction:column; justify-content:space-between; height:50px; padding-top:1px; padding-bottom:1px;';
-                             
                              const nameInput = document.createElement('input'); nameInput.type = 'text'; nameInput.className = 'compact-input'; nameInput.placeholder = '品名'; nameInput.value = item.text || ''; 
                              nameInput.style.cssText = 'width:100%; font-weight:bold; border:none; padding:0; height:22px; font-size:13px;';
                              nameInput.onchange = (e) => updateListItem(listData, idx, {text: e.target.value});
-                             
                              const descInput = document.createElement('textarea'); descInput.className = 'compact-input'; descInput.placeholder = '說明'; descInput.value = item.desc || ''; 
-                             // 設定固定高度 26px，剛好填滿剩餘空間，消除下方留白
                              descInput.style.cssText = 'width:100%; border:none; padding:0; resize:none; font-size:11px; height:26px; line-height:1.3; overflow:hidden; color:#888;';
                              descInput.onchange = (e) => updateListItem(listData, idx, {desc: e.target.value});
-                             
                              midCol.appendChild(nameInput); midCol.appendChild(descInput);
                              
-                             // 4. 地點欄位 (固定高度 50px)
+                             // 4. 地點欄位
                              const locInput = document.createElement('textarea'); 
                              locInput.className = 'compact-input'; 
                              locInput.placeholder = '地點'; 
                              locInput.value = item.location || ''; 
+                             // 高度 50px 與圖片切齊
                              locInput.style.cssText = 'width:100%; height:50px; border:1px solid #eee; background:#f9f9f9; padding:4px; resize:none; border-radius:4px; font-size:10px; line-height:1.2;';
                              locInput.onchange = (e) => updateListItem(listData, idx, {location: e.target.value});
                              
-                             // 5. 刪除按鈕 (改為 Grid 的第 4 欄)
+                             // 5. 刪除按鈕 (垂直置中)
                              const delBtnDesktop = document.createElement('div');
                              delBtnDesktop.className = 'desktop-del-btn';
                              delBtnDesktop.innerHTML = '×';
-                             // 移除 absolute，改用 flex 居中
                              delBtnDesktop.style.cssText = "width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#CB8572; font-weight:bold; cursor:pointer; font-size:18px;";
                              delBtnDesktop.onclick = (e) => { e.stopPropagation(); deleteListItem(listData, idx); };
 
                              c.appendChild(imgContainer); 
                              c.appendChild(midCol); 
                              c.appendChild(locInput); 
-                             c.appendChild(delBtnDesktop); // 放在最後
+                             c.appendChild(delBtnDesktop);
                              c.appendChild(fileInput);
 
                              wrap.appendChild(bg); wrap.appendChild(c); inner.appendChild(wrap);
@@ -1090,6 +1088,7 @@
     </script>
 </body>
 </html>
+
 
 
 
