@@ -16,7 +16,7 @@
     scroll-snap-type: y proximity;
     
     /* 讓吸附點偏移 240px，剛好避開 Header 區域 */
-    scroll-padding-top: 240px;
+    scroll-padding-top: 170px;
     
     /* 讓滾動更滑順 */
     scroll-behavior: smooth;
@@ -40,7 +40,7 @@
    #schedule-list-container {
     /* ❌ 移除或註釋掉 margin-top: -50px; 之類的負值設定 */
     /* 關鍵修復：設置 Padding Top，將所有可滾動內容向下推 */
-    padding-top: 220px; /* ✅ 修正：使用足夠大的數值將內容推到 Header 固定區下方 */
+    padding-top: 170px; /* ✅ 修正：使用足夠大的數值將內容推到 Header 固定區下方 */
     padding-bottom: 40px;
     margin-top: 0; /* 確保沒有負邊距 */
     position: relative; /* 確保定位正確 */
@@ -133,7 +133,7 @@
     /* 第一張卡片的線不要向上凸出 - 保持不變 */
     .trip-card:first-child::before { 
     /* 假設 margin-top 是 250px。將 top 設為負值，讓線條向上延伸 250px */
-    top: -60px;    /* ✅ 修正：讓線條向上延伸，填滿 Header 下方的空白區域 */
+    top: 0px;    /* ✅ 修正：讓線條向上延伸，填滿 Header 下方的空白區域 */
     bottom: -6px; /* 保持與預設 Timeline 一致，避免與下方卡片間距拉長衝突 */
     height: auto; 
 }
@@ -199,6 +199,19 @@
         .desktop-del-btn { display: block !important; }
     }
     @media (max-width: 500px) {
+        html {
+        scroll-padding-top: 240px; 
+    }
+
+    /* 覆蓋容器設定：推得更下面 */
+    #schedule-list-container {
+        padding-top: 240px; 
+    }
+
+    /* 覆蓋線條設定：因為推得遠，線要往上拉長才連得到日期 */
+    .trip-card:first-child::before {
+        top: -60px; 
+    }
         .trip-card .content-text-block { margin-top: 8px; }
         .desktop-del-btn { display: none !important; } 
         
@@ -1049,6 +1062,7 @@
     </script>
 </body>
 </html>
+
 
 
 
