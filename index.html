@@ -374,9 +374,9 @@
                     memberHtml += `</div>`;
                 }
 
-                // ✅ 修改 1: 必去標籤 HTML (外層加 mt-auto 讓它自動置底)
-                // 修正讀取變數為 schedule.MustGo
-                const mustGoHtml = schedule.MustGo ? `<div class="mt-auto pt-1"><span class="text-[9px] text-[#CB8572] border border-[#CB8572] px-1 rounded-[2px] inline-block leading-none font-normal">必去</span></div>` : '';
+                // ✅ 修改 1: 必去標籤 HTML
+                // 使用 mt-auto (自動置底) 和 justify-end (靠右對齊)
+                const mustGoHtml = schedule.MustGo ? `<div class="mt-auto w-full flex justify-end"><span class="text-[9px] text-[#CB8572] border border-[#CB8572] px-1 rounded-[2px] leading-none font-normal">必去</span></div>` : '';
 
                 const card = document.createElement('div');
                 card.className = 'trip-card flex w-full mb-3 relative min-h-[75px]'; 
@@ -401,17 +401,13 @@
                     </div>
                     
                     <div class="flex-grow py-2 pl-2 pr-1 flex flex-col justify-start min-w-0 relative">
-                        
                         <div class="flex justify-between items-start w-full">
                             <h3 class="text-xs font-bold text-[#4A4B4D] leading-tight mb-0.5 flex-grow mr-1">
                                 <a href="#" class="location-link map-link hover:underline">${schedule.Location}</a>
                             </h3>
                             ${memberHtml}
                         </div>
-                        
                         <p class="text-[#888888] text-[10px] line-clamp-4 whitespace-pre-wrap leading-normal mt-0.5">${schedule.說明 || ''}</p>
-                        
-                        ${mustGoHtml}
                     </div>
                     
                     <div class="card-right-col">
@@ -421,6 +417,8 @@
                         </div>
                         <div class="flex items-center justify-start w-full"><span class="text-[#8F9E8B] font-bold text-[10px]">💰 TWD$${amountTWD.toFixed(0)}</span></div>
                         <div class="flex items-center justify-start w-full"><span class="text-[#888888] font-bold text-[10px]">👫 TWD$${formatCurrency(perPersonTWD)}</span></div>
+                        
+                        ${mustGoHtml}
                     </div>`;
                 
                 visualWrapper.appendChild(content);
@@ -1074,6 +1072,7 @@
     </script>
 </body>
 </html>
+
 
 
 
