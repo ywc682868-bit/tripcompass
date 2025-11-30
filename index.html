@@ -733,17 +733,16 @@
                              inner.appendChild(c);
 
                         } else {
-                             // --- 購物清單 (修改重點) ---
+                             // --- 購物清單 (微調處) ---
                              
-                             // 1. Grid 設定: 
-                             // 50px(圖) | 1fr(文) | 80px(地點變寬) | 20px(叉叉)
                              c.style.display = 'grid'; 
                              c.style.gridTemplateColumns = '50px 1fr 80px 20px'; 
                              c.style.gap = '4px'; 
-                             c.style.alignItems = 'center'; // ✅ 垂直置中 (讓叉叉下移到中間)
-                             c.style.paddingRight = '2px';  // ✅ 右側留白縮小 (讓叉叉靠右)
+                             c.style.alignItems = 'center'; 
                              
-                             // 2. 圖片
+                             // ✅ 修改 1: 將右邊距設為 0，讓內容能貼到最右邊
+                             c.style.paddingRight = '0px';  
+                             
                              const imgContainer = document.createElement('div'); imgContainer.className = 'shopping-img-box';
                              imgContainer.style.cssText = 'width:50px; height:50px; overflow:hidden; border-radius:4px; background:#f0f0f0; display:flex; justify-content:center; align-items:center; cursor:pointer; border:1px dashed #ccc;';
                              if (item.imageUrl) { const img = document.createElement('img'); img.src = item.imageUrl; img.style.cssText = 'width:100%; height:100%; object-fit:cover;'; imgContainer.appendChild(img); } 
@@ -752,7 +751,6 @@
                              imgContainer.onclick = () => { if (item.imageUrl) { document.getElementById('zoom-img').src = item.imageUrl; document.getElementById('image-zoom-modal').style.display = 'flex'; } else { fileInput.click(); } };
                              fileInput.onchange = (e) => { if(!e.target.files[0]) return; const fr = new FileReader(); fr.onload = (ev) => { const img = new Image(); img.onload = () => { const cvs = document.createElement('canvas'); const scale = 300 / img.width; cvs.width = 300; cvs.height = img.height * scale; cvs.getContext('2d').drawImage(img, 0, 0, cvs.width, cvs.height); updateListItem(listData, idx, {imageUrl: cvs.toDataURL("image/jpeg", 0.7)}); }; img.src = ev.target.result; }; fr.readAsDataURL(e.target.files[0]); };
 
-                             // 3. 中間文字
                              const midCol = document.createElement('div'); 
                              midCol.style.cssText = 'display:flex; flex-direction:column; justify-content:space-between; height:50px; padding-top:1px; padding-bottom:1px;';
                              const nameInput = document.createElement('input'); nameInput.type = 'text'; nameInput.className = 'compact-input'; nameInput.placeholder = '品名'; nameInput.value = item.text || ''; 
@@ -763,20 +761,20 @@
                              descInput.onchange = (e) => updateListItem(listData, idx, {desc: e.target.value});
                              midCol.appendChild(nameInput); midCol.appendChild(descInput);
                              
-                             // 4. 地點欄位
                              const locInput = document.createElement('textarea'); 
                              locInput.className = 'compact-input'; 
                              locInput.placeholder = '地點'; 
                              locInput.value = item.location || ''; 
-                             // 高度 50px 與圖片切齊
                              locInput.style.cssText = 'width:100%; height:50px; border:1px solid #eee; background:#f9f9f9; padding:4px; resize:none; border-radius:4px; font-size:10px; line-height:1.2;';
                              locInput.onchange = (e) => updateListItem(listData, idx, {location: e.target.value});
                              
-                             // 5. 刪除按鈕 (垂直置中)
+                             // ✅ 修改 2: 刪除按鈕樣式調整 (右移 + 下移)
                              const delBtnDesktop = document.createElement('div');
                              delBtnDesktop.className = 'desktop-del-btn';
                              delBtnDesktop.innerHTML = '×';
-                             delBtnDesktop.style.cssText = "width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#CB8572; font-weight:bold; cursor:pointer; font-size:18px;";
+                             // padding-top: 12px (下移)
+                             // padding-left: 5px (右移)
+                             delBtnDesktop.style.cssText = "width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#CB8572; font-weight:bold; cursor:pointer; font-size:18px; padding-top: 12px; padding-left: 5px;";
                              delBtnDesktop.onclick = (e) => { e.stopPropagation(); deleteListItem(listData, idx); };
 
                              c.appendChild(imgContainer); 
@@ -1088,6 +1086,7 @@
     </script>
 </body>
 </html>
+
 
 
 
