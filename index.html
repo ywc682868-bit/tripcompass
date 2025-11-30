@@ -709,10 +709,10 @@
                         bg.innerHTML = `<button class="px-2 py-1 h-full text-xs font-bold bg-[#CB8572] text-white" data-action="delete">刪除</button>`;
                         
                         const c = document.createElement('div'); 
-                        // ✅ 修改 1: 減少內距 padding (p-2 -> p-1.5)
                         c.className = 'swipe-item-content p-1.5 border border-gray-100 bg-white relative';
                         
                         if(listData.type==='check') {
+                             // --- 檢查清單 (維持不變) ---
                              c.style.cssText = "display:flex; align-items:center; gap:4px; padding:6px; border:1px solid #f0f0f0; border-radius:8px; background:white;";
                              c.innerHTML = `
                                 <div style="display:flex; gap:4px; flex-shrink:0;">
@@ -722,34 +722,26 @@
                                 <input type="text" class="check-text compact-input" style="flex-grow:1; min-width:0; border:none; padding:0 2px; text-align:left; font-size:12px; font-weight:bold; color:#5F6368;" placeholder="物品">
                                 <button class="del-btn text-[#CB8572] hover:text-red-600 font-bold px-1" style="font-size:16px; line-height:1;">×</button>
                              `;
-                             
                              const boxL = c.querySelector('.check-left');
                              const txt = c.querySelector('.check-text');
                              const boxR = c.querySelector('.check-right');
                              const delBtn = c.querySelector('.del-btn');
-
                              if(boxL) { boxL.checked = !!item.checkedLeft; boxL.onchange = (e) => updateListItem(listData, idx, {checkedLeft: e.target.checked}); }
                              if(txt) { txt.value = item.text || ''; txt.onchange = (e) => updateListItem(listData, idx, {text: e.target.value}); }
                              if(boxR) { boxR.checked = !!item.checkedRight; boxR.onchange = (e) => updateListItem(listData, idx, {checkedRight: e.target.checked}); }
                              if(delBtn) { delBtn.onclick = () => deleteListItem(listData, idx); } 
-
                              inner.appendChild(c);
 
                         } else {
-                             const delBtnDesktop = document.createElement('div');
-                             delBtnDesktop.className = 'desktop-del-btn';
-                             delBtnDesktop.innerHTML = '×';
-                             delBtnDesktop.style.cssText = "position:absolute; right:5px; top:50%; transform:translateY(-50%); width:15px; height:15px; line-height:15px; text-align:center; color:#CB8572; font-weight:bold; cursor:pointer; font-size:16px; z-index:20;";
-                             delBtnDesktop.onclick = (e) => { e.stopPropagation(); deleteListItem(listData, idx); };
-                             c.appendChild(delBtnDesktop);
-
-                             c.style.paddingRight = "30px"; 
-
-                             c.style.display = 'grid'; 
-                             c.style.gridTemplateColumns = '50px 1fr 80px'; 
-                             c.style.gap = '8px'; 
-                             c.style.alignItems = 'start';
+                             // --- 購物清單 (主要修改處) ---
                              
+                             // 1. 設定 4 欄位 Grid 佈局: 圖片(50px) | 文字(自動) | 地點(65px) | 刪除鈕(25px)
+                             c.style.display = 'grid'; 
+                             c.style.gridTemplateColumns = '50px 1fr 65px 25px'; 
+                             c.style.gap = '4px'; 
+                             c.style.alignItems = 'center'; // 垂直置中
+                             
+                             // 2. 圖片區塊
                              const imgContainer = document.createElement('div'); imgContainer.className = 'shopping-img-box';
                              imgContainer.style.cssText = 'width:50px; height:50px; overflow:hidden; border-radius:4px; background:#f0f0f0; display:flex; justify-content:center; align-items:center; cursor:pointer; border:1px dashed #ccc;';
                              if (item.imageUrl) { const img = document.createElement('img'); img.src = item.imageUrl; img.style.cssText = 'width:100%; height:100%; object-fit:cover;'; imgContainer.appendChild(img); } 
@@ -758,24 +750,42 @@
                              imgContainer.onclick = () => { if (item.imageUrl) { document.getElementById('zoom-img').src = item.imageUrl; document.getElementById('image-zoom-modal').style.display = 'flex'; } else { fileInput.click(); } };
                              fileInput.onchange = (e) => { if(!e.target.files[0]) return; const fr = new FileReader(); fr.onload = (ev) => { const img = new Image(); img.onload = () => { const cvs = document.createElement('canvas'); const scale = 300 / img.width; cvs.width = 300; cvs.height = img.height * scale; cvs.getContext('2d').drawImage(img, 0, 0, cvs.width, cvs.height); updateListItem(listData, idx, {imageUrl: cvs.toDataURL("image/jpeg", 0.7)}); }; img.src = ev.target.result; }; fr.readAsDataURL(e.target.files[0]); };
 
-                             // ✅ 修改 2: 減少中間欄位的文字間距 (gap:4px -> gap:2px)
-                             const midCol = document.createElement('div'); midCol.style.cssText = 'display:flex; flex-direction:column; gap:2px; width:100%;';
-                             const nameInput = document.createElement('input'); nameInput.type = 'text'; nameInput.className = 'compact-input'; nameInput.placeholder = '品名'; nameInput.value = item.text || ''; nameInput.style.cssText = 'width:100%; font-weight:bold; border:none; padding:0; height:auto;';
+                             // 3. 中間文字區塊 (固定高度 50px，內容上下分佈)
+                             const midCol = document.createElement('div'); 
+                             midCol.style.cssText = 'display:flex; flex-direction:column; justify-content:space-between; height:50px; padding-top:1px; padding-bottom:1px;';
+                             
+                             const nameInput = document.createElement('input'); nameInput.type = 'text'; nameInput.className = 'compact-input'; nameInput.placeholder = '品名'; nameInput.value = item.text || ''; 
+                             nameInput.style.cssText = 'width:100%; font-weight:bold; border:none; padding:0; height:22px; font-size:13px;';
                              nameInput.onchange = (e) => updateListItem(listData, idx, {text: e.target.value});
-                             const descInput = document.createElement('textarea'); descInput.className = 'compact-input'; descInput.placeholder = '說明'; descInput.value = item.desc || ''; descInput.rows = 2; descInput.style.cssText = 'width:100%; border:none; padding:0; resize:none; font-size:10px; height:auto;';
+                             
+                             const descInput = document.createElement('textarea'); descInput.className = 'compact-input'; descInput.placeholder = '說明'; descInput.value = item.desc || ''; 
+                             // 設定固定高度 26px，剛好填滿剩餘空間，消除下方留白
+                             descInput.style.cssText = 'width:100%; border:none; padding:0; resize:none; font-size:11px; height:26px; line-height:1.3; overflow:hidden; color:#888;';
                              descInput.onchange = (e) => updateListItem(listData, idx, {desc: e.target.value});
+                             
                              midCol.appendChild(nameInput); midCol.appendChild(descInput);
                              
+                             // 4. 地點欄位 (固定高度 50px)
                              const locInput = document.createElement('textarea'); 
                              locInput.className = 'compact-input'; 
                              locInput.placeholder = '地點'; 
                              locInput.value = item.location || ''; 
-                             locInput.rows = 3; 
-                             // ✅ 修改 3: 縮小地點欄位高度 (54px -> 50px)，跟左邊圖片高度一樣，消除下方留白
                              locInput.style.cssText = 'width:100%; height:50px; border:1px solid #eee; background:#f9f9f9; padding:4px; resize:none; border-radius:4px; font-size:10px; line-height:1.2;';
                              locInput.onchange = (e) => updateListItem(listData, idx, {location: e.target.value});
                              
-                             c.appendChild(imgContainer); c.appendChild(midCol); c.appendChild(locInput); c.appendChild(fileInput);
+                             // 5. 刪除按鈕 (改為 Grid 的第 4 欄)
+                             const delBtnDesktop = document.createElement('div');
+                             delBtnDesktop.className = 'desktop-del-btn';
+                             delBtnDesktop.innerHTML = '×';
+                             // 移除 absolute，改用 flex 居中
+                             delBtnDesktop.style.cssText = "width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#CB8572; font-weight:bold; cursor:pointer; font-size:18px;";
+                             delBtnDesktop.onclick = (e) => { e.stopPropagation(); deleteListItem(listData, idx); };
+
+                             c.appendChild(imgContainer); 
+                             c.appendChild(midCol); 
+                             c.appendChild(locInput); 
+                             c.appendChild(delBtnDesktop); // 放在最後
+                             c.appendChild(fileInput);
 
                              wrap.appendChild(bg); wrap.appendChild(c); inner.appendChild(wrap);
                              try { if (typeof enableSwipeToDelete === 'function') enableSwipeToDelete(c, bg, 'list'); } catch(e){}
@@ -1080,6 +1090,7 @@
     </script>
 </body>
 </html>
+
 
 
 
