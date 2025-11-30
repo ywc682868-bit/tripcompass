@@ -386,6 +386,24 @@
             }
 
             function createTripCard(schedule) {
+    // 1. ✅ 新增：定義必去標籤的 HTML (帶有顏色和邊框)
+const mustGoBadge = schedule.MustGo 
+    ? `<span class="ml-1.5 inline-block text-[9px] text-[#CB8572] border border-[#CB8572] rounded px-1 py-[0px] font-normal leading-normal whitespace-nowrap self-center" style="transform: translateY(-1px);">必去</span>` 
+    : '';
+
+// 2. 修改 content.innerHTML 中的 h3 標題部分
+content.innerHTML = `
+    <div class="${config.bg} ... (略)"> ... </div>
+    <div class="flex-grow ... (略)">
+        <div class="flex justify-between items-start w-full">
+            <h3 class="text-xs font-bold text-[#4A4B4D] leading-tight mb-0.5 flex-grow flex items-center flex-wrap">
+                <a href="#" class="location-link map-link hover:underline mr-0.5">${schedule.Location}</a>
+                ${mustGoBadge}
+            </h3>
+            ${memberHtml}
+        </div>
+        <p class="...">...</p>
+    </div>
     const style = getCardStyle(schedule.Type);
     const config = CATEGORY_COLORS[schedule.Type] || CATEGORY_COLORS['default'];
     const rate = schedule.Rate || 1;
@@ -609,7 +627,7 @@
     uid: uid,
     
     // ✅ 新增這一行：儲存必去狀態
-    MustGo: document.getElementById('form-must-go').checked 
+    MustGo: document.getElementById('form-must-go').checked || false;
 };
                     const col = collection(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`);
                     if (editingScheduleId) await updateDoc(doc(col, editingScheduleId), data); else await addDoc(col, data);
@@ -865,11 +883,26 @@
                             </h3>
                             <button id="modal-close-btn" class="absolute top-3 right-3 text-[#A9A9A9] hover:text-[#5F6368] text-2xl leading-none w-6 h-6 flex items-center justify-center">×</button>
                             <form id="add-schedule-form" class="space-y-2">
-                                <div class="flex flex-col items-center w-8 flex-shrink-0">
-            <label class="compact-label mb-0 leading-tight">必去</label>
-            <input type="checkbox" id="form-must-go" class="mt-1 w-4 h-4 accent-[#CB8572] cursor-pointer">
-        </div>
-        
+                                <div class="flex gap-2 w-full">
+    <div style="width: 25%;">
+        <label class="block compact-label">類型</label>
+        <select id="form-type" class="compact-input block w-full rounded border shadow-sm" style="width: 100% !important; box-sizing: border-box;">
+            <option value="location">📍 景點</option><option value="restaurant">🍽️ 餐廳</option>
+            <option value="coffee">☕ 咖啡廳</option><option value="accommodation">🛏️ 住宿</option>
+            <option value="交通">🚗 交通</option><option value="shopping">🛍️ 購物</option>
+        </select>
+    </div>
+
+    <div class="flex flex-col items-center justify-start flex-shrink-0 w-8">
+        <label class="compact-label mb-0 leading-tight">必去</label>
+        <input type="checkbox" id="form-must-go" class="mt-1.5 w-3.5 h-3.5 accent-[#CB8572] cursor-pointer">
+    </div>
+
+    <div class="flex-grow min-w-0">
+        <label class="block compact-label">地點</label>
+        <input type="text" id="form-location" class="compact-input block w-full rounded border shadow-sm" style="width: 100% !important; box-sizing: border-box;">
+    </div>
+</div>
         <div class="flex-grow min-w-0">
             <label class="block compact-label">類型</label>
             <select id="form-type" class="compact-input block w-full rounded border shadow-sm" style="width: 100% !important; min-width: 0; box-sizing: border-box;">
@@ -971,7 +1004,8 @@
                     document.getElementById('bar-calc-currency').onchange = calculateCurrency; document.getElementById('bar-calc-amount').oninput = calculateCurrency;
                     document.getElementById('center-add-btn').onclick = () => { if(!currentTripId) return alert('請先建計畫'); document.getElementById('add-schedule-form').reset(); editingScheduleId=null; document.getElementById('modal-delete-btn').style.display='none'; document.getElementById('add-schedule-modal-title').textContent = '新增行程'; const t=tripData[currentTripId]; document.getElementById('form-date').value=getDateFromDayId(t, currentDayId).toISOString().split('T')[0]; document.getElementById('form-members-container').innerHTML=''; (t.members||[]).forEach(n=>addMemberInput(n)); if(!(t.members||[]).length){addMemberInput();addMemberInput();} document.getElementById('add-schedule-modal').style.display='flex'; };
                     document.getElementById('modal-close-btn').onclick = () => document.getElementById('add-schedule-modal').style.display='none'; document.getElementById('modal-save-btn').onclick = submitSchedule; document.getElementById('form-amount').oninput = (e) => document.getElementById('form-amount-twd').value = (e.target.value * currentTripRate).toFixed(0);
-                    
+                    document.getElementById('add-schedule-form').reset();
+document.getElementById('form-must-go').checked = false; // ✅ 記得加這行
                     document.getElementById('form-amount-twd').oninput = (e) => {
                         const twd = parseFloat(e.target.value);
                         if (!isNaN(twd) && currentTripRate > 0) {
@@ -1080,6 +1114,7 @@
     </script>
 </body>
 </html>
+
 
 
 
