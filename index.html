@@ -11,84 +11,70 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-    html {
-    /* 開啟 Y 軸的滾動吸附，proximity 代表「接近時才吸附」，比較自然 */
-    scroll-snap-type: y proximity;
-    
-    /* 讓吸附點偏移 240px，剛好避開 Header 區域 */
-    scroll-padding-top: 170px;
-    
-    /* 讓滾動更滑順 */
-    scroll-behavior: smooth;
-}
     /* --- 全域設定 --- */
+    html {
+        scroll-snap-type: y proximity;
+        scroll-padding-top: 170px; /* 電腦版預設 */
+        scroll-behavior: smooth;
+    }
     body { font-family: 'Inter', sans-serif; background-color: #f7f7f7; margin: 0; padding: 0; color: #5F6368; overflow-x: hidden; }
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     
     /* --- 容器與佈局 --- */
     #app-container {
-    max-width: 500px;
-    margin: 0 auto;
-    min-height: 100vh;
-    background-color: white;
-    padding-top: 0px; /* 保持為 0 */
-    padding-bottom: 140px;
-    position: relative;
-    box-shadow: 0 0 10px rgba(0,0,0,0.05);
-}
-   #schedule-list-container {
-    /* ❌ 移除或註釋掉 margin-top: -50px; 之類的負值設定 */
-    /* 關鍵修復：設置 Padding Top，將所有可滾動內容向下推 */
-    padding-top: 170px; /* ✅ 修正：使用足夠大的數值將內容推到 Header 固定區下方 */
-    padding-bottom: 40px;
-    margin-top: 0; /* 確保沒有負邊距 */
-    position: relative; /* 確保定位正確 */
-    z-index: 1; 
-}
+        max-width: 500px;
+        margin: 0 auto;
+        min-height: 100vh;
+        background-color: white;
+        padding-top: 0px; 
+        padding-bottom: 140px;
+        position: relative;
+        box-shadow: 0 0 10px rgba(0,0,0,0.05);
+    }
+    #schedule-list-container {
+        padding-top: 170px; /* 電腦版預設 */
+        padding-bottom: 40px;
+        margin-top: 0; 
+        position: relative; 
+        z-index: 1; 
+    }
     #schedule-list-container::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    /* 高度設定：必須大於 padding-top (250px) + 第一張卡片的 margin-top */
-    /* 因為您的代碼中 padding-top 是 250px 且第一張卡片 margin-top 也是 250px，總空隙很大，設 600px 確保覆蓋 */
-    height: 600px; 
-    background-color: white;
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 600px; 
+        background-color: white;
+        z-index: -2; 
+    }    
     
-    /* 關鍵：z-index 設為 -2 */
-    /* 因為 Timeline 線條是 -1，卡片是 0。設為 -2 可以確保線條顯示在白色背景上 */
-    z-index: -2; 
-    
-    /* (選用) 如果希望白色背景底部有漸層消失到灰色，可改用下面這行，否則保留 background-color: white 即可 */
-    /* background: linear-gradient(to bottom, #ffffff 90%, rgba(247,247,247,0) 100%); */
-}    
-    /* 新增規則: 讓列表裡的第一個卡片有足夠的空間避開 Header */
-#schedule-list-container .trip-card:first-child {
-    margin-top: 10px; 
-}
+    #schedule-list-container .trip-card:first-child {
+        margin-top: 10px; 
+        /* 電腦版也開啟吸附，體驗較一致 */
+        scroll-snap-align: start;
+        scroll-margin-top: 10px;
+    }
+
     /* --- Header 固定區 --- */
     header { 
-    position: fixed;
-    top: 0; 
-    left: 0;
-    right: 0;
-    width: 100%; 
-    max-width: 500px;
-    margin-left: auto;
-    margin-right: auto;
-    background-color: #ffffff;
-    z-index: 50; /* 確保浮在最上層 */
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-}
-        #header-content-wrapper {
-    /* 確保 Header 內容從狀態欄下方開始，並增加額外留白 */
-    padding-top: calc(15px + env(safe-area-inset-top)); /* 15px 是您希望的額外留白 */
-    padding-bottom: 4px; /* 保持 Day Tabs 下方的留白，原是 pb-1 (~4px) */
-    padding-left: 12px; /* 保持 px-3 (~12px) */
-    padding-right: 12px;
-}
+        position: fixed;
+        top: 0; 
+        left: 0;
+        right: 0;
+        width: 100%; 
+        max-width: 500px;
+        margin-left: auto;
+        margin-right: auto;
+        background-color: #ffffff;
+        z-index: 50; 
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+    #header-content-wrapper {
+        padding-top: calc(15px + env(safe-area-inset-top)); 
+        padding-bottom: 4px; 
+        padding-left: 12px; 
+        padding-right: 12px;
+    }
     #trip-select { background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%237E92A1' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: right center; background-repeat: no-repeat; background-size: 1.25em 1.25em; -webkit-appearance: none; appearance: none; background-color: transparent; font-weight: 800; color: #4A4B4D; border: none; padding-right: 1.5rem; cursor: pointer; }
     #trip-select:focus { outline: none; }
     #header-day-date-container { padding-bottom: 0px; margin-top: 8px; margin-bottom: 1px; line-height: 1.2; }
@@ -101,54 +87,43 @@
     #bar-calc-result { font-size: 0.7rem; font-weight: bold; color: #7E92A1; }
 
     /* --- 行程卡片 (Trip Card) & 串連線 (Timeline) --- */
-    /* 外層容器：負責定位與繪製串連線 */
     .trip-card { 
         width: 100%; 
         margin-bottom: 2rem; 
         position: relative; 
         min-height: 85px; 
         display: flex; 
-        z-index: 0; /* 建立堆疊環境，確保子元素的 z-index -1 不會跑到 body 背景後面 */
-    /* 新增：告訴瀏覽器這張卡片的頂端是吸附點 */
-    scroll-snap-align: start;
-    
-    /* 新增：多留一點點緩衝空間，不要吸得太死 */
-    scroll-margin-top: 10px;
-}
+        z-index: 0; 
+    }
 
-    /* 串連線 (Pseudo-element) - 修正：改為莫蘭迪咖啡色，並保持最下層 */
     .trip-card::before {
         content: '';
         position: absolute;
-        left: 28px; /* 56px (w-14) 的一半 */
-        /* --- START OF LENGTH MODIFICATION --- */
-        top: -6px;        /* 向上延伸縮短為 6px (原本是 -20px) */
-        bottom: -6px;     /* 向下延伸縮短為 6px (原本是 -20px) */
-        /* --- END OF LENGTH MODIFICATION --- */
+        left: 28px; 
+        top: -6px;        
+        bottom: -6px;     
         width: 2px;
-        background-color: #9C8B74; /* 莫蘭迪咖啡色 */
+        background-color: #9C8B74; 
         z-index: -1; 
         transform: translateX(-50%);
     }
-    /* 第一張卡片的線不要向上凸出 - 保持不變 */
+    
     .trip-card:first-child::before { 
-    /* 假設 margin-top 是 250px。將 top 設為負值，讓線條向上延伸 250px */
-    top: -60px;    /* ✅ 修正：讓線條向上延伸，填滿 Header 下方的空白區域 */
-    bottom: -6px; /* 保持與預設 Timeline 一致，避免與下方卡片間距拉長衝突 */
-    height: auto; 
-}
+        top: 0px; /* 電腦版預設 */
+        bottom: -6px; 
+        height: auto; 
+    }
     .trip-card:last-child::before { bottom: auto; height: 100%; }
 
-    /* 視覺包裹層：不透明白底，遮住中間的線，只讓線在空隙露出 */
     .trip-card-visual-wrapper {
         position: relative;
         width: 100%;
         height: 100%;
-        border-radius: 0.75rem; /* rounded-xl */
+        border-radius: 0.75rem; 
         overflow: hidden;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* shadow-lg */
-        background-color: white; /* 必須是實色背景 */
-        z-index: 10; /* 確保在線的上方 */
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); 
+        background-color: white; 
+        z-index: 10; 
     }
 
     .swipe-item-container { position: relative; overflow: hidden; border-radius: 0.375rem; margin-bottom: 0.5rem; touch-action: pan-y; }
@@ -180,7 +155,6 @@
 
     .info-block-content { display: flex; flex-direction: column; justify-content: flex-start; align-items: flex-end; gap: 4px; width: 100%; }
     
-    /* 按鈕靠左緊鄰，gap: 2px */
     .card-static-actions { 
         display: none !important; 
         width: 100%; 
@@ -199,24 +173,17 @@
         .desktop-del-btn { display: block !important; }
     }
     @media (max-width: 500px) {
+        /* 手機版磁吸與間距調整 */
         html {
-        scroll-padding-top: 215px; 
-    }
-
-    /* 覆蓋容器設定：推得更下面 */
-    #schedule-list-container {
-        padding-top: 215px; 
-    }
-
-    /* 覆蓋線條設定：因為推得遠，線要往上拉長才連得到日期 */
-    .trip-card:first-child::before {
-        top: -60px; 
-    }
-        #schedule-list-container .trip-card:first-child {
-        margin-top: 10px;
-        scroll-snap-align: start;
-        scroll-margin-top: 10px;
-            }
+            scroll-padding-top: 215px; 
+        }
+        #schedule-list-container {
+            padding-top: 215px; 
+        }
+        .trip-card:first-child::before {
+            top: -35px; /* 連接線往上拉 */
+        }
+        
         .trip-card .content-text-block { margin-top: 8px; }
         .desktop-del-btn { display: none !important; } 
         
@@ -335,7 +302,7 @@
   storageBucket: "mytravelplanner-36283.firebasestorage.app",
   messagingSenderId: "86504733738",
   appId: "1:86504733738:web:5167a6a795eb206dfed753"
-};           
+};            
             const COUNTRY_CONFIG = { 
                 'USA': { name: '美國', currency: 'USD', localName: 'New York', lat: 40.71, lon: -74.00, img: 'usa' }, 
                 'JP': { name: '日本', currency: 'JPY', localName: '東京', lat: 35.68, lon: 139.76, img: 'japan' }, 
@@ -386,98 +353,84 @@
             }
 
             function createTripCard(schedule) {
-    // 1. ✅ 新增：定義必去標籤的 HTML (帶有顏色和邊框)
-const mustGoBadge = schedule.MustGo 
-    ? `<span class="ml-1.5 inline-block text-[9px] text-[#CB8572] border border-[#CB8572] rounded px-1 py-[0px] font-normal leading-normal whitespace-nowrap self-center" style="transform: translateY(-1px);">必去</span>` 
-    : '';
+                const style = getCardStyle(schedule.Type);
+                const config = CATEGORY_COLORS[schedule.Type] || CATEGORY_COLORS['default'];
+                const rate = schedule.Rate || 1;
+                const amountTWD = (schedule.Amount || 0) * rate;
+                let perPersonTWD = 0, specifiedTWD = 0, unspecifiedCount = 0;
+                const members = schedule.members || [];
+                if (amountTWD > 0) {
+                    members.forEach(m => { const amt = typeof m === 'string' ? null : m.amount; if(amt !== null && !isNaN(amt)) specifiedTWD += (schedule.isTwdSplit ? amt : amt * rate); else unspecifiedCount++; });
+                    perPersonTWD = (unspecifiedCount > 0) ? (amountTWD - specifiedTWD) / unspecifiedCount : (members.length > 0 ? amountTWD / members.length : amountTWD);
+                }
+                const scheduleJson = JSON.stringify({ ...schedule, Amount: schedule.Amount || 0 });
+                
+                let memberHtml = '';
+                if (members.length > 0) {
+                    memberHtml = `<div class="flex flex-wrap justify-end gap-x-1.5 gap-y-0.5 ml-2">`;
+                    members.forEach((m, i) => {
+                         memberHtml += `<span class="${MEMBER_COLORS[i % MEMBER_COLORS.length]} text-[10px] font-bold whitespace-nowrap">${typeof m === 'string' ? m : m.name}</span>`;
+                    });
+                    memberHtml += `</div>`;
+                }
 
-// 2. 修改 content.innerHTML 中的 h3 標題部分
-content.innerHTML = `
-    <div class="${config.bg} ... (略)"> ... </div>
-    <div class="flex-grow ... (略)">
-        <div class="flex justify-between items-start w-full">
-            <h3 class="text-xs font-bold text-[#4A4B4D] leading-tight mb-0.5 flex-grow flex items-center flex-wrap">
-                <a href="#" class="location-link map-link hover:underline mr-0.5">${schedule.Location}</a>
-                ${mustGoBadge}
-            </h3>
-            ${memberHtml}
-        </div>
-        <p class="...">...</p>
-    </div>
-    const style = getCardStyle(schedule.Type);
-    const config = CATEGORY_COLORS[schedule.Type] || CATEGORY_COLORS['default'];
-    const rate = schedule.Rate || 1;
-    const amountTWD = (schedule.Amount || 0) * rate;
-    let perPersonTWD = 0, specifiedTWD = 0, unspecifiedCount = 0;
-    const members = schedule.members || [];
-    if (amountTWD > 0) {
-        members.forEach(m => { const amt = typeof m === 'string' ? null : m.amount; if(amt !== null && !isNaN(amt)) specifiedTWD += (schedule.isTwdSplit ? amt : amt * rate); else unspecifiedCount++; });
-        perPersonTWD = (unspecifiedCount > 0) ? (amountTWD - specifiedTWD) / unspecifiedCount : (members.length > 0 ? amountTWD / members.length : amountTWD);
-    }
-    const scheduleJson = JSON.stringify({ ...schedule, Amount: schedule.Amount || 0 });
-    
-    let memberHtml = '';
-    if (members.length > 0) {
-        memberHtml = `<div class="flex flex-wrap justify-end gap-x-1.5 gap-y-0.5 ml-2">`;
-        members.forEach((m, i) => {
-             memberHtml += `<span class="${MEMBER_COLORS[i % MEMBER_COLORS.length]} text-[10px] font-bold whitespace-nowrap">${typeof m === 'string' ? m : m.name}</span>`;
-        });
-        memberHtml += `</div>`;
-    }
+                // 必去標籤 HTML
+                const mustGoBadge = schedule.MustGo 
+                    ? `<span class="ml-1.5 inline-block text-[9px] text-[#CB8572] border border-[#CB8572] rounded px-1 py-[0px] font-normal leading-normal whitespace-nowrap self-center" style="transform: translateY(-1px);">必去</span>` 
+                    : '';
 
-    // 1. 外層容器 (負責 Timeline 線條)
-    const card = document.createElement('div');
-    card.className = 'trip-card flex w-full mb-3 relative min-h-[75px]'; 
-    
-    // 2. 視覺包裹層 (負責圓角、陰影、裁切，且 z-index: 10 遮住線條)
-    const visualWrapper = document.createElement('div');
-    visualWrapper.className = 'trip-card-visual-wrapper';
+                const card = document.createElement('div');
+                card.className = 'trip-card flex w-full mb-3 relative min-h-[75px]'; 
+                
+                const visualWrapper = document.createElement('div');
+                visualWrapper.className = 'trip-card-visual-wrapper';
 
-    const swipeActions = document.createElement('div');
-    swipeActions.className = 'swipe-item-delete-bg';
-    swipeActions.innerHTML = `<button class="px-2 py-1 h-full text-xs font-bold bg-[#7E92A1] text-white" data-action="modify" data-schedule='${scheduleJson}'>修改</button><button class="px-2 py-1 h-full text-xs font-bold bg-[#CB8572] text-white" data-action="delete" data-id="${schedule.id}">刪除</button>`;
-    
-    // 將動作按鈕加入視覺層
-    visualWrapper.appendChild(swipeActions);
+                const swipeActions = document.createElement('div');
+                swipeActions.className = 'swipe-item-delete-bg';
+                swipeActions.innerHTML = `<button class="px-2 py-1 h-full text-xs font-bold bg-[#7E92A1] text-white" data-action="modify" data-schedule='${scheduleJson}'>修改</button><button class="px-2 py-1 h-full text-xs font-bold bg-[#CB8572] text-white" data-action="delete" data-id="${schedule.id}">刪除</button>`;
+                
+                visualWrapper.appendChild(swipeActions);
 
-    const content = document.createElement('div');
-    content.className = 'swipe-item-content flex w-full bg-white relative items-stretch h-full z-10';
-    
-    content.innerHTML = `
-        <div class="${config.bg} w-14 flex-none flex flex-col items-center justify-start gap-2 text-white relative z-10 h-full py-3">
-            <span class="text-[10px] font-bold tracking-tight leading-none">${schedule.Time}</span>
-            <span class="text-2xl leading-none mb-1">${style.icon}</span>
-            <span class="text-[9px] font-medium opacity-90 leading-none">${CATEGORY_NAMES[schedule.Type] || schedule.Type}</span>
-        </div>
-        <div class="flex-grow py-2 pl-2 pr-1 flex flex-col justify-start min-w-0 relative">
-            <div class="flex justify-between items-start w-full">
-                <h3 class="text-xs font-bold text-[#4A4B4D] leading-tight mb-0.5 flex-grow"><a href="#" class="location-link map-link hover:underline">${schedule.Location}</a></h3>
-                ${memberHtml}
-            </div>
-            <p class="text-[#888888] text-[10px] line-clamp-4 whitespace-pre-wrap leading-normal mt-0.5">${schedule.說明 || ''}</p>
-        </div>
-        
-        <div class="card-right-col">
-            <div class="card-static-actions"> 
-                <button class="bg-[#7E92A1] text-white modify-btn-static rounded px-1.5 py-0.5 text-[9px] font-bold" data-schedule='${scheduleJson}'>修改</button>
-                <button class="bg-[#CB8572] text-white delete-btn-static rounded px-1.5 py-0.5 text-[9px] font-bold" data-id="${schedule.id}">刪除</button>
-            </div>
-            <div class="flex items-center justify-start w-full"><span class="text-[#8F9E8B] font-bold text-[10px]">💰 TWD$${amountTWD.toFixed(0)}</span></div>
-            <div class="flex items-center justify-start w-full"><span class="text-[#888888] font-bold text-[10px]">👫 TWD$${formatCurrency(perPersonTWD)}</span></div>
-        </div>`;
-    
-    // 將內容層加入視覺層
-    visualWrapper.appendChild(content);
-    // 將視覺層加入外層卡片 (Header 樣式是 fixed，這裡用 div.trip-card-visual-wrapper 遮住線條)
-    card.appendChild(visualWrapper);
+                const content = document.createElement('div');
+                content.className = 'swipe-item-content flex w-full bg-white relative items-stretch h-full z-10';
+                
+                content.innerHTML = `
+                    <div class="${config.bg} w-14 flex-none flex flex-col items-center justify-start gap-2 text-white relative z-10 h-full py-3">
+                        <span class="text-[10px] font-bold tracking-tight leading-none">${schedule.Time}</span>
+                        <span class="text-2xl leading-none mb-1">${style.icon}</span>
+                        <span class="text-[9px] font-medium opacity-90 leading-none">${CATEGORY_NAMES[schedule.Type] || schedule.Type}</span>
+                    </div>
+                    <div class="flex-grow py-2 pl-2 pr-1 flex flex-col justify-start min-w-0 relative">
+                        <div class="flex justify-between items-start w-full">
+                            <h3 class="text-xs font-bold text-[#4A4B4D] leading-tight mb-0.5 flex-grow flex items-center flex-wrap">
+                                <a href="#" class="location-link map-link hover:underline mr-0.5">${schedule.Location}</a>
+                                ${mustGoBadge}
+                            </h3>
+                            ${memberHtml}
+                        </div>
+                        <p class="text-[#888888] text-[10px] line-clamp-4 whitespace-pre-wrap leading-normal mt-0.5">${schedule.說明 || ''}</p>
+                    </div>
+                    
+                    <div class="card-right-col">
+                        <div class="card-static-actions"> 
+                            <button class="bg-[#7E92A1] text-white modify-btn-static rounded px-1.5 py-0.5 text-[9px] font-bold" data-schedule='${scheduleJson}'>修改</button>
+                            <button class="bg-[#CB8572] text-white delete-btn-static rounded px-1.5 py-0.5 text-[9px] font-bold" data-id="${schedule.id}">刪除</button>
+                        </div>
+                        <div class="flex items-center justify-start w-full"><span class="text-[#8F9E8B] font-bold text-[10px]">💰 TWD$${amountTWD.toFixed(0)}</span></div>
+                        <div class="flex items-center justify-start w-full"><span class="text-[#888888] font-bold text-[10px]">👫 TWD$${formatCurrency(perPersonTWD)}</span></div>
+                    </div>`;
+                
+                visualWrapper.appendChild(content);
+                card.appendChild(visualWrapper);
 
-    card.querySelector('.map-link').onclick = (e) => { e.preventDefault(); navigateToMap(schedule.Address || schedule.Location); };
-    card.querySelector('.modify-btn-static').onclick = () => openEditScheduleModal(scheduleJson);
-    card.querySelector('.delete-btn-static').onclick = () => deleteSchedule(schedule.id);
-    content.onclick = (e) => { if (window.innerWidth > 500 && !e.target.closest('button') && !e.target.classList.contains('map-link')) openEditScheduleModal(scheduleJson); };
-    enableSwipeToDelete(content, swipeActions, 'schedule');
-    return card;
-}
+                card.querySelector('.map-link').onclick = (e) => { e.preventDefault(); navigateToMap(schedule.Address || schedule.Location); };
+                card.querySelector('.modify-btn-static').onclick = () => openEditScheduleModal(scheduleJson);
+                card.querySelector('.delete-btn-static').onclick = () => deleteSchedule(schedule.id);
+                content.onclick = (e) => { if (window.innerWidth > 500 && !e.target.closest('button') && !e.target.classList.contains('map-link')) openEditScheduleModal(scheduleJson); };
+                enableSwipeToDelete(content, swipeActions, 'schedule');
+                return card;
+            }
+
             const loadSchedules = function(tripId, dayId) {
                 if (unsubscribeSchedule) unsubscribeSchedule();
                 const container = document.getElementById('schedule-list-container'); container.innerHTML = '<div class="p-4 text-center text-[#A9A9A9] text-xs">載入中...</div>';
@@ -585,6 +538,10 @@ content.innerHTML = `
                 ['Date','Time','Location','Type','說明','Address','Amount'].forEach(k => { const el = document.getElementById(`form-${k.toLowerCase().replace('說明','details')}`); if(el) el.value = s[k] || (k==='Amount'?0:''); });
                 document.getElementById('form-currency-label').textContent = tripData[currentTripId].currency || 'TWD';
                 document.getElementById('form-amount-twd').value = ((s.Amount||0) * currentTripRate).toFixed(0);
+                
+                // ✅ 讀取 MustGo 狀態
+                document.getElementById('form-must-go').checked = s.MustGo || false;
+
                 const c = document.getElementById('form-members-container'); c.innerHTML = '';
                 const mems = s.members || []; 
                 if(mems.length) {
@@ -609,26 +566,23 @@ content.innerHTML = `
                     names.forEach((n, i) => { if(n.value.trim()) members.push({name: n.value.trim(), amount: amts[i].value ? parseFloat(amts[i].value) : null}); });
                     const uid = auth.currentUser ? auth.currentUser.uid : null; 
                     
-                    // ⚠️ 強制處理金額，確保空白為0
                     let rawAmount = parseFloat(document.getElementById('form-amount').value);
                     if (isNaN(rawAmount)) rawAmount = 0;
 
                     const data = { 
-    dayId, 
-    Date: dateVal, 
-    Time: document.getElementById('form-time').value, 
-    Location: document.getElementById('form-location').value, 
-    Type: document.getElementById('form-type').value, 
-    說明: document.getElementById('form-details').value, 
-    Address: document.getElementById('form-address').value, 
-    Amount: rawAmount, 
-    Rate: currentTripRate || 1, 
-    members, 
-    uid: uid,
-    
-    // ✅ 新增這一行：儲存必去狀態
-    MustGo: document.getElementById('form-must-go').checked || false;
-};
+                        dayId, 
+                        Date: dateVal, 
+                        Time: document.getElementById('form-time').value, 
+                        Location: document.getElementById('form-location').value, 
+                        Type: document.getElementById('form-type').value, 
+                        說明: document.getElementById('form-details').value, 
+                        Address: document.getElementById('form-address').value, 
+                        Amount: rawAmount, 
+                        Rate: currentTripRate || 1, 
+                        members, 
+                        uid: uid,
+                        MustGo: document.getElementById('form-must-go').checked || false
+                    };
                     const col = collection(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`);
                     if (editingScheduleId) await updateDoc(doc(col, editingScheduleId), data); else await addDoc(col, data);
                     document.getElementById('add-schedule-modal').style.display = 'none'; currentDayId = dayId; renderDayTabs(); loadSchedules(currentTripId, currentDayId);
@@ -733,7 +687,7 @@ content.innerHTML = `
                 
                 const inner = document.createElement('div'); 
                 if(listData.type === 'check') inner.className = 'grid grid-cols-2 gap-2 pb-12';
-                else inner.className = 'space-y-1 pb-12';
+                else inner.className = 'space-y-1 pb-12';
 
                 const items = Array.isArray(listData.items) ? listData.items : [];
                 items.forEach((item, idx) => {
@@ -883,41 +837,32 @@ content.innerHTML = `
                             </h3>
                             <button id="modal-close-btn" class="absolute top-3 right-3 text-[#A9A9A9] hover:text-[#5F6368] text-2xl leading-none w-6 h-6 flex items-center justify-center">×</button>
                             <form id="add-schedule-form" class="space-y-2">
+                                <div class="grid grid-cols-2 gap-2"> 
+                                    <div><label class="block compact-label">日期</label><input type="date" id="form-date" class="compact-input block w-full rounded border shadow-sm text-center h-6 leading-6 p-0 box-border" style="width: 92% !important; min-width: 100%; box-sizing: border-box;"></div> 
+                                    <div><label class="block compact-label">時間</label><input type="time" id="form-time" class="compact-input block w-full rounded border shadow-sm text-center h-6 leading-6 p-0 box-border" style="width: 92% !important; min-width: 100%; box-sizing: border-box;"></div>
+                                </div>
+                                
                                 <div class="flex gap-2 w-full">
-    <div style="width: 25%;">
-        <label class="block compact-label">類型</label>
-        <select id="form-type" class="compact-input block w-full rounded border shadow-sm" style="width: 100% !important; box-sizing: border-box;">
-            <option value="location">📍 景點</option><option value="restaurant">🍽️ 餐廳</option>
-            <option value="coffee">☕ 咖啡廳</option><option value="accommodation">🛏️ 住宿</option>
-            <option value="交通">🚗 交通</option><option value="shopping">🛍️ 購物</option>
-        </select>
-    </div>
+                                    <div style="width: 25%;">
+                                        <label class="block compact-label">類型</label>
+                                        <select id="form-type" class="compact-input block w-full rounded border shadow-sm" style="width: 100% !important; box-sizing: border-box;">
+                                            <option value="location">📍 景點</option><option value="restaurant">🍽️ 餐廳</option>
+                                            <option value="coffee">☕ 咖啡廳</option><option value="accommodation">🛏️ 住宿</option>
+                                            <option value="交通">🚗 交通</option><option value="shopping">🛍️ 購物</option>
+                                        </select>
+                                    </div>
 
-    <div class="flex flex-col items-center justify-start flex-shrink-0 w-8">
-        <label class="compact-label mb-0 leading-tight">必去</label>
-        <input type="checkbox" id="form-must-go" class="mt-1.5 w-3.5 h-3.5 accent-[#CB8572] cursor-pointer">
-    </div>
+                                    <div class="flex flex-col items-center justify-start flex-shrink-0 w-8">
+                                        <label class="compact-label mb-0 leading-tight">必去</label>
+                                        <input type="checkbox" id="form-must-go" class="mt-1.5 w-3.5 h-3.5 accent-[#CB8572] cursor-pointer">
+                                    </div>
 
-    <div class="flex-grow min-w-0">
-        <label class="block compact-label">地點</label>
-        <input type="text" id="form-location" class="compact-input block w-full rounded border shadow-sm" style="width: 100% !important; box-sizing: border-box;">
-    </div>
-</div>
-        <div class="flex-grow min-w-0">
-            <label class="block compact-label">類型</label>
-            <select id="form-type" class="compact-input block w-full rounded border shadow-sm" style="width: 100% !important; min-width: 0; box-sizing: border-box;">
-                <option value="location">📍 景點</option><option value="restaurant">🍽️ 餐廳</option>
-                <option value="coffee">☕ 咖啡廳</option><option value="accommodation">🛏️ 住宿</option>
-                <option value="交通">🚗 交通</option><option value="shopping">🛍️ 購物</option>
-            </select>
-        </div>
-    </div>
+                                    <div class="flex-grow min-w-0">
+                                        <label class="block compact-label">地點</label>
+                                        <input type="text" id="form-location" class="compact-input block w-full rounded border shadow-sm" style="width: 100% !important; box-sizing: border-box;">
+                                    </div>
+                                </div>
 
-    <div>
-        <label class="block compact-label">地點</label>
-        <input type="text" id="form-location" class="compact-input block w-full rounded border shadow-sm" style="width: 100% !important; min-width: 0; box-sizing: border-box;">
-    </div>
-</div>
                                 <div><label class="block compact-label">地址</label><input type="text" id="form-address" class="compact-input block w-full rounded border shadow-sm"></div>
                                 <div><label class="block compact-label">說明</label><textarea id="form-details" rows="4" class="compact-input block w-full rounded border shadow-sm !h-auto leading-normal"></textarea></div>
                                 <div class="flex gap-2 items-start">
@@ -925,7 +870,7 @@ content.innerHTML = `
                                         <div class="flex justify-start items-center mb-1 gap-2">
                                             <label class="block compact-label">成員</label>
                                             <button type="button" id="add-member-btn" class="ml-[115px] text-xl font-bold text-[#7E92A1] hover:text-[#64748B] transition-colors leading-none">+</button>
-                                             <div class="flex items-center ml-4">
+                                            <div class="flex items-center ml-4">
                                                 </div>
                                         </div>
                                         <div id="form-members-container" class="space-y-1"></div>
@@ -1002,10 +947,27 @@ content.innerHTML = `
                     // UI Event Bindings
                     document.getElementById('trip-select').onchange = (e) => changeTrip(e.target.value);
                     document.getElementById('bar-calc-currency').onchange = calculateCurrency; document.getElementById('bar-calc-amount').oninput = calculateCurrency;
-                    document.getElementById('center-add-btn').onclick = () => { if(!currentTripId) return alert('請先建計畫'); document.getElementById('add-schedule-form').reset(); editingScheduleId=null; document.getElementById('modal-delete-btn').style.display='none'; document.getElementById('add-schedule-modal-title').textContent = '新增行程'; const t=tripData[currentTripId]; document.getElementById('form-date').value=getDateFromDayId(t, currentDayId).toISOString().split('T')[0]; document.getElementById('form-members-container').innerHTML=''; (t.members||[]).forEach(n=>addMemberInput(n)); if(!(t.members||[]).length){addMemberInput();addMemberInput();} document.getElementById('add-schedule-modal').style.display='flex'; };
+                    
+                    document.getElementById('center-add-btn').onclick = () => { 
+                        if(!currentTripId) return alert('請先建計畫'); 
+                        document.getElementById('add-schedule-form').reset(); 
+                        
+                        // ✅ 將這行放在這裡才對
+                        document.getElementById('form-must-go').checked = false; 
+                        
+                        editingScheduleId=null; 
+                        document.getElementById('modal-delete-btn').style.display='none'; 
+                        document.getElementById('add-schedule-modal-title').textContent = '新增行程'; 
+                        const t=tripData[currentTripId]; 
+                        document.getElementById('form-date').value=getDateFromDayId(t, currentDayId).toISOString().split('T')[0]; 
+                        document.getElementById('form-members-container').innerHTML=''; 
+                        (t.members||[]).forEach(n=>addMemberInput(n)); 
+                        if(!(t.members||[]).length){addMemberInput();addMemberInput();} 
+                        document.getElementById('add-schedule-modal').style.display='flex'; 
+                    };
+                    
                     document.getElementById('modal-close-btn').onclick = () => document.getElementById('add-schedule-modal').style.display='none'; document.getElementById('modal-save-btn').onclick = submitSchedule; document.getElementById('form-amount').oninput = (e) => document.getElementById('form-amount-twd').value = (e.target.value * currentTripRate).toFixed(0);
-                    document.getElementById('add-schedule-form').reset();
-document.getElementById('form-must-go').checked = false; // ✅ 記得加這行
+                    
                     document.getElementById('form-amount-twd').oninput = (e) => {
                         const twd = parseFloat(e.target.value);
                         if (!isNaN(twd) && currentTripRate > 0) {
@@ -1048,11 +1010,9 @@ document.getElementById('form-must-go').checked = false; // ✅ 記得加這行
                     
                     document.getElementById('settings-add-member-btn').onclick = () => addSettingsMemberInput();
                     
-                    // --- 補上：行程視窗中的新增成員按鈕監聽器 ---
                     const addMemBtn = document.getElementById('add-member-btn');
                     if(addMemBtn) addMemBtn.onclick = () => addMemberInput();
 
-                    // --- 關鍵修改：設定儲存按鈕 (自動更新所有行程成員：新增/刪除) ---
                     document.getElementById('settings-modal-save-btn').onclick = async () => {
                         const newName = document.getElementById('settings-trip-name').value;
                         const newCountry = document.getElementById('settings-trip-country').value;
@@ -1081,7 +1041,6 @@ document.getElementById('form-must-go').checked = false; // ✅ 記得加這行
                                     const sData = scheduleDoc.data();
                                     let currentSchedMembers = sData.members || [];
                                     
-                                    // 1. 處理刪除：過濾掉被移除的成員
                                     if (removedMembers.length > 0) {
                                         currentSchedMembers = currentSchedMembers.filter(m => {
                                             const name = typeof m === 'string' ? m : m.name;
@@ -1089,7 +1048,6 @@ document.getElementById('form-must-go').checked = false; // ✅ 記得加這行
                                         });
                                     }
 
-                                    // 2. 處理新增：加入新成員
                                     const membersToAdd = addedMembers.map(name => ({ name: name, amount: null }));
                                     const finalMembers = [...currentSchedMembers, ...membersToAdd];
 
@@ -1114,49 +1072,3 @@ document.getElementById('form-must-go').checked = false; // ✅ 記得加這行
     </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
