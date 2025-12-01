@@ -519,14 +519,58 @@
 
             function enableSwipeToDelete(contentEl, actionEl, type) {
                 if (window.innerWidth > 500) return; 
-                let startX = 0, currentTranslate = 0, isSwiping = false;
-                contentEl.addEventListener('touchstart', e => { startX = e.touches[0].clientX; isSwiping = false; }, {passive: true});
-                contentEl.addEventListener('touchmove', e => { const diff = e.touches[0].clientX - startX; if (diff < 0) { isSwiping = true; currentTranslate = Math.max(diff, -140); contentEl.style.transform = `translateX(${currentTranslate}px)`; } else if(currentTranslate < 0) { currentTranslate = Math.min(diff - 140, 0); contentEl.style.transform = `translateX(${currentTranslate}px)`; } }, {passive: true});
-                contentEl.addEventListener('touchend', () => { contentEl.style.transform = (isSwiping && currentTranslate < -70) ? `translateX(-140px)` : `translateX(0)`; });
+                
+                let startX = 0, startY = 0, currentTranslate = 0, isSwiping = false;
+                
+                contentEl.addEventListener('touchstart', e => { 
+                    startX = e.touches[0].clientX; 
+                    startY = e.touches[0].clientY; // ✅ 新增：紀錄垂直起始點
+                    isSwiping = false; 
+                }, {passive: true});
+                
+                contentEl.addEventListener('touchmove', e => { 
+                    const diffX = e.touches[0].clientX - startX;
+                    const diffY = e.touches[0].clientY - startY; // ✅ 新增：計算垂直位移
+                    
+                    // ✅ 關鍵判斷：防誤觸機制
+                    // 1. 如果垂直移動幅度 > 水平移動幅度 (代表想下滑) -> 不執行左滑
+                    // 2. 如果水平移動小於 10px (手指微抖) -> 不執行左滑
+                    if (Math.abs(diffY) > Math.abs(diffX) || Math.abs(diffX) < 10) return;
+
+                    if (diffX < 0) { 
+                        isSwiping = true; 
+                        currentTranslate = Math.max(diffX, -140); 
+                        contentEl.style.transform = `translateX(${currentTranslate}px)`; 
+                    } else if(currentTranslate < 0) { 
+                        currentTranslate = Math.min(diffX - 140, 0); 
+                        contentEl.style.transform = `translateX(${currentTranslate}px)`; 
+                    } 
+                }, {passive: true});
+                
+                contentEl.addEventListener('touchend', () => { 
+                    contentEl.style.transform = (isSwiping && currentTranslate < -70) ? `translateX(-140px)` : `translateX(0)`; 
+                });
+                
                 actionEl.querySelectorAll('button').forEach(btn => {
-                    btn.onclick = (e) => { e.stopPropagation(); const action = btn.getAttribute('data-action');
-                        if (type === 'schedule') { const s = JSON.parse(btn.closest('.swipe-item-delete-bg').querySelector('[data-action="modify"]').getAttribute('data-schedule')); if (action === 'modify') openEditScheduleModal(JSON.stringify(s)); else deleteSchedule(s.id); } 
-                        else if (type === 'list') { const w = btn.closest('.swipe-item-container'); const l = tripData[currentTripId].lists.find(x => x.id === currentListTabId); if (action === 'delete') deleteListItem(l, parseInt(w.getAttribute('data-index'))); }
+                    btn.onclick = (e) => { 
+                        e.stopPropagation(); 
+                        const action = btn.getAttribute('data-action');
+                        if (type === 'schedule') { 
+                            // 這裡需要從 DOM 結構往回找資料，請確保原本邏輯正確
+                            const container = btn.closest('.swipe-item-delete-bg');
+                            // 修正：因為 modify 按鈕可能在 HTML 結構變更後位置不同，這裡做防呆
+                            const modifyBtn = container.querySelector('[data-action="modify"]');
+                            if (modifyBtn) {
+                                const s = JSON.parse(modifyBtn.getAttribute('data-schedule')); 
+                                if (action === 'modify') openEditScheduleModal(JSON.stringify(s)); 
+                                else deleteSchedule(s.id); 
+                            }
+                        } 
+                        else if (type === 'list') { 
+                            const w = btn.closest('.swipe-item-container'); 
+                            const l = tripData[currentTripId].lists.find(x => x.id === currentListTabId); 
+                            if (action === 'delete') deleteListItem(l, parseInt(w.getAttribute('data-index'))); 
+                        }
                         contentEl.style.transform = `translateX(0)`;
                     };
                 });
@@ -1086,6 +1130,7 @@
     </script>
 </body>
 </html>
+
 
 
 
