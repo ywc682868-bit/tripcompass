@@ -11,162 +11,39 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-    /* --- 全域設定 --- */
-    html {
-        scroll-snap-type: y proximity;
-        scroll-padding-top: 170px; 
-        scroll-behavior: smooth;
-    }
+    html { scroll-snap-type: y proximity; scroll-padding-top: 170px; scroll-behavior: smooth; }
     body { font-family: 'Inter', sans-serif; background-color: #f7f7f7; margin: 0; padding: 0; color: #5F6368; overflow-x: hidden; }
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     
-    /* --- 容器與佈局 --- */
-    #app-container {
-        max-width: 500px;
-        margin: 0 auto;
-        min-height: 100vh;
-        background-color: white;
-        padding-top: 0px; 
-        padding-bottom: 140px;
-        position: relative;
-        box-shadow: 0 0 10px rgba(0,0,0,0.05);
-    }
-    #schedule-list-container {
-        padding-top: 170px; 
-        padding-bottom: 40px;
-        margin-top: 0; 
-        position: relative; 
-        z-index: 1; 
-    }
-    #schedule-list-container::before {
-        content: '';
-        position: absolute;
-        top: 0; left: 0; right: 0;
-        height: 600px; 
-        background-color: white;
-        z-index: -2; 
-    }    
-    
-    #schedule-list-container .trip-card:first-child {
-        margin-top: 10px; 
-        scroll-snap-align: start;
-        scroll-margin-top: 10px;
-    }
+    #app-container { max-width: 500px; margin: 0 auto; min-height: 100vh; background-color: white; padding-bottom: 140px; position: relative; box-shadow: 0 0 10px rgba(0,0,0,0.05); }
+    #schedule-list-container { padding-top: 170px; padding-bottom: 40px; position: relative; z-index: 1; }
+    #schedule-list-container::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 600px; background-color: white; z-index: -2; }    
+    #schedule-list-container .trip-card:first-child { margin-top: 10px; scroll-snap-align: start; scroll-margin-top: 10px; }
 
-    /* --- Header 固定區 --- */
-    header { 
-        position: fixed;
-        top: 0; 
-        left: 0;
-        right: 0;
-        width: 100%; 
-        max-width: 500px;
-        margin-left: auto;
-        margin-right: auto;
-        background-color: #ffffff;
-        z-index: 50; 
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-    }
-    #header-content-wrapper {
-        padding-top: calc(15px + env(safe-area-inset-top)); 
-        padding-bottom: 4px; 
-        padding-left: 12px; 
-        padding-right: 12px;
-    }
+    header { position: fixed; top: 0; left: 0; right: 0; width: 100%; max-width: 500px; margin: 0 auto; background-color: #ffffff; z-index: 50; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
+    #header-content-wrapper { padding-top: calc(15px + env(safe-area-inset-top)); padding-bottom: 4px; padding-left: 12px; padding-right: 12px; }
     #trip-select { background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%237E92A1' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: right center; background-repeat: no-repeat; background-size: 1.25em 1.25em; -webkit-appearance: none; appearance: none; background-color: transparent; font-weight: 800; color: #4A4B4D; border: none; padding-right: 1.5rem; cursor: pointer; }
     #trip-select:focus { outline: none; }
-    #header-day-date-container { padding-bottom: 0px; margin-top: 8px; margin-bottom: 1px; line-height: 1.2; }
-
-    /* --- Footer (底部工具列) --- */
+    
     #combined-bottom-bar { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: 95%; max-width: 480px; background-color: white; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15); z-index: 50; display: flex; flex-direction: column; padding: 0.4rem 0.75rem 0.2rem 0.75rem; border-radius: 24px; border: 1px solid #f0f0f0; }
     .prominent-integrated-btn { width: 30px; height: 30px; background-color: #7E92A1; border-radius: 50%; color: white; font-size: 18px; font-weight: 300; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; transition: transform 0.1s; }
     .prominent-integrated-btn:active { transform: scale(0.95); }
-    #rate-display-label { font-size: 0.85rem; font-weight: bold; color: #7E92A1; line-height: 20px; }
-    #bar-calc-result { font-size: 0.7rem; font-weight: bold; color: #7E92A1; }
-
-    /* --- 行程卡片 (Trip Card) --- */
-    .trip-card { 
-        width: 100%; 
-        margin-bottom: 2rem; 
-        position: relative; 
-        height: 100px; 
-        display: flex; 
-        z-index: 0;
-    }
-
-    .trip-card::before {
-        content: '';
-        position: absolute;
-        left: 28px; 
-        top: -6px;        
-        bottom: -6px;      
-        width: 2px;
-        background-color: #9C8B74; 
-        z-index: -1; 
-        transform: translateX(-50%);
-    }
     
-    .trip-card:first-child::before { 
-        top: -60px; 
-        bottom: -6px; 
-        height: auto; 
-    }
+    .trip-card { width: 100%; margin-bottom: 2rem; position: relative; height: 100px; display: flex; z-index: 0; }
+    .trip-card::before { content: ''; position: absolute; left: 28px; top: -6px; bottom: -6px; width: 2px; background-color: #9C8B74; z-index: -1; transform: translateX(-50%); }
+    .trip-card:first-child::before { top: -60px; bottom: -6px; height: auto; }
     .trip-card:last-child::before { bottom: auto; height: 100%; }
 
-    .trip-card-visual-wrapper {
-        position: relative;
-        width: 100%;
-        height: 100%;
-        border-radius: 0.75rem; 
-        overflow: hidden; 
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08); 
-        background-color: white; 
-        z-index: 10; 
-        /* 修復圓角灰邊 */
-        mask-image: -webkit-radial-gradient(white, black);
-        -webkit-mask-image: -webkit-radial-gradient(white, black);
-    }
-
+    .trip-card-visual-wrapper { position: relative; width: 100%; height: 100%; border-radius: 0.75rem; overflow: hidden; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08); background-color: white; z-index: 10; mask-image: -webkit-radial-gradient(white, black); -webkit-mask-image: -webkit-radial-gradient(white, black); }
     .swipe-item-container { position: relative; overflow: hidden; border-radius: 0.375rem; margin-bottom: 0.5rem; touch-action: pan-y; }
+    .swipe-item-delete-bg { position: absolute; top: 0; bottom: 0; right: 0; width: 140px; display: flex; align-items: center; justify-content: flex-end; z-index: 0; }
+    .swipe-item-content { position: relative; z-index: 10; background-color: white; transition: transform 0.2s ease-out; transform: translateX(0); width: 100%; display: flex; align-items: stretch; }
     
-    .swipe-item-delete-bg { 
-        position: absolute; top: 0; bottom: 0; right: 0; width: 140px; 
-        display: flex; align-items: center; justify-content: flex-end; 
-        z-index: 0; 
-    }
+    .card-right-col { display: flex; flex-direction: column; justify-content: flex-start; align-items: flex-start; gap: 8px; width: 95px; min-width: 95px; max-width: 95px; flex: 0 0 95px; border-left: none; padding-left: 6px; padding-bottom: 0.25rem; padding-top: 12px; position: relative; }
+    .card-right-col::before { content: ''; position: absolute; left: 0; top: 8%; bottom: 8%; width: 1px; background-color: #C0C0C0; }
+    .card-static-actions { display: none !important; width: 100%; justify-content: flex-start !important; gap: 2px; padding: 0; margin: 0; }
     
-    .swipe-item-content { 
-        position: relative; z-index: 10; background-color: white; 
-        transition: transform 0.2s ease-out; transform: translateX(0); 
-        width: 100%; display: flex; align-items: stretch; 
-    }
-    
-    .card-right-col { 
-        display: flex; 
-        flex-direction: column; 
-        justify-content: flex-start; 
-        align-items: flex-start; 
-        gap: 8px; 
-        width: 95px; min-width: 95px; max-width: 95px; flex: 0 0 95px;
-        border-left: none; padding-left: 6px; padding-bottom: 0.25rem; padding-top: 12px; position: relative; 
-    }
-    .card-right-col::before {
-        content: ''; position: absolute; left: 0; top: 8%; bottom: 8%; width: 1px; background-color: #C0C0C0;
-    }
-
-    .info-block-content { display: flex; flex-direction: column; justify-content: flex-start; align-items: flex-end; gap: 4px; width: 100%; }
-    
-    .card-static-actions { 
-        display: none !important; 
-        width: 100%; 
-        justify-content: flex-start !important; 
-        gap: 2px; 
-        padding: 0; 
-        margin: 0; 
-    }
-    
-    /* --- RWD Adjustments --- */
     @media (min-width: 501px) {
         .swipe-item-delete-bg { display: none !important; }
         .trip-card .swipe-item-content { cursor: pointer; } 
@@ -180,7 +57,6 @@
         .trip-card:first-child::before { top: -35px; }
         .trip-card .content-text-block { margin-top: 8px; }
         .desktop-del-btn { display: none !important; } 
-        
         #currency-display-row { flex-wrap: nowrap !important; gap: 5px !important; }
         #rate-display-container { width: auto !important; flex: 0 0 auto !important; border-right: none !important; }
         #rate-display-label { font-size: 14px !important; white-space: nowrap !important; }
@@ -190,17 +66,14 @@
         #btn-lists span:nth-child(2), #split-expense-btn span:nth-child(2) { font-size: 14px !important; }
     }
 
-    /* --- Modals & Lists --- */
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(95, 99, 104, 0.4); display: flex; justify-content: center; align-items: center; z-index: 100; }
     .compact-input { padding: 0 0.3rem; font-size: 0.7rem; height: 28px; line-height: 28px; color: #5F6368; border-color: #E0E0E0; border-width: 1px; box-sizing: border-box; }
     .compact-input:focus { border-color: #7E92A1; outline: none; ring: 1px solid #7E92A1; }
     .compact-label { font-size: 0.7rem; color: #7E92A1; font-weight: 700; margin-bottom: 0; }
     input[type="time"], input[type="date"] { text-align: center; }
-    .list-tab-active { border-bottom: 2px solid #7E92A1; color: #7E92A1; font-weight: bold; }
-    .list-tab-inactive { color: #A9A9A9; }
     .shopping-img-box { width: 50px; height: 50px; background-color: #f0f0f0; border-radius: 6px; overflow: hidden; display: flex; justify-content: center; align-items: center; cursor: pointer; border: 1px dashed #ccc; position: relative; }
     .shopping-img-box img { width: 100%; height: 100%; object-fit: cover; }
-</style>
+    </style>
 </head>
 
 <body>
@@ -261,11 +134,9 @@
                  <span class="text-xl leading-none">📝</span>
                  <span class="text-[12px] font-bold leading-none">清單</span>
              </button>
-             
              <div class="flex-none px-4">
                  <button id="center-add-btn" class="prominent-integrated-btn shadow-md">＋</button>
              </div>
-             
              <button id="split-expense-btn" class="flex-1 flex flex-row items-center justify-center gap-2 text-[#888888] hover:text-[#8F9E8B]">
                  <span class="text-xl leading-none">💰</span>
                  <span class="text-[12px] font-bold leading-none">花費</span>
@@ -273,9 +144,7 @@
         </div>
     </div>
 
-    <div id="add-schedule-modal" class="modal-overlay hidden">
-        <div class="bg-white rounded-xl shadow-2xl p-3 w-11/12 max-w-sm max-h-[90vh] overflow-y-auto relative"></div>
-    </div>
+    <div id="add-schedule-modal" class="modal-overlay hidden"><div class="bg-white rounded-xl shadow-2xl p-3 w-11/12 max-w-sm max-h-[90vh] overflow-y-auto relative"></div></div>
     <div id="lists-modal" class="modal-overlay hidden"><div class="bg-white rounded-xl shadow-2xl p-4 w-11/12 max-w-sm max-h-[80vh] flex flex-col relative"><h3 class="text-base font-bold mb-2 flex justify-between items-center flex-shrink-0 text-[#4A4B4D]">清單<button id="lists-modal-close-btn" class="text-[#A9A9A9] hover:text-[#5F6368] text-xl leading-none">×</button></h3><div id="list-tabs" class="flex gap-1 border-b border-gray-100 mb-2 overflow-x-auto no-scrollbar flex-shrink-0"></div><div id="list-content" class="flex-grow overflow-y-auto flex flex-col relative"></div></div></div>
     <div id="image-zoom-modal" class="modal-overlay hidden z-[150] bg-black/80"><img id="zoom-img" class="max-w-[95%] max-h-[90%] rounded shadow-lg object-contain"></div>
     <div id="settings-modal" class="modal-overlay hidden"><div class="bg-white rounded-xl shadow-2xl p-4 w-11/12 max-w-sm"></div></div>
@@ -369,6 +238,7 @@
 
                 const mustGoHtml = schedule.MustGo ? `<div class="mt-auto w-full flex justify-start mb-3"><span class="text-[9px] text-[#CB8572] border border-[#CB8572] px-1 py-0.5 rounded-[2px] leading-none font-normal bg-white">必去</span></div>` : '';
 
+                // ✅ 100% 純 DOM 建立，不使用 innerHTML 插值，杜絕 SyntaxError
                 const card = document.createElement('div');
                 card.className = 'trip-card flex w-full mb-3 relative'; 
                 card.style.height = '100px'; 
@@ -379,18 +249,18 @@
                 const swipeActions = document.createElement('div');
                 swipeActions.className = 'swipe-item-delete-bg';
                 
-                // ✅ 使用 createElement 建立按鈕，防止 SyntaxError
-                const modifyBtn = document.createElement('button');
-                modifyBtn.className = "px-2 py-1 h-full text-xs font-bold bg-[#7E92A1] text-white modify-btn";
-                modifyBtn.textContent = "修改";
+                const modBtn = document.createElement('button');
+                modBtn.className = "px-2 py-1 h-full text-xs font-bold bg-[#7E92A1] text-white";
+                modBtn.textContent = "修改";
+                modBtn.onclick = (e) => { e.stopPropagation(); openEditScheduleModal(schedule); };
                 
-                const deleteBtn = document.createElement('button');
-                deleteBtn.className = "px-2 py-1 h-full text-xs font-bold bg-[#CB8572] text-white delete-btn";
-                deleteBtn.textContent = "刪除";
+                const delBtn = document.createElement('button');
+                delBtn.className = "px-2 py-1 h-full text-xs font-bold bg-[#CB8572] text-white";
+                delBtn.textContent = "刪除";
+                delBtn.onclick = (e) => { e.stopPropagation(); deleteSchedule(schedule.id); };
                 
-                swipeActions.appendChild(modifyBtn);
-                swipeActions.appendChild(deleteBtn);
-                
+                swipeActions.appendChild(modBtn);
+                swipeActions.appendChild(delBtn);
                 visualWrapper.appendChild(swipeActions);
 
                 const content = document.createElement('div');
@@ -402,7 +272,6 @@
                         <span class="text-2xl leading-none mb-1">${style.icon}</span>
                         <span class="text-[9px] font-medium opacity-90 leading-none">${CATEGORY_NAMES[schedule.Type] || schedule.Type}</span>
                     </div>
-                    
                     <div class="flex-grow py-2 pl-2 pr-1 flex flex-col justify-start min-w-0 relative overflow-hidden">
                         <div class="flex justify-between items-start w-full">
                             <h3 class="text-xs font-bold text-[#4A4B4D] leading-tight mb-0.5 flex-grow mr-1 truncate">
@@ -410,61 +279,38 @@
                             </h3>
                             ${memberHtml}
                         </div>
-                        
                         <p class="text-[#888888] text-[10px] line-clamp-4 whitespace-pre-wrap leading-normal mt-0.5">${schedule.說明 || ''}</p>
                     </div>
-                    
                     <div class="card-right-col h-full flex flex-col">
-                        <div class="card-static-actions"> 
-                             </div>
-                        
+                        <div class="card-static-actions"></div>
                         <div class="flex flex-col gap-1 mt-1">
                             <div class="flex items-center justify-start w-full"><span class="text-[#8F9E8B] font-bold text-[10px]">💰 TWD$${amountTWD.toFixed(0)}</span></div>
                             <div class="flex items-center justify-start w-full"><span class="text-[#888888] font-bold text-[10px]">👫 TWD$${formatCurrency(perPersonTWD)}</span></div>
                         </div>
-                        
                         ${mustGoHtml}
                     </div>`;
                 
-                // Insert static buttons manually
+                // 手動加入靜態按鈕，避免 innerHTML onclick 問題
                 const staticActions = content.querySelector('.card-static-actions');
-                const staticModBtn = document.createElement('button');
-                staticModBtn.className = "bg-[#7E92A1] text-white modify-btn rounded px-1.5 py-0.5 text-[9px] font-bold";
-                staticModBtn.textContent = "修改";
+                const staticMod = document.createElement('button');
+                staticMod.className = "bg-[#7E92A1] text-white rounded px-1.5 py-0.5 text-[9px] font-bold";
+                staticMod.textContent = "修改";
+                staticMod.onclick = (e) => { e.stopPropagation(); openEditScheduleModal(schedule); };
                 
-                const staticDelBtn = document.createElement('button');
-                staticDelBtn.className = "bg-[#CB8572] text-white delete-btn rounded px-1.5 py-0.5 text-[9px] font-bold";
-                staticDelBtn.textContent = "刪除";
+                const staticDel = document.createElement('button');
+                staticDel.className = "bg-[#CB8572] text-white rounded px-1.5 py-0.5 text-[9px] font-bold";
+                staticDel.textContent = "刪除";
+                staticDel.onclick = (e) => { e.stopPropagation(); deleteSchedule(schedule.id); };
                 
-                staticActions.appendChild(staticModBtn);
-                staticActions.appendChild(staticDelBtn);
+                staticActions.appendChild(staticMod);
+                staticActions.appendChild(staticDel);
 
                 visualWrapper.appendChild(content);
                 card.appendChild(visualWrapper);
 
                 card.querySelector('.map-link').onclick = (e) => { e.preventDefault(); navigateToMap(schedule.Address || schedule.Location); };
-                
-                // ✅ 綁定事件
-                const handleEdit = (e) => { 
-                    if(e) e.stopPropagation(); 
-                    // 這裡直接傳遞物件，不轉字串
-                    openEditScheduleModal(schedule); 
-                };
-                
-                const handleDelete = (e) => {
-                    if(e) e.stopPropagation();
-                    deleteSchedule(schedule.id);
-                };
-                
-                modifyBtn.onclick = handleEdit;
-                deleteBtn.onclick = handleDelete;
-                staticModBtn.onclick = handleEdit;
-                staticDelBtn.onclick = handleDelete;
-
                 content.onclick = (e) => { 
-                    if (window.innerWidth > 500 && !e.target.closest('button') && !e.target.classList.contains('map-link')) {
-                        openEditScheduleModal(schedule);
-                    }
+                    if (window.innerWidth > 500 && !e.target.closest('button') && !e.target.classList.contains('map-link')) openEditScheduleModal(schedule); 
                 };
                 enableSwipeToDelete(content, swipeActions, 'schedule');
                 return card;
@@ -549,7 +395,6 @@
                 document.getElementById('bar-calc-result').value = (amt === 0) ? '0' : (amt * rate).toFixed(0);
             }
 
-            // ✅ 輔助函式：安全綁定事件，防止 null error
             function safeBind(id, event, handler) {
                 const el = document.getElementById(id);
                 if (el) el[event] = handler;
@@ -586,20 +431,16 @@
                     contentEl.style.transform = (isSwiping && currentTranslate < -70) ? `translateX(-140px)` : `translateX(0)`; 
                 });
                 
-                // No inline onclick handler needed here as buttons are created in DOM
                 actionEl.querySelectorAll('button').forEach(btn => {
-                    // Keep existing click handlers attached in createTripCard
-                    const originalClick = btn.onclick;
-                    btn.onclick = (e) => {
-                        if(originalClick) originalClick(e);
-                        contentEl.style.transform = `translateX(0)`;
-                    }
+                   const originalClick = btn.onclick;
+                   btn.onclick = (e) => {
+                       if(originalClick) originalClick(e);
+                       contentEl.style.transform = `translateX(0)`;
+                   }
                 });
             }
 
-            function openEditScheduleModal(schedule) {
-                // ✅ Handle both string (legacy) and object
-                const s = (typeof schedule === 'string') ? JSON.parse(schedule) : schedule;
+            function openEditScheduleModal(s) {
                 editingScheduleId = s.id;
                 document.getElementById('add-schedule-modal-title').textContent = s.Location || '編輯行程'; 
                 document.getElementById('modal-delete-btn').style.display = 'block'; 
@@ -634,27 +475,58 @@
                 document.getElementById('add-schedule-modal').style.display = 'flex';
             }
             
-            // ✅ 成員列表 UI 優化：單行排列，刪除按鈕在最右邊
+            // ✅ 成員列表 UI 優化：單行排列，使用 createElement 避免 innerHTML 問題
             function addMemberInput(name='', amt='', isPayer=false, method='cash') { 
                 const d = document.createElement('div'); 
                 d.className = 'flex items-center w-full gap-2 border-b border-gray-100 pb-2 mb-2 last:border-0 last:mb-0'; 
-                d.innerHTML = `
-                    <input type="text" name="schedule-member-name" value="${name}" placeholder="名字" class="compact-input w-16 rounded-md font-bold text-[11px] flex-shrink-0">
-                    <input type="number" name="schedule-member-amount" value="${amt}" placeholder="金額" class="compact-input w-16 rounded-md text-[11px] flex-shrink-0">
-                    
-                    <div class="flex flex-col justify-center gap-0.5">
-                        <label class="flex items-center text-[9px] text-[#7E92A1] cursor-pointer leading-none select-none whitespace-nowrap">
-                            <input type="checkbox" class="payer-check mr-1 h-3 w-3" ${isPayer ? 'checked' : ''}>墊付
-                        </label>
-                        <select class="payment-method text-[9px] border border-gray-200 rounded px-0 py-0 text-[#5F6368] bg-white h-4 leading-none w-12 text-center">
-                            <option value="cash" ${method === 'cash' ? 'selected' : ''}>現金</option>
-                            <option value="card" ${method === 'card' ? 'selected' : ''}>刷卡</option>
-                        </select>
-                    </div>
-                    
-                    <button type="button" class="text-[#CB8572] font-bold p-1 rm-btn ml-auto text-lg leading-none w-6 flex justify-center items-center">×</button>
-                `; 
-                d.querySelector('.rm-btn').onclick = () => d.remove(); 
+                
+                // Name
+                const nameInput = document.createElement('input');
+                nameInput.type = 'text'; nameInput.name = 'schedule-member-name'; nameInput.value = name;
+                nameInput.placeholder = '名字';
+                nameInput.className = 'compact-input w-16 rounded-md font-bold text-[11px] flex-shrink-0';
+                
+                // Amount
+                const amtInput = document.createElement('input');
+                amtInput.type = 'number'; amtInput.name = 'schedule-member-amount'; amtInput.value = amt;
+                amtInput.placeholder = '金額';
+                amtInput.className = 'compact-input w-16 rounded-md text-[11px] flex-shrink-0';
+                
+                // Options Container
+                const optsDiv = document.createElement('div');
+                optsDiv.className = 'flex flex-col justify-center gap-0.5';
+                
+                // Payer Checkbox
+                const label = document.createElement('label');
+                label.className = 'flex items-center text-[9px] text-[#7E92A1] cursor-pointer leading-none select-none whitespace-nowrap';
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox'; checkbox.className = 'payer-check mr-1 h-3 w-3'; checkbox.checked = isPayer;
+                label.appendChild(checkbox);
+                label.appendChild(document.createTextNode('墊付'));
+                
+                // Payment Method
+                const select = document.createElement('select');
+                select.className = 'payment-method text-[9px] border border-gray-200 rounded px-0 py-0 text-[#5F6368] bg-white h-4 leading-none w-12 text-center';
+                const op1 = document.createElement('option'); op1.value='cash'; op1.text='現金';
+                const op2 = document.createElement('option'); op2.value='card'; op2.text='刷卡';
+                select.add(op1); select.add(op2);
+                select.value = method;
+
+                optsDiv.appendChild(label);
+                optsDiv.appendChild(select);
+                
+                // Delete Button
+                const delBtn = document.createElement('button');
+                delBtn.type = 'button';
+                delBtn.className = 'text-[#CB8572] font-bold p-1 rm-btn ml-auto text-lg leading-none w-6 flex justify-center items-center';
+                delBtn.textContent = '×';
+                delBtn.onclick = () => d.remove();
+                
+                d.appendChild(nameInput);
+                d.appendChild(amtInput);
+                d.appendChild(optsDiv);
+                d.appendChild(delBtn);
+                
                 document.getElementById('form-members-container').appendChild(d); 
             }
 
@@ -981,7 +853,6 @@
 
                     const addScheduleModalContent = document.querySelector('#add-schedule-modal > div');
                     if(addScheduleModalContent) {
-                        // ✅ 修改：按鈕改成「儲存」，總金額移到底部，成員列表優化
                         addScheduleModalContent.innerHTML = `
                             <h3 class="text-base font-bold mb-2 text-[#4A4B4D] pr-8 truncate"> 
                                 <span id="add-schedule-modal-title">新增行程</span> 
@@ -1053,9 +924,7 @@
                                             <label id="form-currency-label" class="text-[10px] font-bold text-[#7E92A1] w-8 text-right">USD</label>
                                             <input type="number" id="form-amount" min="0" placeholder="0" class="w-16 p-1 border border-[#E0E0E0] rounded text-right text-[11px] text-[#5F6368] bg-white text-left">
                                         </div>
-                                        
                                         <div class="text-center text-gray-400 text-xs font-bold">=</div>
-                                        
                                         <div class="flex items-center gap-1 justify-start">
                                             <span class="text-[10px] font-bold text-[#A9A9A9] w-8 text-right">TWD</span>
                                             <input type="number" id="form-amount-twd" placeholder="0" class="w-16 p-1 border border-[#E0E0E0] bg-[#E0E0E0] rounded text-right text-[11px] text-left">
