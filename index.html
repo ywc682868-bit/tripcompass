@@ -116,15 +116,15 @@
     .trip-card:last-child::before { bottom: auto; height: 100%; }
 
     .trip-card-visual-wrapper {
-        position: relative;
-        width: 100%;
-        height: 100%;
-        border-radius: 0.75rem; 
-        overflow: hidden;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); 
-        background-color: white; 
-        z-index: 10; 
-    }
+    position: relative;
+    width: 100%;
+    height: 100%;
+    border-radius: 0.75rem; 
+    overflow: hidden; /* 關鍵：必須隱藏溢出 */
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); 
+    background-color: white; 
+    z-index: 10; 
+}
 
     .swipe-item-container { position: relative; overflow: hidden; border-radius: 0.375rem; margin-bottom: 0.5rem; touch-action: pan-y; }
     
@@ -380,7 +380,9 @@
                 
                 // ✅ 關鍵修正：這裡移除了 'overflow-hidden'
                 // 保留 'h-[100px]' 確保高度固定，但允許線條(::before)和陰影顯示在框外
-                card.className = 'trip-card flex w-full mb-3 relative h-[100px]'; 
+                card.className = 'trip-card flex w-full mb-3 relative';
+card.style.height = '100px'; 
+card.style.overflow = 'hidden';
                 
                 const visualWrapper = document.createElement('div');
                 // 內層 wrapper 已經有 CSS class 設定 overflow: hidden，所以內容不會跑出來
@@ -1359,5 +1361,6 @@ END:VEVENT
     </script>
 </body>
 </html>
+
 
 
