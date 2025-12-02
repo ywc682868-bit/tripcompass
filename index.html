@@ -90,10 +90,9 @@
         width: 100%; 
         margin-bottom: 2rem; 
         position: relative; 
-        min-height: 85px; 
+        height: 100px; 
         display: flex; 
         z-index: 0;
-        /* 注意：這裡不能有 overflow: hidden，否則陰影會被切掉 */
     }
 
     .trip-card::before {
@@ -115,17 +114,18 @@
     }
     .trip-card:last-child::before { bottom: auto; height: 100%; }
 
-    /* ✅ 陰影與圓角設定 */
     .trip-card-visual-wrapper {
         position: relative;
         width: 100%;
         height: 100%;
         border-radius: 0.75rem; 
-        overflow: hidden; /* 這裡保留 hidden 以裁切內部內容 */
-        /* 加深陰影，確保看得到 */
+        overflow: hidden; 
         box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08); 
         background-color: white; 
         z-index: 10; 
+        /* 修復圓角灰邊 */
+        mask-image: -webkit-radial-gradient(white, black);
+        -webkit-mask-image: -webkit-radial-gradient(white, black);
     }
 
     .swipe-item-container { position: relative; overflow: hidden; border-radius: 0.375rem; margin-bottom: 0.5rem; touch-action: pan-y; }
@@ -371,7 +371,6 @@
                 const mustGoHtml = schedule.MustGo ? `<div class="mt-auto w-full flex justify-start mb-3"><span class="text-[9px] text-[#CB8572] border border-[#CB8572] px-1 py-0.5 rounded-[2px] leading-none font-normal bg-white">必去</span></div>` : '';
 
                 const card = document.createElement('div');
-                // ✅ 關鍵修改：刪除 overflow: hidden 讓陰影不被裁切，並加上固定高度
                 card.className = 'trip-card flex w-full mb-3 relative'; 
                 card.style.height = '100px'; 
                 
@@ -592,9 +591,12 @@
                 const mems = s.members || []; 
                 if(mems.length) {
                     mems.forEach(m => {
+                        // ✅ 修正：傳入更多參數 (name, amount, isPayer, method)
                         const name = typeof m === 'string' ? m : m.name;
                         const amt = (typeof m === 'string' || m.amount === null) ? '' : m.amount;
-                        addMemberInput(name, amt);
+                        const isPayer = m.isPayer || false;
+                        const method = m.method || 'cash';
+                        addMemberInput(name, amt, isPayer, method);
                     }); 
                 } else { 
                     addMemberInput(); addMemberInput(); 
@@ -602,16 +604,55 @@
                 document.getElementById('add-schedule-modal').style.display = 'flex';
             }
             
-            function addMemberInput(name='', amt='') { const d = document.createElement('div'); d.className = 'flex items-center space-x-2 mt-1.5'; d.innerHTML = `<input type="text" name="schedule-member-name" value="${name}" placeholder="名字" class="compact-input w-16 rounded-md"><input type="number" name="schedule-member-amount" value="${amt}" placeholder="金額" class="compact-input w-16 rounded-md"><button type="button" class="text-[#CB8572] font-bold p-1 rm-btn">×</button>`; d.querySelector('.rm-btn').onclick = () => d.remove(); document.getElementById('form-members-container').appendChild(d); }
+            // ✅ 大改版：支援墊付與付款方式，排版優化
+            function addMemberInput(name='', amt='', isPayer=false, method='cash') { 
+                const d = document.createElement('div'); 
+                d.className = 'flex flex-col border-b border-gray-100 pb-2 mb-2 last:border-0 last:mb-0'; 
+                d.innerHTML = `
+                    <div class="flex items-center space-x-2">
+                        <input type="text" name="schedule-member-name" value="${name}" placeholder="名字" class="compact-input w-20 rounded-md font-bold">
+                        <input type="number" name="schedule-member-amount" value="${amt}" placeholder="金額" class="compact-input w-20 rounded-md">
+                        <button type="button" class="text-[#CB8572] font-bold p-1 rm-btn ml-auto">×</button>
+                    </div>
+                    <div class="flex items-center space-x-3 mt-1.5 pl-1">
+                        <label class="flex items-center text-[10px] text-[#7E92A1] cursor-pointer">
+                            <input type="checkbox" class="payer-check mr-1" ${isPayer ? 'checked' : ''}> 墊付
+                        </label>
+                        <select class="payment-method text-[10px] border border-gray-200 rounded px-1 py-0.5 text-[#5F6368] bg-white">
+                            <option value="cash" ${method === 'cash' ? 'selected' : ''}>現金</option>
+                            <option value="card" ${method === 'card' ? 'selected' : ''}>刷卡</option>
+                        </select>
+                    </div>
+                `; 
+                d.querySelector('.rm-btn').onclick = () => d.remove(); 
+                document.getElementById('form-members-container').appendChild(d); 
+            }
 
             async function submitSchedule() {
                 try {
                     const dateVal = document.getElementById('form-date').value; if (!dateVal) return alert("請選日期");
                     const trip = tripData[currentTripId]; const dayId = `Day ${dateDiffInDays(new Date(dateVal), new Date(trip.startDate)) + 1}`;
-                    const members = []; const names = document.querySelectorAll('input[name="schedule-member-name"]'); const amts = document.querySelectorAll('input[name="schedule-member-amount"]');
-                    names.forEach((n, i) => { if(n.value.trim()) members.push({name: n.value.trim(), amount: amts[i].value ? parseFloat(amts[i].value) : null}); });
-                    const uid = auth.currentUser ? auth.currentUser.uid : null; 
                     
+                    // ✅ 修正：讀取新欄位資料
+                    const members = []; 
+                    const memberRows = document.getElementById('form-members-container').children;
+                    for (let row of memberRows) {
+                        const name = row.querySelector('input[name="schedule-member-name"]').value.trim();
+                        const amountStr = row.querySelector('input[name="schedule-member-amount"]').value;
+                        const isPayer = row.querySelector('.payer-check').checked;
+                        const method = row.querySelector('.payment-method').value;
+                        
+                        if (name) {
+                            members.push({
+                                name: name, 
+                                amount: amountStr ? parseFloat(amountStr) : null,
+                                isPayer: isPayer,
+                                method: method
+                            });
+                        }
+                    }
+
+                    const uid = auth.currentUser ? auth.currentUser.uid : null; 
                     let rawAmount = parseFloat(document.getElementById('form-amount').value);
                     if (isNaN(rawAmount)) rawAmount = 0;
 
@@ -956,6 +997,7 @@ END:VCALENDAR`;
 
                     const addScheduleModalContent = document.querySelector('#add-schedule-modal > div');
                     if(addScheduleModalContent) {
+                        // ✅ 修改：按鈕改成「儲存」，總金額移到底部，成員列表優化
                         addScheduleModalContent.innerHTML = `
                             <h3 class="text-base font-bold mb-2 text-[#4A4B4D] pr-8 truncate"> 
                                 <span id="add-schedule-modal-title">新增行程</span> 
@@ -1015,22 +1057,22 @@ END:VCALENDAR`;
                                     <textarea id="form-details" rows="2" class="compact-input block w-full rounded border shadow-sm !h-auto leading-normal p-2 text-xs" placeholder="備註說明..."></textarea>
                                 </div>
                                 
-                                <div class="flex gap-2 items-start mt-1 bg-gray-50 p-2 rounded border border-gray-100">
-                                    <div class="flex-grow">
-                                        <div class="flex justify-start items-center mb-1 gap-2">
-                                            <label class="block compact-label">分帳成員</label>
-                                            <button type="button" id="add-member-btn" class="ml-auto text-sm font-bold text-white bg-[#7E92A1] rounded-full w-5 h-5 flex items-center justify-center hover:bg-[#64748B] transition-colors leading-none">+</button>
-                                        </div>
-                                        <div id="form-members-container" class="space-y-1"></div>
+                                <div class="bg-gray-50 p-2 rounded border border-gray-100 mt-1">
+                                    <div class="flex justify-start items-center mb-1 gap-2">
+                                        <label class="block compact-label">分帳成員</label>
+                                        <button type="button" id="add-member-btn" class="ml-auto text-sm font-bold text-white bg-[#7E92A1] rounded-full w-5 h-5 flex items-center justify-center hover:bg-[#64748B] transition-colors leading-none">+</button>
                                     </div>
-                                    <div class="w-24 flex-shrink-0 flex flex-col gap-1">
+                                    <div id="form-members-container" class="space-y-1 mb-2"></div>
+                                    
+                                    <div class="border-t border-gray-200 pt-2 flex items-center justify-end gap-2">
                                          <div class="flex items-center gap-1">
                                              <label id="form-currency-label" class="text-[10px] text-[#7E92A1] font-bold w-6 text-right">USD</label>
-                                             <input type="number" id="form-amount" min="0" placeholder="0" class="w-full p-1 border border-[#E0E0E0] rounded text-right text-[11px] text-[#5F6368] bg-white" style="height: 28px !important;">
+                                             <input type="number" id="form-amount" min="0" placeholder="0" class="w-20 p-1 border border-[#E0E0E0] rounded text-right text-[11px] text-[#5F6368] bg-white">
                                          </div>
+                                         <span class="text-[10px] text-[#A9A9A9]">=</span>
                                          <div class="flex items-center gap-1">
-                                             <span class="text-[10px] text-[#A9A9A9] font-bold w-6 text-right">TWD</span>
-                                             <input type="number" id="form-amount-twd" placeholder="0" class="w-full p-1 border border-[#E0E0E0] bg-[#E0E0E0] rounded text-right text-[11px]" style="height: 28px !important;">
+                                             <span class="text-[10px] text-[#A9A9A9] font-bold text-right">TWD</span>
+                                             <input type="number" id="form-amount-twd" placeholder="0" class="w-20 p-1 border border-[#E0E0E0] bg-[#E0E0E0] rounded text-right text-[11px]">
                                          </div>
                                     </div>
                                 </div>
@@ -1038,7 +1080,7 @@ END:VCALENDAR`;
                                 <div class="flex justify-between items-center pt-2 mt-2 border-t border-[#E0E0E0]">
                                     <button type="button" id="modal-delete-btn" class="px-3 py-1 h-7 text-white bg-[#CB8572] rounded text-xs font-bold flex-shrink-0 hover:bg-[#B56B5A] hidden">刪除</button>
                                     <div class="flex-grow flex justify-end">
-                                        <button type="button" id="modal-save-btn" class="px-6 py-1 h-8 text-white bg-[#7E92A1] rounded text-xs font-bold flex-shrink-0 hover:bg-[#64748B] shadow-sm">儲存行程</button>
+                                        <button type="button" id="modal-save-btn" class="px-6 py-1 h-8 text-white bg-[#7E92A1] rounded text-xs font-bold flex-shrink-0 hover:bg-[#64748B] shadow-sm">儲存</button>
                                     </div>
                                 </div>
                             </form>
@@ -1047,7 +1089,6 @@ END:VCALENDAR`;
 
                     const settingsModalContent = document.querySelector('#settings-modal > div');
                     if (settingsModalContent) {
-                        // ✅ 修改：天數欄位高度改為 h-[28px]
                         settingsModalContent.innerHTML = `
                             <h3 class="text-base font-bold mb-3 flex justify-between items-center text-[#4A4B4D]">
                                 計畫設定 <button id="settings-modal-close-btn" class="text-[#A9A9A9] hover:text-[#5F6368] text-xl leading-none">×</button>
@@ -1093,7 +1134,6 @@ END:VCALENDAR`;
 
                     loadTripList();
 
-                    // ✅ 全面改用 safeBind，解決所有潛在 null 錯誤
                     safeBind('trip-select', 'onchange', (e) => changeTrip(e.target.value));
                     safeBind('bar-calc-currency', 'onchange', calculateCurrency);
                     safeBind('bar-calc-amount', 'oninput', calculateCurrency);
@@ -1214,7 +1254,7 @@ END:VCALENDAR`;
 
                         document.getElementById('settings-modal').style.display='none';
                         changeTrip(currentTripId); 
-                    });
+                    };
                 });
             }
             
