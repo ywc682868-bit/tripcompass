@@ -123,7 +123,6 @@
         box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08); 
         background-color: white; 
         z-index: 10; 
-        /* 修復圓角灰邊 */
         mask-image: -webkit-radial-gradient(white, black);
         -webkit-mask-image: -webkit-radial-gradient(white, black);
     }
@@ -359,7 +358,7 @@
                 }
                 
                 // ✅ 關鍵修正：跳脫單引號，防止 SyntaxError
-                const scheduleJson = JSON.stringify({ ...schedule, Amount: schedule.Amount || 0 }).replace(/'/g, "&#39;");
+                const scheduleJson = JSON.stringify({ ...schedule, Amount: schedule.Amount || 0 }).replace(/'/g, "'");
                 
                 let memberHtml = '';
                 if (members.length > 0) {
@@ -606,16 +605,15 @@
                 document.getElementById('add-schedule-modal').style.display = 'flex';
             }
             
-            // ✅ 大改版：使用 Grid 佈局，確保對齊與空間分配
+            // ✅ 大改版：單行排列，刪除按鈕在最右邊
             function addMemberInput(name='', amt='', isPayer=false, method='cash') { 
                 const d = document.createElement('div'); 
-                // Grid: [Name 1fr] [Amount 1fr] [Options auto] [Delete 20px]
-                d.className = 'grid grid-cols-[1.5fr_1.5fr_auto_20px] gap-2 items-center border-b border-gray-100 pb-2 mb-2 last:border-0 last:mb-0'; 
+                d.className = 'flex items-center w-full gap-2 border-b border-gray-100 pb-2 mb-2 last:border-0 last:mb-0'; 
                 d.innerHTML = `
-                    <input type="text" name="schedule-member-name" value="${name}" placeholder="名字" class="compact-input w-full rounded-md font-bold text-[11px]">
-                    <input type="number" name="schedule-member-amount" value="${amt}" placeholder="金額" class="compact-input w-full rounded-md text-[11px]">
+                    <input type="text" name="schedule-member-name" value="${name}" placeholder="名字" class="compact-input w-16 rounded-md font-bold text-[11px] flex-shrink-0">
+                    <input type="number" name="schedule-member-amount" value="${amt}" placeholder="金額" class="compact-input w-16 rounded-md text-[11px] flex-shrink-0">
                     
-                    <div class="flex flex-col gap-0.5 items-end">
+                    <div class="flex flex-col justify-center gap-0.5">
                         <label class="flex items-center text-[9px] text-[#7E92A1] cursor-pointer leading-none select-none whitespace-nowrap">
                             <input type="checkbox" class="payer-check mr-1 h-3 w-3" ${isPayer ? 'checked' : ''}>墊付
                         </label>
@@ -625,7 +623,7 @@
                         </select>
                     </div>
                     
-                    <button type="button" class="text-[#CB8572] font-bold p-1 rm-btn text-lg leading-none flex justify-center items-center">×</button>
+                    <button type="button" class="text-[#CB8572] font-bold p-1 rm-btn ml-auto text-lg leading-none w-6 flex justify-center items-center">×</button>
                 `; 
                 d.querySelector('.rm-btn').onclick = () => d.remove(); 
                 document.getElementById('form-members-container').appendChild(d); 
