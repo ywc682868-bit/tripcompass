@@ -982,20 +982,20 @@ END:VCALENDAR`;
                             <h3 class="text-base font-bold mb-2 text-[#4A4B4D] pr-8 truncate"> <span id="add-schedule-modal-title">新增行程</span> </h3>
                             <button id="modal-close-btn" class="absolute top-3 right-3 text-[#A9A9A9] hover:text-[#5F6368] text-2xl leading-none w-6 h-6 flex items-center justify-center">×</button>
                             
-                            <form id="add-schedule-form" class="space-y-1.5">
+                            <form id="add-schedule-form" class="space-y-2">
     
-    <div class="grid grid-cols-[1.3fr_0.9fr_1.1fr] gap-1.5 items-end"> 
+    <div class="grid grid-cols-3 gap-1"> 
         <div>
             <label class="block compact-label mb-0.5">日期</label>
-            <input type="date" id="form-date" class="compact-input block w-full rounded border shadow-sm text-center h-6 leading-6 p-0 text-[10px]" style="min-width: 0;">
+            <input type="date" id="form-date" class="compact-input block w-full rounded border shadow-sm text-center h-7 p-0 text-[10px]" style="min-width: 0;">
         </div> 
         <div>
             <label class="block compact-label mb-0.5">時間</label>
-            <input type="time" id="form-time" class="compact-input block w-full rounded border shadow-sm text-center h-6 leading-6 p-0 text-[10px]" style="min-width: 0;">
+            <input type="time" id="form-time" class="compact-input block w-full rounded border shadow-sm text-center h-7 p-0 text-[10px]" style="min-width: 0;">
         </div>
         <div>
             <label class="block compact-label mb-0.5">類型</label>
-            <select id="form-type" class="compact-input block w-full rounded border shadow-sm h-6 py-0 pl-1 pr-0 text-[10px]" style="min-width: 0;">
+            <select id="form-type" class="compact-input block w-full rounded border shadow-sm h-7 py-0 pl-1 pr-0 text-[10px]" style="min-width: 0;">
                 <option value="location">📍 景點</option>
                 <option value="restaurant">🍽️ 餐廳</option>
                 <option value="coffee">☕ 咖啡廳</option>
@@ -1006,27 +1006,31 @@ END:VCALENDAR`;
         </div>
     </div>
 
-    <div class="flex gap-1.5 items-end">
+    <div class="flex gap-2 items-end">
         <div class="flex-grow min-w-0">
             <label class="block compact-label mb-0.5">地點</label>
-            <input type="text" id="form-location" class="compact-input block w-full rounded border shadow-sm h-7 px-1 text-[11px]" placeholder="輸入地點名稱">
+            <input type="text" id="form-location" class="compact-input block w-full rounded border shadow-sm h-8 px-2 text-xs" placeholder="輸入地點">
         </div>
 
-        <div class="flex gap-2 flex-shrink-0 pb-0.5">
+        <div class="flex gap-2 flex-shrink-0 pb-1">
             <div class="flex flex-col items-center justify-end">
-                <label class="compact-label mb-1 leading-none">必去</label>
-                <input type="checkbox" id="form-must-go" class="w-3.5 h-3.5 accent-[#CB8572] cursor-pointer">
+                <label class="compact-label mb-1 leading-none text-[10px]">必去</label>
+                <input type="checkbox" id="form-must-go" class="w-4 h-4 accent-[#CB8572] cursor-pointer">
             </div>
             <div class="flex flex-col items-center justify-end">
-                <label class="compact-label mb-1 leading-none">鬧鐘</label>
-                <input type="checkbox" id="form-set-alarm" class="w-3.5 h-3.5 accent-[#7E92A1] cursor-pointer">
+                <label class="compact-label mb-1 leading-none text-[10px]">鬧鐘</label>
+                <input type="checkbox" id="form-set-alarm" class="w-4 h-4 accent-[#7E92A1] cursor-pointer">
             </div>
         </div>
     </div>
 
-    <div><label class="block compact-label mb-0.5">地址</label><input type="text" id="form-address" class="compact-input block w-full rounded border shadow-sm h-7 px-1" placeholder="Google Maps URL 或地址"></div>
+    <div>
+        <input type="text" id="form-address" class="compact-input block w-full rounded border shadow-sm h-7 px-2 text-xs" placeholder="Google Maps 連結或地址">
+    </div>
     
-    <div><label class="block compact-label mb-0.5">說明</label><textarea id="form-details" rows="4" class="compact-input block w-full rounded border shadow-sm !h-auto leading-normal p-1"></textarea></div>
+    <div>
+        <textarea id="form-details" rows="3" class="compact-input block w-full rounded border shadow-sm !h-auto leading-normal p-2 text-xs" placeholder="備註說明..."></textarea>
+    </div>
     
     <div class="flex gap-2 items-start mt-1">
         <div class="flex-grow">
@@ -1240,6 +1244,7 @@ END:VCALENDAR`;
     </script>
 </body>
 </html>
+
 
 
 
