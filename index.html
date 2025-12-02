@@ -120,12 +120,10 @@
         width: 100%;
         height: 100%;
         border-radius: 0.75rem; 
-        /* 重要：不使用 overflow: hidden 避免切掉陰影，改用 mask-image 處理圓角 */
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08); 
+        /* 修改：移除 mask-image，加強 box-shadow */
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.1); 
         background-color: white; 
         z-index: 10; 
-        mask-image: -webkit-radial-gradient(white, black);
-        -webkit-mask-image: -webkit-radial-gradient(white, black);
     }
 
     .swipe-item-container { position: relative; overflow: hidden; border-radius: 0.375rem; margin-bottom: 0.5rem; touch-action: pan-y; }
@@ -625,7 +623,7 @@
                 nameInput.name = 'schedule-member-name';
                 nameInput.value = name;
                 nameInput.placeholder = '名字';
-                nameInput.className = 'compact-input w-16 rounded-md font-bold text-[11px] flex-shrink-0';
+                nameInput.className = 'compact-input w-16 rounded-md font-bold text-xs flex-shrink-0';
                 
                 // Amount Input
                 const amtInput = document.createElement('input');
@@ -633,7 +631,7 @@
                 amtInput.name = 'schedule-member-amount';
                 amtInput.value = amt;
                 amtInput.placeholder = '金額';
-                amtInput.className = 'compact-input w-16 rounded-md text-[11px] flex-shrink-0';
+                amtInput.className = 'compact-input w-16 rounded-md text-xs flex-shrink-0';
                 
                 // Options Container
                 const optsDiv = document.createElement('div');
@@ -642,19 +640,19 @@
                 
                 // Payer Checkbox
                 const label = document.createElement('label');
-                // 修改處：字體調整為 text-[11px]
-                label.className = 'flex items-center text-[11px] text-[#7E92A1] cursor-pointer leading-none select-none whitespace-nowrap';
+                // 修改處：字體調整為 text-xs
+                label.className = 'flex items-center text-xs text-[#7E92A1] cursor-pointer leading-none select-none whitespace-nowrap';
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
-                checkbox.className = 'payer-check mr-1 h-3 w-3';
+                checkbox.className = 'payer-check mr-1 h-4 w-4';
                 checkbox.checked = isPayer;
                 label.appendChild(checkbox);
                 label.appendChild(document.createTextNode('墊付'));
                 
                 // Payment Method
                 const select = document.createElement('select');
-                // 修改處：字體調整為 text-[11px]
-                select.className = 'payment-method text-[11px] border border-gray-200 rounded px-0 py-0 text-[#5F6368] bg-white h-4 leading-none w-12 text-center';
+                // 修改處：字體調整為 text-xs
+                select.className = 'payment-method text-xs border border-gray-200 rounded px-0 py-0 text-[#5F6368] bg-white h-4 leading-none w-12 text-center';
                 const op1 = document.createElement('option'); op1.value='cash'; op1.text='現金';
                 const op2 = document.createElement('option'); op2.value='card'; op2.text='刷卡';
                 select.add(op1); select.add(op2);
@@ -1123,11 +1121,11 @@
                                     <div class="flex gap-2 flex-shrink-0 pb-1">
                                         <label class="flex flex-col items-center justify-end cursor-pointer group">
                                             <span class="compact-label mb-0.5 leading-none text-[10px] font-bold text-[#CB8572]">必去</span>
-                                            <input type="checkbox" id="form-must-go" class="w-6 h-6 accent-[#CB8572] cursor-pointer">
+                                            <input type="checkbox" id="form-must-go" class="w-4 h-4 accent-[#CB8572] cursor-pointer">
                                         </label>
                                         <label class="flex flex-col items-center justify-end cursor-pointer group">
                                             <span class="compact-label mb-0.5 leading-none text-[10px] font-bold text-[#7E92A1]">鬧鐘</span>
-                                            <input type="checkbox" id="form-set-alarm" class="w-6 h-6 accent-[#7E92A1] cursor-pointer">
+                                            <input type="checkbox" id="form-set-alarm" class="w-4 h-4 accent-[#7E92A1] cursor-pointer">
                                         </label>
                                     </div>
                                 </div>
@@ -1142,15 +1140,12 @@
                                 </div>
                                 
                                 <div class="bg-gray-50 p-2 rounded border border-gray-100 mt-1">
-                                    <div class="flex justify-start items-center mb-1 gap-2">
+                                    <div class="flex justify-between items-center mb-1">
                                         <label class="block compact-label">分帳成員</label>
+                                        <button type="button" id="add-member-btn" class="text-[#7E92A1] text-lg font-bold hover:text-[#5F6368] px-2 leading-none">＋</button>
                                     </div>
                                     <div id="form-members-container" class="space-y-1 mb-2"></div>
                                     
-                                    <div class="flex justify-center w-full mb-2">
-                                         <button type="button" id="add-member-btn" class="text-[#7E92A1] text-2xl leading-none font-bold hover:text-[#5F6368] transition-colors w-full text-center py-1">＋</button>
-                                    </div>
-
                                     <div class="grid grid-cols-[1fr_20px_1fr] gap-2 items-center mt-2 border-t border-gray-200 pt-2">
                                         <div class="flex items-center gap-1 justify-start">
                                             <label id="form-currency-label" class="text-[10px] font-bold text-[#7E92A1] w-8 text-right">USD</label>
