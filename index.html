@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Trip Compass</title>
     <link rel="icon" type="image/png" href="icon.png">
     <link rel="apple-touch-icon" href="icon.png">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -123,6 +123,7 @@
         box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08); 
         background-color: white; 
         z-index: 10; 
+        /* 修復圓角灰邊 */
         mask-image: -webkit-radial-gradient(white, black);
         -webkit-mask-image: -webkit-radial-gradient(white, black);
     }
@@ -605,25 +606,26 @@
                 document.getElementById('add-schedule-modal').style.display = 'flex';
             }
             
-            // ✅ 大改版：單行排列，刪除按鈕在最右邊
+            // ✅ 大改版：使用 Grid 佈局，確保對齊與空間分配
             function addMemberInput(name='', amt='', isPayer=false, method='cash') { 
                 const d = document.createElement('div'); 
-                d.className = 'flex items-center w-full gap-2 border-b border-gray-100 pb-2 mb-2 last:border-0 last:mb-0'; 
+                // Grid: [Name 1fr] [Amount 1fr] [Options auto] [Delete 20px]
+                d.className = 'grid grid-cols-[1.5fr_1.5fr_auto_20px] gap-2 items-center border-b border-gray-100 pb-2 mb-2 last:border-0 last:mb-0'; 
                 d.innerHTML = `
-                    <input type="text" name="schedule-member-name" value="${name}" placeholder="名字" class="compact-input w-16 rounded-md font-bold text-[11px] flex-shrink-0">
-                    <input type="number" name="schedule-member-amount" value="${amt}" placeholder="金額" class="compact-input w-16 rounded-md text-[11px] flex-shrink-0">
+                    <input type="text" name="schedule-member-name" value="${name}" placeholder="名字" class="compact-input w-full rounded-md font-bold text-[11px]">
+                    <input type="number" name="schedule-member-amount" value="${amt}" placeholder="金額" class="compact-input w-full rounded-md text-[11px]">
                     
-                    <div class="flex flex-col justify-center gap-0.5">
-                        <label class="flex items-center text-[9px] text-[#7E92A1] cursor-pointer leading-none select-none">
+                    <div class="flex flex-col gap-0.5 items-end">
+                        <label class="flex items-center text-[9px] text-[#7E92A1] cursor-pointer leading-none select-none whitespace-nowrap">
                             <input type="checkbox" class="payer-check mr-1 h-3 w-3" ${isPayer ? 'checked' : ''}>墊付
                         </label>
-                        <select class="payment-method text-[9px] border border-gray-200 rounded px-0 py-0 text-[#5F6368] bg-white h-4 leading-none w-full">
+                        <select class="payment-method text-[9px] border border-gray-200 rounded px-0 py-0 text-[#5F6368] bg-white h-4 leading-none w-12 text-center">
                             <option value="cash" ${method === 'cash' ? 'selected' : ''}>現金</option>
                             <option value="card" ${method === 'card' ? 'selected' : ''}>刷卡</option>
                         </select>
                     </div>
                     
-                    <button type="button" class="text-[#CB8572] font-bold p-1 rm-btn ml-auto text-lg leading-none w-6 flex justify-center items-center">×</button>
+                    <button type="button" class="text-[#CB8572] font-bold p-1 rm-btn text-lg leading-none flex justify-center items-center">×</button>
                 `; 
                 d.querySelector('.rm-btn').onclick = () => d.remove(); 
                 document.getElementById('form-members-container').appendChild(d); 
@@ -634,6 +636,7 @@
                     const dateVal = document.getElementById('form-date').value; if (!dateVal) return alert("請選日期");
                     const trip = tripData[currentTripId]; const dayId = `Day ${dateDiffInDays(new Date(dateVal), new Date(trip.startDate)) + 1}`;
                     
+                    // ✅ 修正：讀取新欄位資料
                     const members = []; 
                     const memberRows = document.getElementById('form-members-container').children;
                     for (let row of memberRows) {
@@ -678,7 +681,7 @@
                     if (editingScheduleId) await updateDoc(doc(col, editingScheduleId), data); else await addDoc(col, data);
                     
                     if (setAlarm) {
-                        downloadSingleEventIcs(data);
+                        // downloadSingleEventIcs(data);
                     }
 
                     document.getElementById('add-schedule-modal').style.display = 'none'; 
@@ -686,47 +689,6 @@
                     renderDayTabs(); 
                     loadSchedules(currentTripId, currentDayId);
                 } catch(e) { console.error(e); }
-            }
-
-            function downloadSingleEventIcs(schedule) {
-                if (!schedule.Date || !schedule.Time) return;
-
-                const cleanDate = schedule.Date.replace(/-/g, '');
-                const cleanTime = schedule.Time.replace(/:/g, '');
-                const startDateTime = `${cleanDate}T${cleanTime}00`;
-                
-                let endHour = parseInt(schedule.Time.split(':')[0]) + 1;
-                let endMinute = schedule.Time.split(':')[1];
-                if (endHour > 23) { endHour = 23; endMinute = "59"; } 
-                const endDateTime = `${cleanDate}T${String(endHour).padStart(2, '0')}${endMinute}00`;
-
-                let icsContent = 
-`BEGIN:VCALENDAR
-VERSION:2.0
-PRODID:-//Trip Compass//TW
-CALSCALE:GREGORIAN
-METHOD:PUBLISH
-BEGIN:VEVENT
-DTSTART:${startDateTime}
-DTEND:${endDateTime}
-SUMMARY:${schedule.Location}
-DESCRIPTION:${schedule.說明 || ''}
-LOCATION:${schedule.Address || ''}
-BEGIN:VALARM
-TRIGGER:-PT1H
-DESCRIPTION:Trip Reminder
-ACTION:DISPLAY
-END:VALARM
-END:VEVENT
-END:VCALENDAR`;
-
-                const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
-                const link = document.createElement('a');
-                link.href = window.URL.createObjectURL(blob);
-                link.setAttribute('download', `${schedule.Location || '行程'}.ics`);
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
             }
 
             async function checkAndCreateDefaultLists(tripId) { 
@@ -1064,7 +1026,7 @@ END:VCALENDAR`;
                                     </div>
                                     <div id="form-members-container" class="space-y-1 mb-2"></div>
                                     
-                                    <div class="grid grid-cols-[1fr_20px_1fr] gap-2 items-center mt-2 border-t border-gray-200 pt-2">
+                                    <div class="grid grid-cols-[1fr_10px_1fr] gap-2 items-center mt-2 border-t border-gray-200 pt-2">
                                         <div class="flex items-center gap-1 justify-start">
                                             <label id="form-currency-label" class="text-[10px] font-bold text-[#7E92A1] w-8 text-right">USD</label>
                                             <input type="number" id="form-amount" min="0" placeholder="0" class="w-16 p-1 border border-[#E0E0E0] rounded text-right text-[11px] text-[#5F6368] bg-white text-left">
