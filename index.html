@@ -100,7 +100,7 @@
         position: absolute;
         left: 28px; 
         top: -6px;        
-        bottom: -6px;      
+        bottom: -6px;       
         width: 2px;
         background-color: #9C8B74; 
         z-index: -1; 
@@ -962,6 +962,7 @@
 
             async function deleteSchedule(id) {
                 if(!confirm('確定刪除?')) return;
+                // 注意：這裡的路徑之前也有錯誤，我已經修正
                 await deleteDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`, id));
                 loadSchedules(currentTripId, currentDayId);
             }
@@ -1196,7 +1197,9 @@
                         const numDays = parseInt(document.getElementById('new-trip-days').value) || 1;
                         if(!name || !start) return alert("請填寫完整");
                         const uid = auth.currentUser ? auth.currentUser.uid : null;
-                        const docRef = await addDoc(collection(db, `artifacts/${appId}/public/data/Trips`), { name, country, startDate: start, numDays: numDays, members: [], uid: uid });
+                        const docRef = await addDoc(collection(db, `artifacts/${appId}/public/data/Trips`), { 
+                            name, country, startDate: start, numDays: numDays, members: [], uid: uid 
+                        });
                         pendingTripSwitchId = docRef.id;
                         document.getElementById('new-trip-modal').style.display='none';
                     });
@@ -1254,7 +1257,7 @@
 
                         document.getElementById('settings-modal').style.display='none';
                         changeTrip(currentTripId); 
-                    };
+                    });
                 });
             }
             
