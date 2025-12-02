@@ -934,13 +934,53 @@
             }
 
             async function loadExpenseSummary() {
-                if(!currentTripId) return; const snap = await getDocs(collection(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`));
-                let total=0, types={}, mems={};
+                if(!currentTripId) return; 
+                const snap = await getDocs(collection(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`));
+                let total=0, types={}, mems={}, balances={};
+                
                 snap.forEach(d => {
-                    const da = d.data(); const tTWD = (da.Amount||0)*(da.Rate||1);
-                    if(tTWD>0) { total+=tTWD; types[da.Type]=(types[da.Type]||0)+tTWD; let spSum=0, unSpUsers=[]; (da.members||[]).forEach(m=>{ const amt = typeof m==='string'?null:m.amount; const name = typeof m==='string'?m:m.name; if(amt!==null && !isNaN(amt)) { spSum+=amt; addMemExp(mems, name, da.Type, amt*(da.Rate||1)); } else unSpUsers.push(name); }); if(unSpUsers.length) { const split = ((da.Amount||0)-spSum)*(da.Rate||1)/unSpUsers.length; unSpUsers.forEach(u=>addMemExp(mems, u, da.Type, split)); } }
+                    const da = d.data(); 
+                    const tTWD = (da.Amount||0)*(da.Rate||1);
+                    
+                    if(tTWD > 0) { 
+                        total += tTWD; 
+                        types[da.Type] = (types[da.Type]||0) + tTWD; 
+                        
+                        // 計算代墊人 (Who Paid)
+                        const payers = (da.members||[]).filter(m => typeof m !== 'string' && m.isPayer);
+                        if(payers.length > 0) {
+                            const payShare = tTWD / payers.length;
+                            payers.forEach(p => { balances[p.name] = (balances[p.name] || 0) + payShare; });
+                        }
+
+                        // 計算分帳人 (Who Consumed)
+                        let spSum=0, unSpUsers=[]; 
+                        (da.members||[]).forEach(m => { 
+                            const amt = typeof m==='string'?null:m.amount; 
+                            const name = typeof m==='string'?m:m.name; 
+                            
+                            if(amt!==null && !isNaN(amt)) { 
+                                spSum += amt; 
+                                const share = amt * (da.Rate||1);
+                                addMemExp(mems, name, da.Type, share); 
+                                balances[name] = (balances[name] || 0) - share; // 扣除應付金額
+                            } else {
+                                unSpUsers.push(name);
+                            }
+                        }); 
+                        
+                        if(unSpUsers.length) { 
+                            const split = ((da.Amount||0)-spSum)*(da.Rate||1)/unSpUsers.length; 
+                            unSpUsers.forEach(u => {
+                                addMemExp(mems, u, da.Type, split);
+                                balances[u] = (balances[u] || 0) - split; // 扣除應付金額
+                            }); 
+                        } 
+                    }
                 });
+
                 function addMemExp(s, n, t, a) { if(!s[n]) s[n]={total:0, cats:{}}; s[n].total+=a; s[n].cats[t]=(s[n].cats[t]||0)+a; }
+                
                 document.getElementById('expense-total-amount').textContent = total.toFixed(0);
                 const ctx = document.getElementById('expense-chart').getContext('2d'); if(expenseChart) expenseChart.destroy();
                 expenseChart = new Chart(ctx, { type:'pie', data:{labels:Object.keys(types).map(k=>CATEGORY_NAMES[k]||k), datasets:[{data:Object.values(types), backgroundColor:Object.keys(types).map(k=>(CATEGORY_COLORS[k]||CATEGORY_COLORS.default).hex), borderWidth:0}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}} });
@@ -960,6 +1000,46 @@
                     }); 
                     l.innerHTML += `<div class="grid grid-cols-[40%_20%_40%] py-1 mb-2 bg-[#F9F9F9] border-b border-[#E0E0E0] text-[10px] font-bold"><span></span><span class="text-center">個人總計</span><span class="text-right">$${mems[n].total.toFixed(0)}</span></div>`; 
                 });
+
+                // --- 結帳建議 (Settlement) ---
+                l.innerHTML += `<div class="mt-4 mb-2 font-bold text-[#5F6368] text-xs border-b border-[#E0E0E0] pb-1">結帳建議</div>`;
+                
+                let debtors = [], creditors = [];
+                for (let name in balances) {
+                    if (balances[name] < -1) debtors.push({name, amount: balances[name]});
+                    else if (balances[name] > 1) creditors.push({name, amount: balances[name]});
+                }
+                debtors.sort((a,b) => a.amount - b.amount);
+                creditors.sort((a,b) => b.amount - a.amount);
+
+                if (debtors.length === 0 && creditors.length === 0) {
+                    l.innerHTML += `<div class="text-[10px] text-gray-400 py-1">目前沒有需要結算的款項</div>`;
+                } else {
+                    let i=0, j=0;
+                    while(i < debtors.length && j < creditors.length){
+                        let debt = Math.abs(debtors[i].amount);
+                        let credit = creditors[j].amount;
+                        let amount = Math.min(debt, credit);
+                        
+                        if (amount > 0) {
+                            l.innerHTML += `
+                                <div class="flex justify-between items-center py-1.5 text-[11px] border-b border-gray-50">
+                                    <span class="font-bold text-[#CB8572]">${debtors[i].name}</span>
+                                    <span class="text-gray-400 text-[10px]">給</span>
+                                    <span class="font-bold text-[#7E92A1]">${creditors[j].name}</span>
+                                    <span class="font-bold text-[#5F6368]">$${amount.toFixed(0)}</span>
+                                </div>
+                            `;
+                        }
+                        
+                        debtors[i].amount += amount;
+                        creditors[j].amount -= amount;
+                        
+                        if(Math.abs(debtors[i].amount) < 1) i++;
+                        if(creditors[j].amount < 1) j++;
+                    }
+                }
+
                 document.getElementById('split-expense-modal').style.display = 'flex';
             }
 
@@ -1042,11 +1122,11 @@
 
                                     <div class="flex gap-2 flex-shrink-0 pb-1">
                                         <label class="flex flex-col items-center justify-end cursor-pointer group">
-                                            <span class="compact-label mb-0.5 leading-none text-xs font-bold text-[#CB8572]">必去</span>
+                                            <span class="compact-label mb-0.5 leading-none text-[10px] font-bold text-[#CB8572]">必去</span>
                                             <input type="checkbox" id="form-must-go" class="w-6 h-6 accent-[#CB8572] cursor-pointer">
                                         </label>
                                         <label class="flex flex-col items-center justify-end cursor-pointer group">
-                                            <span class="compact-label mb-0.5 leading-none text-xs font-bold text-[#7E92A1]">鬧鐘</span>
+                                            <span class="compact-label mb-0.5 leading-none text-[10px] font-bold text-[#7E92A1]">鬧鐘</span>
                                             <input type="checkbox" id="form-set-alarm" class="w-6 h-6 accent-[#7E92A1] cursor-pointer">
                                         </label>
                                     </div>
