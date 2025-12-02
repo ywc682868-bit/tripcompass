@@ -1035,6 +1035,7 @@
                 });
 
                 // --- 結帳建議 (Settlement) ---
+                // 修改：不顯示標題 "結帳建議"，直接顯示轉帳列表
                 
                 let debtors = [], creditors = [];
                 for (let name in balances) {
@@ -1150,12 +1151,12 @@
                                         <input type="text" id="form-location" class="compact-input block w-full rounded border shadow-sm px-2 text-xs" style="height: 32px !important;" placeholder="輸入地點名稱">
                                     </div>
 
-                                    <div class="flex gap-2 flex-shrink-0 pb-1 h-8 items-end">
-                                        <div class="flex flex-col items-center justify-end h-full">
+                                    <div class="flex gap-2 flex-shrink-0 pb-1 h-8 items-center">
+                                        <div class="flex flex-col items-center justify-center h-full">
                                             <span class="compact-label leading-none text-[10px] font-bold text-[#CB8572] mb-0.5">必去</span>
                                             <input type="checkbox" id="form-must-go" class="w-3.5 h-3.5 accent-[#CB8572] cursor-pointer">
                                         </div>
-                                        <div class="flex flex-col items-center justify-end h-full">
+                                        <div class="flex flex-col items-center justify-center h-full">
                                             <span class="compact-label leading-none text-[10px] font-bold text-[#7E92A1] mb-0.5">鬧鐘</span>
                                             <input type="checkbox" id="form-set-alarm" class="w-3.5 h-3.5 accent-[#7E92A1] cursor-pointer">
                                         </div>
