@@ -979,27 +979,27 @@ END:VCALENDAR`;
                     const addScheduleModalContent = document.querySelector('#add-schedule-modal > div');
                     if(addScheduleModalContent) {
                         addScheduleModalContent.innerHTML = `
-                            <h3 class="text-base font-bold mb-3 text-[#4A4B4D] pr-8 truncate"> 
+                            <h3 class="text-base font-bold mb-2 text-[#4A4B4D] pr-8 truncate"> 
                                 <span id="add-schedule-modal-title">新增行程</span> 
                             </h3>
                             <button id="modal-close-btn" class="absolute top-3 right-3 text-[#A9A9A9] hover:text-[#5F6368] text-2xl leading-none w-6 h-6 flex items-center justify-center">×</button>
                             
-                            <form id="add-schedule-form" class="space-y-3">
+                            <form id="add-schedule-form" class="space-y-2">
 
-                                <div class="grid grid-cols-[1.3fr_1fr_1.1fr] gap-1 w-full"> 
+                                <div class="grid grid-cols-[1.3fr_1fr_1.1fr] gap-1.5 w-full"> 
                                     <div class="min-w-0">
                                         <label class="block compact-label mb-0.5">日期</label>
-                                        <input type="date" id="form-date" class="compact-input block w-full rounded border shadow-sm text-center h-7 p-0 text-[11px]">
+                                        <input type="date" id="form-date" class="compact-input block w-full rounded border shadow-sm text-center p-0 text-[11px]" style="height: 28px !important; min-height: 28px !important;">
                                     </div> 
 
                                     <div class="min-w-0">
                                         <label class="block compact-label mb-0.5">時間</label>
-                                        <input type="time" id="form-time" class="compact-input block w-full rounded border shadow-sm text-center h-7 p-0 text-[11px]">
+                                        <input type="time" id="form-time" class="compact-input block w-full rounded border shadow-sm text-center p-0 text-[11px]" style="height: 28px !important; min-height: 28px !important;">
                                     </div>
 
                                     <div class="min-w-0">
                                         <label class="block compact-label mb-0.5">類型</label>
-                                        <select id="form-type" class="compact-input block w-full rounded border shadow-sm h-7 py-0 pl-1 pr-0 text-[11px]">
+                                        <select id="form-type" class="compact-input block w-full rounded border shadow-sm py-0 pl-1 pr-0 text-[11px]" style="height: 28px !important; min-height: 28px !important;">
                                             <option value="location">📍 景點</option>
                                             <option value="restaurant">🍽️ 餐廳</option>
                                             <option value="coffee">☕ 咖啡</option>
@@ -1013,7 +1013,7 @@ END:VCALENDAR`;
                                 <div class="flex gap-2 items-end">
                                     <div class="flex-grow min-w-0">
                                         <label class="block compact-label mb-0.5">地點</label>
-                                        <input type="text" id="form-location" class="compact-input block w-full rounded border shadow-sm h-9 px-2 text-xs" placeholder="輸入地點名稱">
+                                        <input type="text" id="form-location" class="compact-input block w-full rounded border shadow-sm px-2 text-xs" style="height: 32px !important;" placeholder="輸入地點名稱">
                                     </div>
 
                                     <div class="flex gap-2 flex-shrink-0 pb-1">
@@ -1030,7 +1030,7 @@ END:VCALENDAR`;
 
                                 <div>
                                     <label class="block compact-label mb-0.5">地址</label>
-                                    <input type="text" id="form-address" class="compact-input block w-full rounded border shadow-sm h-8 px-2 text-xs" placeholder="Google Map 連結或地址">
+                                    <input type="text" id="form-address" class="compact-input block w-full rounded border shadow-sm px-2 text-xs" style="height: 28px !important;" placeholder="Google Map 連結或地址">
                                 </div>
                                 
                                 <div>
@@ -1048,11 +1048,11 @@ END:VCALENDAR`;
                                     <div class="w-24 flex-shrink-0 flex flex-col gap-1">
                                          <div class="flex items-center gap-1">
                                              <label id="form-currency-label" class="text-[10px] text-[#7E92A1] font-bold w-6 text-right">USD</label>
-                                             <input type="number" id="form-amount" min="0" placeholder="0" class="w-full p-1 border border-[#E0E0E0] rounded text-right text-[11px] h-7 text-[#5F6368] bg-white">
+                                             <input type="number" id="form-amount" min="0" placeholder="0" class="w-full p-1 border border-[#E0E0E0] rounded text-right text-[11px] text-[#5F6368] bg-white" style="height: 28px !important;">
                                          </div>
                                          <div class="flex items-center gap-1">
                                              <span class="text-[10px] text-[#A9A9A9] font-bold w-6 text-right">TWD</span>
-                                             <input type="number" id="form-amount-twd" placeholder="0" class="w-full p-1 border border-[#E0E0E0] bg-[#E0E0E0] rounded text-right text-[11px] h-7">
+                                             <input type="number" id="form-amount-twd" placeholder="0" class="w-full p-1 border border-[#E0E0E0] bg-[#E0E0E0] rounded text-right text-[11px]" style="height: 28px !important;">
                                          </div>
                                     </div>
                                 </div>
@@ -1249,6 +1249,7 @@ END:VCALENDAR`;
     </script>
 </body>
 </html>
+
 
 
 
