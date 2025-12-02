@@ -13,9 +13,8 @@
     <style>
     /* --- 全域設定 --- */
     html {
-        /* ✅ 關鍵設定：開啟 Y 軸的鄰近磁吸效果 */
         scroll-snap-type: y proximity;
-        scroll-padding-top: 170px; /* 頂部保留空間給 Header */
+        scroll-padding-top: 170px; 
         scroll-behavior: smooth;
     }
     body { font-family: 'Inter', sans-serif; background-color: #f7f7f7; margin: 0; padding: 0; color: #5F6368; overflow-x: hidden; }
@@ -49,17 +48,10 @@
         z-index: -2; 
     }    
     
-    /* ✅ 第一張卡片：對齊頂部 (start) */
     #schedule-list-container .trip-card:first-child {
         margin-top: 10px; 
         scroll-snap-align: start;
         scroll-margin-top: 10px;
-    }
-
-    /* ✅ 最後一張卡片：對齊底部 (end)，並預留底部工具列空間 */
-    #schedule-list-container .trip-card:last-child {
-        scroll-snap-align: end;
-        scroll-margin-bottom: 100px; /* 確保不被底部按鈕遮擋 */
     }
 
     /* --- Header 固定區 --- */
@@ -614,22 +606,20 @@
             // ✅ 大改版：支援墊付與付款方式，排版優化
             function addMemberInput(name='', amt='', isPayer=false, method='cash') { 
                 const d = document.createElement('div'); 
-                d.className = 'flex flex-col border-b border-gray-100 pb-2 mb-2 last:border-0 last:mb-0'; 
+                d.className = 'flex items-center gap-1 border-b border-gray-100 pb-2 mb-2 last:border-0 last:mb-0'; 
                 d.innerHTML = `
-                    <div class="flex items-center space-x-2">
-                        <input type="text" name="schedule-member-name" value="${name}" placeholder="名字" class="compact-input w-20 rounded-md font-bold">
-                        <input type="number" name="schedule-member-amount" value="${amt}" placeholder="金額" class="compact-input w-20 rounded-md">
-                        <button type="button" class="text-[#CB8572] font-bold p-1 rm-btn ml-auto">×</button>
-                    </div>
-                    <div class="flex items-center space-x-3 mt-1.5 pl-1">
-                        <label class="flex items-center text-[10px] text-[#7E92A1] cursor-pointer">
-                            <input type="checkbox" class="payer-check mr-1" ${isPayer ? 'checked' : ''}> 墊付
+                    <input type="text" name="schedule-member-name" value="${name}" placeholder="名字" class="compact-input w-16 rounded-md font-bold text-[11px]">
+                    <input type="number" name="schedule-member-amount" value="${amt}" placeholder="金額" class="compact-input w-20 rounded-md text-[11px]">
+                    <div class="flex flex-col gap-1 ml-1">
+                        <label class="flex items-center text-[9px] text-[#7E92A1] cursor-pointer leading-none">
+                            <input type="checkbox" class="payer-check mr-1 h-3 w-3" ${isPayer ? 'checked' : ''}> 墊付
                         </label>
-                        <select class="payment-method text-[10px] border border-gray-200 rounded px-1 py-0.5 text-[#5F6368] bg-white">
+                        <select class="payment-method text-[9px] border border-gray-200 rounded px-0 py-0 text-[#5F6368] bg-white h-4 leading-none">
                             <option value="cash" ${method === 'cash' ? 'selected' : ''}>現金</option>
                             <option value="card" ${method === 'card' ? 'selected' : ''}>刷卡</option>
                         </select>
                     </div>
+                    <button type="button" class="text-[#CB8572] font-bold p-1 rm-btn ml-auto text-lg leading-none">×</button>
                 `; 
                 d.querySelector('.rm-btn').onclick = () => d.remove(); 
                 document.getElementById('form-members-container').appendChild(d); 
@@ -1071,16 +1061,18 @@ END:VCALENDAR`;
                                     </div>
                                     <div id="form-members-container" class="space-y-1 mb-2"></div>
                                     
-                                    <div class="border-t border-gray-200 pt-2 flex items-center justify-end gap-2">
-                                         <div class="flex items-center gap-1">
-                                             <label id="form-currency-label" class="text-[10px] text-[#7E92A1] font-bold w-6 text-right">USD</label>
-                                             <input type="number" id="form-amount" min="0" placeholder="0" class="w-20 p-1 border border-[#E0E0E0] rounded text-right text-[11px] text-[#5F6368] bg-white">
-                                         </div>
-                                         <span class="text-[10px] text-[#A9A9A9]">=</span>
-                                         <div class="flex items-center gap-1">
-                                             <span class="text-[10px] text-[#A9A9A9] font-bold text-right">TWD</span>
-                                             <input type="number" id="form-amount-twd" placeholder="0" class="w-20 p-1 border border-[#E0E0E0] bg-[#E0E0E0] rounded text-right text-[11px]">
-                                         </div>
+                                    <div class="border-t border-gray-200 pt-2 mt-2">
+                                       <div class="grid grid-cols-[1fr_10px_1fr] gap-2 items-center">
+                                           <div class="flex items-center gap-1">
+                                               <label id="form-currency-label" class="text-[10px] font-bold text-[#7E92A1] w-8 text-right">USD</label>
+                                               <input type="number" id="form-amount" min="0" placeholder="0" class="w-full p-1 border border-[#E0E0E0] rounded text-right text-[11px] text-[#5F6368] bg-white">
+                                           </div>
+                                           <div class="text-center text-gray-400 text-xs">=</div>
+                                           <div class="flex items-center gap-1">
+                                                <span class="text-[10px] font-bold text-[#A9A9A9] w-8 text-right">TWD</span>
+                                                <input type="number" id="form-amount-twd" placeholder="0" class="w-full p-1 border border-[#E0E0E0] bg-[#E0E0E0] rounded text-right text-[11px]">
+                                           </div>
+                                       </div>
                                     </div>
                                 </div>
 
@@ -1261,7 +1253,7 @@ END:VCALENDAR`;
 
                         document.getElementById('settings-modal').style.display='none';
                         changeTrip(currentTripId); 
-                    });
+                    };
                 });
             }
             
