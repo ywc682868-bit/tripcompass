@@ -228,7 +228,7 @@
                           <div id="header-weather-icon" class="text-3xl leading-none mb-0"></div>
                           <span id="header-weather-temp" class="text-base font-bold"></span>
                           <span id="header-location-name" class="text-xs font-bold mt-0.5"></span>
-                          <span id="header-clothing-advice" class="text-[9px] font-bold text-[#CB8572] mt-0.5"></span>
+                          <span id="header-clothing-advice" class="text-xs font-bold text-[#CB8572] mt-0.5 whitespace-nowrap"></span>
                     </div>
                     <div class="flex items-center flex-shrink-0">
                         <button id="new-trip-btn" class="px-2 py-1 bg-[#7E92A1] text-white text-xs font-semibold rounded hover:bg-[#64748B] transition-colors hidden">+ 新增</button>
@@ -341,18 +341,34 @@
                 try { 
                     const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${config.lat}&longitude=${config.lon}&current=temperature_2m,weather_code&timezone=auto`); 
                     const data = await res.json(); 
-                    let icon = '☀️'; if (data.current.weather_code > 3) icon = '☁️'; if (data.current.weather_code > 50) icon = '🌧️'; 
+                    const code = data.current.weather_code;
+                    let icon = '☀️'; 
+                    if (code > 3) icon = '☁️'; 
+                    if (code > 50) icon = '🌧️'; 
+                    
                     document.getElementById('header-weather-icon').textContent = icon; 
                     document.getElementById('header-weather-temp').textContent = `${data.current.temperature_2m}°C`; 
                     
-                    // 穿衣建議邏輯
+                    // 穿衣建議與天氣警示邏輯
                     const temp = data.current.temperature_2m;
                     let clothing = '';
+                    
+                    // 溫度建議
                     if(temp >= 25) clothing = '🎽 短袖';
                     else if(temp >= 20) clothing = '👕 薄外套';
                     else if(temp >= 15) clothing = '🧥 外套';
                     else if(temp >= 10) clothing = '🧥 大衣';
                     else clothing = '🧣 羽絨';
+
+                    // 特殊天氣提醒
+                    // 雨: 51, 53, 55, 61, 63, 65, 80, 81, 82, 95, 96, 99
+                    if ([51, 53, 55, 61, 63, 65, 80, 81, 82, 95, 96, 99].includes(code)) {
+                        clothing += ' ☔帶雨具';
+                    }
+                    // 雪: 71, 73, 75, 77, 85, 86
+                    else if ([71, 73, 75, 77, 85, 86].includes(code)) {
+                        clothing += ' ❄️注意防滑';
+                    }
                     
                     const adviceEl = document.getElementById('header-clothing-advice');
                     if(adviceEl) adviceEl.textContent = clothing;
@@ -662,6 +678,7 @@
                 label.className = 'flex items-center text-xs text-[#7E92A1] cursor-pointer leading-none select-none whitespace-nowrap';
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
+                // 修改：勾選框大小 w-4 h-4
                 checkbox.className = 'payer-check mr-1 h-4 w-4';
                 checkbox.checked = isPayer;
                 label.appendChild(checkbox);
@@ -1018,7 +1035,6 @@
                 });
 
                 // --- 結帳建議 (Settlement) ---
-                // 修改：不顯示標題 "結帳建議"，直接顯示轉帳列表
                 
                 let debtors = [], creditors = [];
                 for (let name in balances) {
@@ -1031,6 +1047,7 @@
                 if (debtors.length === 0 && creditors.length === 0) {
                     l.innerHTML += `<div class="text-[10px] text-gray-400 py-1 text-center mt-2">目前沒有需要結算的款項</div>`;
                 } else {
+                    // 修改：移除標題，移除紅底，統一字體大小
                     l.innerHTML += `<div class="mt-4 border-t border-gray-100"></div>`; // 分隔線
                     let i=0, j=0;
                     while(i < debtors.length && j < creditors.length){
@@ -1039,8 +1056,9 @@
                         let amount = Math.min(debt, credit);
                         
                         if (amount > 0) {
+                            // 移除 bg-red-50, 移除 rounded, 字體統一為 text-[11px] (或 text-xs)
                             l.innerHTML += `
-                                <div class="flex justify-between items-center py-2 px-1 text-xs border-b border-gray-50 bg-red-50 rounded mt-1">
+                                <div class="flex justify-between items-center py-2 px-1 text-[11px] border-b border-gray-50">
                                     <span class="font-bold text-[#CB8572]">${debtors[i].name}</span>
                                     <span class="text-gray-400 text-[10px]">給</span>
                                     <span class="font-bold text-[#7E92A1]">${creditors[j].name}</span>
@@ -1102,7 +1120,7 @@
                             
                             <form id="add-schedule-form" class="space-y-2">
 
-                                <div class="grid grid-cols-[1.3fr_1fr_1.1fr] gap-1.5 w-full"> 
+                                <div class="grid grid-cols-3 gap-1.5 w-full"> 
                                     <div class="min-w-0">
                                         <label class="block compact-label mb-0.5">日期</label>
                                         <input type="date" id="form-date" class="compact-input block w-full rounded border shadow-sm text-center p-0 text-[11px]" style="height: 28px !important; min-height: 28px !important;">
@@ -1132,14 +1150,14 @@
                                         <input type="text" id="form-location" class="compact-input block w-full rounded border shadow-sm px-2 text-xs" style="height: 32px !important;" placeholder="輸入地點名稱">
                                     </div>
 
-                                    <div class="flex gap-2 flex-shrink-0 pb-1">
-                                        <label class="flex flex-col items-center justify-end cursor-pointer group">
-                                            <span class="compact-label mb-0.5 leading-none text-[10px] font-bold text-[#CB8572]">必去</span>
-                                            <input type="checkbox" id="form-must-go" class="w-3.5 h-3.5 accent-[#CB8572] cursor-pointer">
+                                    <div class="flex gap-2 flex-shrink-0 pb-1 items-center" style="height: 32px;">
+                                        <label class="flex items-center cursor-pointer group">
+                                            <input type="checkbox" id="form-must-go" class="w-3.5 h-3.5 accent-[#CB8572] cursor-pointer mr-1">
+                                            <span class="compact-label leading-none text-[10px] font-bold text-[#CB8572]">必去</span>
                                         </label>
-                                        <label class="flex flex-col items-center justify-end cursor-pointer group">
-                                            <span class="compact-label mb-0.5 leading-none text-[10px] font-bold text-[#7E92A1]">鬧鐘</span>
-                                            <input type="checkbox" id="form-set-alarm" class="w-3.5 h-3.5 accent-[#7E92A1] cursor-pointer">
+                                        <label class="flex items-center cursor-pointer group">
+                                            <input type="checkbox" id="form-set-alarm" class="w-3.5 h-3.5 accent-[#7E92A1] cursor-pointer mr-1">
+                                            <span class="compact-label leading-none text-[10px] font-bold text-[#7E92A1]">鬧鐘</span>
                                         </label>
                                     </div>
                                 </div>
@@ -1150,215 +1168,4 @@
                                 </div>
                                 
                                 <div>
-                                    <textarea id="form-details" rows="4" class="compact-input block w-full rounded border shadow-sm !h-auto leading-normal p-2 text-xs" placeholder="備註說明..."></textarea>
-                                </div>
-                                
-                                <div class="bg-gray-50 p-2 rounded border border-gray-100 mt-1">
-                                    <div class="flex justify-between items-center mb-1">
-                                        <label class="block compact-label">分帳成員</label>
-                                        <button type="button" id="add-member-btn" class="text-[#7E92A1] text-xs font-bold hover:text-[#5F6368] px-2 leading-none">＋</button>
-                                    </div>
-                                    <div id="form-members-container" class="space-y-1 mb-2"></div>
-                                    
-                                    <div class="grid grid-cols-[1fr_20px_1fr] gap-2 items-center mt-2 border-t border-gray-200 pt-2">
-                                        <div class="flex items-center gap-1 justify-start">
-                                            <label id="form-currency-label" class="text-[10px] font-bold text-[#7E92A1] w-8 text-right">USD</label>
-                                            <input type="number" id="form-amount" min="0" placeholder="0" class="w-full p-1 border border-[#E0E0E0] rounded text-right text-[11px] text-[#5F6368] bg-white text-left">
-                                        </div>
-                                        <div class="text-center text-gray-400 text-xs font-bold">=</div>
-                                        <div class="flex items-center gap-1 justify-start">
-                                            <span class="text-[10px] font-bold text-[#A9A9A9] w-8 text-right">TWD</span>
-                                            <input type="number" id="form-amount-twd" placeholder="0" class="w-full p-1 border border-[#E0E0E0] bg-[#E0E0E0] rounded text-right text-[11px] text-left">
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="flex justify-between items-center pt-2 mt-2 border-t border-[#E0E0E0]">
-                                    <button type="button" id="modal-delete-btn" class="px-3 py-1 h-7 text-white bg-[#CB8572] rounded text-xs font-bold flex-shrink-0 hover:bg-[#B56B5A] hidden">刪除</button>
-                                    <div class="flex-grow flex justify-end">
-                                        <button type="button" id="modal-save-btn" class="px-3 py-1 h-7 text-white bg-[#7E92A1] rounded text-xs font-bold flex-shrink-0 hover:bg-[#64748B] shadow-sm">儲存</button>
-                                    </div>
-                                </div>
-                            </form>
-                        `;
-                    }
-
-                    const settingsModalContent = document.querySelector('#settings-modal > div');
-                    if (settingsModalContent) {
-                        settingsModalContent.innerHTML = `
-                            <h3 class="text-base font-bold mb-3 flex justify-between items-center text-[#4A4B4D]">
-                                計畫設定 <button id="settings-modal-close-btn" class="text-[#A9A9A9] hover:text-[#5F6368] text-xl leading-none">×</button>
-                            </h3>
-                            <form id="settings-form" class="space-y-3">
-                                <div><label class="block text-xs font-medium text-[#7E92A1]">計畫名稱</label><input type="text" id="settings-trip-name" class="compact-input mt-0.5 block w-full rounded border"></div>
-                                <div class="grid grid-cols-[0.8fr_1.5fr_0.7fr] gap-1">
-                                    <div><label class="block text-xs font-medium text-[#7E92A1]">國家</label><select id="settings-trip-country" class="compact-input mt-0.5 block w-full rounded border h-[28px]" style="width: 88% !important; min-width: 0;"><option value="USA">🇺🇸 美國</option><option value="JP">🇯🇵 日本</option><option value="KR">🇰🇷 韓國</option><option value="UK">🇬🇧 英國</option><option value="TW">🇹🇼 台灣</option></select></div>
-                                    <div><label class="block text-xs font-medium text-[#7E92A1]">開始日期</label><input type="date" id="settings-start-date" class="compact-input mt-0.5 block w-full rounded border text-center h-[28px] text-[10px]" style="width: 88% !important; min-width: 0;"></div>
-                                    <div><label class="block text-xs font-medium text-[#7E92A1]">天數</label><input type="number" id="settings-num-days" min="1" class="compact-input mt-0.5 block w-full rounded border text-center h-[28px]" style="width: 88% !important; min-width: 0;"></div>
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-medium text-[#7E92A1] mb-1">成員</label>
-                                    <div id="settings-members-container" class="grid grid-cols-3 gap-2"></div>
-                                    <button type="button" id="settings-add-member-btn" class="mt-2 text-[10px] text-[#7E92A1] font-medium">+ 新增成員</button>
-                                </div>
-                                <div class="pt-3 flex justify-between items-center border-t border-gray-100 mt-2">
-                                    <button type="button" id="new-trip-from-settings-btn" class="px-3 py-1.5 text-xs text-[#7E92A1] bg-[#EBF2FA] rounded hover:bg-[#DCE6F2]">新計畫</button>
-                                    <div class="flex space-x-2 justify-end flex-grow">
-                                        <button type="button" id="delete-trip-btn" class="px-3 py-1.5 text-white bg-[#CB8572] rounded text-xs hover:bg-[#B56B5A]">刪除</button>
-                                        <button type="button" id="settings-modal-save-btn" class="px-3 py-1.5 text-white bg-[#7E92A1] rounded text-xs hover:bg-[#64748B]">儲存</button>
-                                    </div>
-                                </div>
-                            </form>
-                        `;
-                    }
-                    
-                    const newTripModalContent = document.querySelector('#new-trip-modal > div');
-                    if (newTripModalContent) {
-                        newTripModalContent.innerHTML = `
-                            <h3 class="text-base font-bold mb-3 flex justify-between items-center text-[#4A4B4D]">新增旅行計畫<button id="new-trip-modal-close-btn" class="text-[#A9A9A9] hover:text-[#5F6368] text-xl">×</button></h3>
-                            <form id="new-trip-form" class="space-y-3">
-                                <div><label class="block text-xs font-medium text-[#7E92A1]">計畫名稱</label><input type="text" id="new-trip-name" class="compact-input mt-0.5 block w-full rounded border"></div>
-                                <div class="grid grid-cols-[0.8fr_1.5fr_0.7fr] gap-1">
-                                    <div><label class="block text-xs font-medium text-[#7E92A1]">國家</label><select id="new-trip-country" class="compact-input mt-0.5 block w-full rounded border h-[28px]" style="width: 88% !important; min-width: 0;"><option value="USA">🇺🇸 美國</option><option value="JP">🇯🇵 日本</option><option value="KR">🇰🇷 韓國</option><option value="UK">🇬🇧 英國</option><option value="TW">🇹🇼 台灣</option></select></div>
-                                    <div><label class="block text-xs font-medium text-[#7E92A1]">開始日期</label><input type="date" id="new-trip-start-date" class="compact-input mt-0.5 block w-full rounded border text-center h-[28px] text-[10px]" style="width: 88% !important; min-width: 0;"></div>
-                                    <div><label class="block text-xs font-medium text-[#7E92A1]">天數</label><input type="number" id="new-trip-days" min="1" class="compact-input mt-0.5 block w-full rounded border text-center h-[32px]" style="width: 88% !important; min-width: 0;"></div>
-                                </div>
-                                <div class="pt-3 flex justify-end"><button type="button" id="new-trip-modal-save-btn" class="px-3 py-1.5 text-white bg-[#7E92A1] rounded text-xs hover:bg-[#64748B]">新增</button></div>
-                            </form>
-                        `;
-                    }
-
-                    loadTripList();
-
-                    safeBind('trip-select', 'onchange', (e) => changeTrip(e.target.value));
-                    safeBind('bar-calc-currency', 'onchange', calculateCurrency);
-                    safeBind('bar-calc-amount', 'oninput', calculateCurrency);
-                    
-                    safeBind('center-add-btn', 'onclick', () => { 
-                        if(!currentTripId) return alert('請先建計畫'); 
-                        document.getElementById('add-schedule-form').reset(); 
-                        document.getElementById('form-must-go').checked = false; 
-                        document.getElementById('form-set-alarm').checked = false;
-                        
-                        editingScheduleId=null; 
-                        document.getElementById('modal-delete-btn').style.display='none'; 
-                        document.getElementById('add-schedule-modal-title').textContent = '新增行程'; 
-                        const t=tripData[currentTripId]; 
-                        const d = getDateFromDayId(t, currentDayId);
-                        if(d) document.getElementById('form-date').value=d.toISOString().split('T')[0]; 
-                        document.getElementById('form-members-container').innerHTML=''; 
-                        (t.members||[]).forEach(n=>addMemberInput(n)); 
-                        if(!(t.members||[]).length){addMemberInput();addMemberInput();} 
-                        document.getElementById('add-schedule-modal').style.display='flex'; 
-                    });
-                    
-                    safeBind('modal-close-btn', 'onclick', () => document.getElementById('add-schedule-modal').style.display='none');
-                    safeBind('modal-save-btn', 'onclick', submitSchedule);
-                    
-                    safeBind('form-amount', 'oninput', (e) => document.getElementById('form-amount-twd').value = (e.target.value * currentTripRate).toFixed(0));
-                    safeBind('form-amount-twd', 'oninput', (e) => {
-                        const twd = parseFloat(e.target.value);
-                        if (!isNaN(twd) && currentTripRate > 0) {
-                            document.getElementById('form-amount').value = (twd / currentTripRate).toFixed(2);
-                        } else if (e.target.value === '') {
-                            document.getElementById('form-amount').value = '';
-                        }
-                    });
-
-                    safeBind('btn-lists', 'onclick', loadLists);
-                    safeBind('lists-modal-close-btn', 'onclick', () => document.getElementById('lists-modal').style.display='none');
-                    safeBind('split-expense-btn', 'onclick', loadExpenseSummary);
-                    safeBind('split-expense-close-btn', 'onclick', () => document.getElementById('split-expense-modal').style.display='none');
-                    
-                    safeBind('settings-btn', 'onclick', () => { 
-                        const trip = tripData[currentTripId];
-                        if (!trip) return;
-                        document.getElementById('settings-trip-name').value = trip.name; 
-                        document.getElementById('settings-trip-country').value = trip.country || 'TW';
-                        document.getElementById('settings-start-date').value = trip.startDate;
-                        document.getElementById('settings-num-days').value = trip.numDays;
-                        document.getElementById('settings-modal').style.display = 'flex'; 
-                        document.getElementById('settings-members-container').innerHTML = ''; 
-                        (trip.members||[]).forEach(m => addSettingsMemberInput(m));
-                    });
-                    
-                    safeBind('new-trip-btn', 'onclick', () => document.getElementById('new-trip-modal').style.display='flex');
-                    safeBind('new-trip-from-settings-btn', 'onclick', () => { document.getElementById('settings-modal').style.display='none'; document.getElementById('new-trip-from-settings-btn').style.display='none'; document.getElementById('new-trip-modal').style.display='flex'; });
-                    safeBind('new-trip-modal-close-btn', 'onclick', () => document.getElementById('new-trip-modal').style.display='none');
-                    safeBind('new-trip-modal-save-btn', 'onclick', async () => {
-                        const name = document.getElementById('new-trip-name').value;
-                        const country = document.getElementById('new-trip-country').value;
-                        const start = document.getElementById('new-trip-start-date').value;
-                        const numDays = parseInt(document.getElementById('new-trip-days').value) || 1;
-                        if(!name || !start) return alert("請填寫完整");
-                        const uid = auth.currentUser ? auth.currentUser.uid : null;
-                        const docRef = await addDoc(collection(db, `artifacts/${appId}/public/data/Trips`), { 
-                            name, country, startDate: start, numDays: numDays, members: [], uid: uid 
-                        });
-                        pendingTripSwitchId = docRef.id;
-                        document.getElementById('new-trip-modal').style.display='none';
-                    });
-
-                    safeBind('settings-modal-close-btn', 'onclick', () => document.getElementById('settings-modal').style.display='none');
-                    safeBind('image-zoom-modal', 'onclick', () => document.getElementById('image-zoom-modal').style.display='none');
-                    
-                    safeBind('delete-trip-btn', 'onclick', async () => { if(confirm("刪除此計畫？")) { await deleteDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}`)); document.getElementById('settings-modal').style.display='none'; } });
-                    
-                    safeBind('settings-add-member-btn', 'onclick', () => addSettingsMemberInput());
-                    safeBind('add-member-btn', 'onclick', () => addMemberInput());
-
-                    safeBind('settings-modal-save-btn', 'onclick', async () => {
-                        const newName = document.getElementById('settings-trip-name').value;
-                        const newCountry = document.getElementById('settings-trip-country').value;
-                        const newStart = document.getElementById('settings-start-date').value;
-                        const newDays = parseInt(document.getElementById('settings-num-days').value) || 1;
-                        
-                        const memInputs = document.querySelectorAll('input[name="settings-member-name"]');
-                        const newMembersList = []; 
-                        memInputs.forEach(i => { if(i.value.trim()) newMembersList.push(i.value.trim()); });
-                        
-                        const trip = tripData[currentTripId];
-                        const oldMembers = trip.members || [];
-                        const addedMembers = newMembersList.filter(m => !oldMembers.includes(m));
-                        const removedMembers = oldMembers.filter(m => !newMembersList.includes(m));
-
-                        await updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}`), { 
-                            name: newName, country: newCountry, startDate: newStart, numDays: newDays, members: newMembersList 
-                        });
-
-                        if (addedMembers.length > 0 || removedMembers.length > 0) {
-                            const originalBtnText = document.getElementById('settings-modal-save-btn').textContent;
-                            document.getElementById('settings-modal-save-btn').textContent = "更新行程中...";
-                            try {
-                                const schedulesRef = collection(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`);
-                                const snapshot = await getDocs(schedulesRef);
-                                const updatePromises = snapshot.docs.map(scheduleDoc => {
-                                    const sData = scheduleDoc.data();
-                                    let currentSchedMembers = sData.members || [];
-                                    if (removedMembers.length > 0) {
-                                        currentSchedMembers = currentSchedMembers.filter(m => {
-                                            const name = typeof m === 'string' ? m : m.name;
-                                            return !removedMembers.includes(name);
-                                        });
-                                    }
-                                    const membersToAdd = addedMembers.map(name => ({ name: name, amount: null }));
-                                    const finalMembers = [...currentSchedMembers, ...membersToAdd];
-                                    return updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`, scheduleDoc.id), { members: finalMembers });
-                                });
-                                await Promise.all(updatePromises);
-                            } catch (err) { console.error("批次更新失敗", err); }
-                            document.getElementById('settings-modal-save-btn').textContent = originalBtnText;
-                        }
-
-                        document.getElementById('settings-modal').style.display='none';
-                        changeTrip(currentTripId); 
-                    });
-                });
-            }
-            
-            return { initApp };
-        })();
-        window.App.initApp();
-    </script>
-</body>
-</html>
+                                    <textarea id="form-details" rows="4" class="compact-input block w-full rounded border shadow-sm !h-
