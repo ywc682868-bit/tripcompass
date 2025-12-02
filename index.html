@@ -945,97 +945,124 @@ END:VCALENDAR`;
                 document.addEventListener('DOMContentLoaded', async () => {
                     document.getElementById('rate-display-label').textContent = '匯率 ≈ ...';
 
-                    const app = initializeApp(firebaseConfig); db = getFirestore(app); auth = getAuth(app); 
-                    const userCred = await signInAnonymously(auth); currentUser = userCred.user;
+                    const app = initializeApp(firebaseConfig); 
+                    db = getFirestore(app); 
+                    auth = getAuth(app); 
+                    const userCred = await signInAnonymously(auth); 
+                    currentUser = userCred.user;
                     
                     // 修正 Modal Container 定位問題
                     document.querySelectorAll('.modal-overlay > div').forEach(el => el.style.position = 'relative');
 
-                    // 填充 HTML 內容
+                    // ✅ 初始化通知按鈕 (確保這個函式有被定義在 initApp 之外)
+                    if (typeof initNotifications === 'function') initNotifications();
+
+                    // --- 1. 填充 Header 內容 (加入鈴鐺按鈕) ---
+                    const headerWrapper = document.getElementById('header-content-wrapper');
+                    // 注意：這裡我們只針對按鈕區塊做微調，不破壞原本結構
+                    // 為了方便，我們直接操作 DOM 找到 weather-info-container 後面的按鈕容器
+                    const weatherInfo = document.getElementById('weather-info-container');
+                    if (weatherInfo && weatherInfo.nextElementSibling) {
+                        const btnContainer = weatherInfo.nextElementSibling;
+                        // 如果還沒加入鈴鐺，就加進去
+                        if (!document.getElementById('notification-btn')) {
+                            const notifBtn = document.createElement('button');
+                            notifBtn.id = 'notification-btn';
+                            notifBtn.className = 'w-8 h-8 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center text-sm shadow-sm transition-colors duration-200 mr-2';
+                            notifBtn.textContent = '🔔';
+                            btnContainer.insertBefore(notifBtn, btnContainer.firstChild);
+                            btnContainer.classList.add('gap-2'); // 增加間距
+                        }
+                    }
+
+                    // --- 2. 填充「新增行程」Modal HTML (新版佈局：日期/時間/類型第一列) ---
                     const addScheduleModalContent = document.querySelector('#add-schedule-modal > div');
                     if(addScheduleModalContent) {
-                        <form id="add-schedule-form" class="space-y-2">
-    
-    <div class="grid grid-cols-[1.3fr_0.9fr_1.1fr] gap-2 items-start"> 
-        <div>
-            <label class="block compact-label">日期</label>
-            <input type="date" id="form-date" class="compact-input block w-full rounded border shadow-sm text-center h-6 leading-6 p-0 box-border" style="width: 100% !important; min-width: 0;">
-        </div> 
-        <div>
-            <label class="block compact-label">時間</label>
-            <input type="time" id="form-time" class="compact-input block w-full rounded border shadow-sm text-center h-6 leading-6 p-0 box-border" style="width: 100% !important; min-width: 0;">
-        </div>
-        <div>
-            <label class="block compact-label">類型</label>
-            <select id="form-type" class="compact-input block w-full rounded border shadow-sm" style="width: 100% !important; min-width: 0; padding-left: 2px; padding-right: 2px;">
-                <option value="location">📍 景點</option>
-                <option value="restaurant">🍽️ 餐廳</option>
-                <option value="coffee">☕ 咖啡廳</option>
-                <option value="accommodation">🛏️ 住宿</option>
-                <option value="交通">🚗 交通</option>
-                <option value="shopping">🛍️ 購物</option>
-            </select>
-        </div>
-    </div>
+                        addScheduleModalContent.innerHTML = `
+                            <h3 class="text-base font-bold mb-2 text-[#4A4B4D] pr-8 truncate"> <span id="add-schedule-modal-title">新增行程</span> </h3>
+                            <button id="modal-close-btn" class="absolute top-3 right-3 text-[#A9A9A9] hover:text-[#5F6368] text-2xl leading-none w-6 h-6 flex items-center justify-center">×</button>
+                            
+                            <form id="add-schedule-form" class="space-y-2">
+                                <div class="grid grid-cols-[1.3fr_0.9fr_1.1fr] gap-2 items-start"> 
+                                    <div>
+                                        <label class="block compact-label">日期</label>
+                                        <input type="date" id="form-date" class="compact-input block w-full rounded border shadow-sm text-center h-6 leading-6 p-0 box-border" style="width: 100% !important; min-width: 0;">
+                                    </div> 
+                                    <div>
+                                        <label class="block compact-label">時間</label>
+                                        <input type="time" id="form-time" class="compact-input block w-full rounded border shadow-sm text-center h-6 leading-6 p-0 box-border" style="width: 100% !important; min-width: 0;">
+                                    </div>
+                                    <div>
+                                        <label class="block compact-label">類型</label>
+                                        <select id="form-type" class="compact-input block w-full rounded border shadow-sm" style="width: 100% !important; min-width: 0; padding-left: 2px; padding-right: 2px;">
+                                            <option value="location">📍 景點</option>
+                                            <option value="restaurant">🍽️ 餐廳</option>
+                                            <option value="coffee">☕ 咖啡廳</option>
+                                            <option value="accommodation">🛏️ 住宿</option>
+                                            <option value="交通">🚗 交通</option>
+                                            <option value="shopping">🛍️ 購物</option>
+                                        </select>
+                                    </div>
+                                </div>
 
-    <div class="flex gap-2 items-start mt-1">
-        <div class="flex-grow min-w-0">
-            <label class="block compact-label">地點</label>
-            <input type="text" id="form-location" class="compact-input block w-full rounded border shadow-sm" style="width: 100% !important; box-sizing: border-box;" placeholder="輸入地點名稱">
-        </div>
+                                <div class="flex gap-2 items-start mt-1">
+                                    <div class="flex-grow min-w-0">
+                                        <label class="block compact-label">地點</label>
+                                        <input type="text" id="form-location" class="compact-input block w-full rounded border shadow-sm" style="width: 100% !important; box-sizing: border-box;" placeholder="輸入地點名稱">
+                                    </div>
 
-        <div class="flex gap-2 flex-shrink-0 pt-0.5">
-            <div class="flex flex-col items-center justify-start w-8">
-                <label class="compact-label mb-0 leading-tight">必去</label>
-                <input type="checkbox" id="form-must-go" class="mt-1 w-3.5 h-3.5 accent-[#CB8572] cursor-pointer">
-            </div>
-            <div class="flex flex-col items-center justify-start w-8">
-                <label class="compact-label mb-0 leading-tight">鬧鐘</label>
-                <input type="checkbox" id="form-set-alarm" class="mt-1 w-3.5 h-3.5 accent-[#7E92A1] cursor-pointer">
-            </div>
-        </div>
-    </div>
+                                    <div class="flex gap-2 flex-shrink-0 pt-0.5">
+                                        <div class="flex flex-col items-center justify-start w-8">
+                                            <label class="compact-label mb-0 leading-tight">必去</label>
+                                            <input type="checkbox" id="form-must-go" class="mt-1 w-3.5 h-3.5 accent-[#CB8572] cursor-pointer">
+                                        </div>
+                                        <div class="flex flex-col items-center justify-start w-8">
+                                            <label class="compact-label mb-0 leading-tight">鬧鐘</label>
+                                            <input type="checkbox" id="form-set-alarm" class="mt-1 w-3.5 h-3.5 accent-[#7E92A1] cursor-pointer">
+                                        </div>
+                                    </div>
+                                </div>
 
-    <div><label class="block compact-label">地址</label><input type="text" id="form-address" class="compact-input block w-full rounded border shadow-sm" placeholder="Google Maps URL 或地址"></div>
-    
-    <div><label class="block compact-label">說明</label><textarea id="form-details" rows="4" class="compact-input block w-full rounded border shadow-sm !h-auto leading-normal"></textarea></div>
-    
-    <div class="flex gap-2 items-start">
-        <div class="flex-grow">
-            <div class="flex justify-start items-center mb-1 gap-2">
-                <label class="block compact-label">成員</label>
-                <button type="button" id="add-member-btn" class="ml-[115px] text-xl font-bold text-[#7E92A1] hover:text-[#64748B] transition-colors leading-none">+</button>
-            </div>
-            <div id="form-members-container" class="space-y-1"></div>
-        </div>
-        <div class="w-24 flex-shrink-0 flex flex-col gap-1 mt-6">
-             <div class="flex items-center gap-1">
-                 <label id="form-currency-label" class="text-[10px] text-[#7E92A1] font-bold w-6 text-right">USD</label>
-                 <input type="number" id="form-amount" min="0" placeholder="0" class="w-full p-1 border border-[#E0E0E0] rounded text-right text-[11px] h-7 text-[#5F6368]">
-             </div>
-             <div class="flex items-center gap-1">
-                 <span class="text-[10px] text-[#A9A9A9] font-bold w-6 text-right">TWD</span>
-                 <input type="number" id="form-amount-twd" placeholder="0" class="w-full p-1 border border-[#E0E0E0] bg-[#F0F0F0] rounded text-right text-[11px] h-7">
-             </div>
-        </div>
-    </div>
+                                <div><label class="block compact-label">地址</label><input type="text" id="form-address" class="compact-input block w-full rounded border shadow-sm" placeholder="Google Maps URL 或地址"></div>
+                                
+                                <div><label class="block compact-label">說明</label><textarea id="form-details" rows="4" class="compact-input block w-full rounded border shadow-sm !h-auto leading-normal"></textarea></div>
+                                
+                                <div class="flex gap-2 items-start">
+                                    <div class="flex-grow">
+                                        <div class="flex justify-start items-center mb-1 gap-2">
+                                            <label class="block compact-label">成員</label>
+                                            <button type="button" id="add-member-btn" class="ml-[115px] text-xl font-bold text-[#7E92A1] hover:text-[#64748B] transition-colors leading-none">+</button>
+                                        </div>
+                                        <div id="form-members-container" class="space-y-1"></div>
+                                    </div>
+                                    <div class="w-24 flex-shrink-0 flex flex-col gap-1 mt-6">
+                                         <div class="flex items-center gap-1">
+                                             <label id="form-currency-label" class="text-[10px] text-[#7E92A1] font-bold w-6 text-right">USD</label>
+                                             <input type="number" id="form-amount" min="0" placeholder="0" class="w-full p-1 border border-[#E0E0E0] rounded text-right text-[11px] h-7 text-[#5F6368]">
+                                         </div>
+                                         <div class="flex items-center gap-1">
+                                             <span class="text-[10px] text-[#A9A9A9] font-bold w-6 text-right">TWD</span>
+                                             <input type="number" id="form-amount-twd" placeholder="0" class="w-full p-1 border border-[#E0E0E0] bg-[#F0F0F0] rounded text-right text-[11px] h-7">
+                                         </div>
+                                    </div>
+                                </div>
 
-    <div class="flex justify-between items-center pt-3 mt-2 border-t border-[#E0E0E0]">
-        <button type="button" id="modal-delete-btn" class="px-2 py-0.5 h-6 text-white bg-[#CB8572] rounded text-[9px] font-bold flex-shrink-0 hover:bg-[#B56B5A] hidden">刪除</button>
-        <div class="flex-grow flex justify-end">
-            <button type="button" id="modal-save-btn" class="px-2 py-0.5 h-6 text-white bg-[#7E92A1] rounded text-[9px] font-bold flex-shrink-0 hover:bg-[#64748B]">儲存</button>
-        </div>
-    </div>
-</form>
+                                <div class="flex justify-between items-center pt-3 mt-2 border-t border-[#E0E0E0]">
+                                    <button type="button" id="modal-delete-btn" class="px-2 py-0.5 h-6 text-white bg-[#CB8572] rounded text-[9px] font-bold flex-shrink-0 hover:bg-[#B56B5A] hidden">刪除</button>
+                                    <div class="flex-grow flex justify-end">
+                                        <button type="button" id="modal-save-btn" class="px-2 py-0.5 h-6 text-white bg-[#7E92A1] rounded text-[9px] font-bold flex-shrink-0 hover:bg-[#64748B]">儲存</button>
+                                    </div>
+                                </div>
+                            </form>
                         `;
                     }
 
+                    // --- 3. 填充「計畫設定」Modal HTML (加入匯出按鈕) ---
                     const settingsModalContent = document.querySelector('#settings-modal > div');
                     if (settingsModalContent) {
                         settingsModalContent.innerHTML = `
                             <h3 class="text-base font-bold mb-3 flex justify-between items-center text-[#4A4B4D]">
-                                計畫設定
-                                <button id="settings-modal-close-btn" class="text-[#A9A9A9] hover:text-[#5F6368] text-xl leading-none">×</button>
+                                計畫設定 <button id="settings-modal-close-btn" class="text-[#A9A9A9] hover:text-[#5F6368] text-xl leading-none">×</button>
                             </h3>
                             <form id="settings-form" class="space-y-3">
                                 <div><label class="block text-xs font-medium text-[#7E92A1]">計畫名稱</label><input type="text" id="settings-trip-name" class="compact-input mt-0.5 block w-full rounded border"></div>
@@ -1052,6 +1079,7 @@ END:VCALENDAR`;
                                 <div class="pt-3 flex justify-between items-center border-t border-gray-100 mt-2">
                                     <button type="button" id="new-trip-from-settings-btn" class="px-3 py-1.5 text-xs text-[#7E92A1] bg-[#EBF2FA] rounded hover:bg-[#DCE6F2]">新計畫</button>
                                     <div class="flex space-x-2">
+                                        <button type="button" id="export-calendar-btn" class="px-3 py-1.5 text-white bg-[#8F9E8B] rounded text-xs hover:bg-[#7A8B76]">匯出行事曆</button>
                                         <button type="button" id="delete-trip-btn" class="px-3 py-1.5 text-white bg-[#CB8572] rounded text-xs hover:bg-[#B56B5A]">刪除</button>
                                         <button type="button" id="settings-modal-save-btn" class="px-3 py-1.5 text-white bg-[#7E92A1] rounded text-xs hover:bg-[#64748B]">儲存</button>
                                     </div>
@@ -1060,6 +1088,7 @@ END:VCALENDAR`;
                         `;
                     }
                     
+                    // --- 4. 填充「新增旅行計畫」Modal HTML ---
                     const newTripModalContent = document.querySelector('#new-trip-modal > div');
                     if (newTripModalContent) {
                         newTripModalContent.innerHTML = `
@@ -1078,7 +1107,7 @@ END:VCALENDAR`;
 
                     loadTripList();
 
-                    // UI Event Bindings
+                    // --- 5. 事件綁定 ---
                     document.getElementById('trip-select').onchange = (e) => changeTrip(e.target.value);
                     document.getElementById('bar-calc-currency').onchange = calculateCurrency; document.getElementById('bar-calc-amount').oninput = calculateCurrency;
                     
@@ -1086,8 +1115,9 @@ END:VCALENDAR`;
                         if(!currentTripId) return alert('請先建計畫'); 
                         document.getElementById('add-schedule-form').reset(); 
                         
-                        // ✅ 將這行放在這裡才對
+                        // 初始化勾選狀態
                         document.getElementById('form-must-go').checked = false; 
+                        document.getElementById('form-set-alarm').checked = false;
                         
                         editingScheduleId=null; 
                         document.getElementById('modal-delete-btn').style.display='none'; 
@@ -1142,6 +1172,9 @@ END:VCALENDAR`;
                     document.getElementById('settings-modal-close-btn').onclick = () => document.getElementById('settings-modal').style.display='none'; document.getElementById('image-zoom-modal').onclick = () => document.getElementById('image-zoom-modal').style.display='none';
                     document.getElementById('delete-trip-btn').onclick = async () => { if(confirm("刪除此計畫？")) { await deleteDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}`)); document.getElementById('settings-modal').style.display='none'; } };
                     
+                    // ✅ 綁定匯出按鈕
+                    document.getElementById('export-calendar-btn').onclick = exportToCalendar;
+
                     document.getElementById('settings-add-member-btn').onclick = () => addSettingsMemberInput();
                     
                     const addMemBtn = document.getElementById('add-member-btn');
@@ -1206,6 +1239,7 @@ END:VCALENDAR`;
     </script>
 </body>
 </html>
+
 
 
 
