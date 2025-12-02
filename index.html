@@ -353,90 +353,92 @@
             }
 
             function createTripCard(schedule) {
-                const style = getCardStyle(schedule.Type);
-                const config = CATEGORY_COLORS[schedule.Type] || CATEGORY_COLORS['default'];
-                const rate = schedule.Rate || 1;
-                const amountTWD = (schedule.Amount || 0) * rate;
-                let perPersonTWD = 0, specifiedTWD = 0, unspecifiedCount = 0;
-                const members = schedule.members || [];
-                if (amountTWD > 0) {
-                    members.forEach(m => { const amt = typeof m === 'string' ? null : m.amount; if(amt !== null && !isNaN(amt)) specifiedTWD += (schedule.isTwdSplit ? amt : amt * rate); else unspecifiedCount++; });
-                    perPersonTWD = (unspecifiedCount > 0) ? (amountTWD - specifiedTWD) / unspecifiedCount : (members.length > 0 ? amountTWD / members.length : amountTWD);
-                }
-                const scheduleJson = JSON.stringify({ ...schedule, Amount: schedule.Amount || 0 });
-                
-                let memberHtml = '';
-                if (members.length > 0) {
-                    memberHtml = `<div class="flex flex-nowrap overflow-hidden justify-end gap-x-1.5 ml-2 max-w-[120px]">`;
-                    members.forEach((m, i) => {
-                         memberHtml += `<span class="${MEMBER_COLORS[i % MEMBER_COLORS.length]} text-[10px] font-bold whitespace-nowrap">${typeof m === 'string' ? m : m.name}</span>`;
-                    });
-                    memberHtml += `</div>`;
-                }
+                const style = getCardStyle(schedule.Type);
+                const config = CATEGORY_COLORS[schedule.Type] || CATEGORY_COLORS['default'];
+                const rate = schedule.Rate || 1;
+                const amountTWD = (schedule.Amount || 0) * rate;
+                let perPersonTWD = 0, specifiedTWD = 0, unspecifiedCount = 0;
+                const members = schedule.members || [];
+                if (amountTWD > 0) {
+                    members.forEach(m => { const amt = typeof m === 'string' ? null : m.amount; if(amt !== null && !isNaN(amt)) specifiedTWD += (schedule.isTwdSplit ? amt : amt * rate); else unspecifiedCount++; });
+                    perPersonTWD = (unspecifiedCount > 0) ? (amountTWD - specifiedTWD) / unspecifiedCount : (members.length > 0 ? amountTWD / members.length : amountTWD);
+                }
+                
+                // ✅ 關鍵修復：這裡加上 .replace(/'/g, "&apos;") 
+                // 防止資料內有單引號 (例如 "Ashley's") 導致 HTML 結構崩壞跑版
+                const rawJson = JSON.stringify({ ...schedule, Amount: schedule.Amount || 0 });
+                const scheduleJson = rawJson.replace(/'/g, "&apos;");
+                
+                let memberHtml = '';
+                if (members.length > 0) {
+                    memberHtml = `<div class="flex flex-nowrap overflow-hidden justify-end gap-x-1.5 ml-2 max-w-[120px]">`;
+                    members.forEach((m, i) => {
+                         memberHtml += `<span class="${MEMBER_COLORS[i % MEMBER_COLORS.length]} text-[10px] font-bold whitespace-nowrap">${typeof m === 'string' ? m : m.name}</span>`;
+                    });
+                    memberHtml += `</div>`;
+                }
 
-                const mustGoHtml = schedule.MustGo ? `<div class="mt-auto w-full flex justify-start mb-3"><span class="text-[9px] text-[#CB8572] border border-[#CB8572] px-1 py-0.5 rounded-[2px] leading-none font-normal bg-white">必去</span></div>` : '';
+                const mustGoHtml = schedule.MustGo ? `<div class="mt-auto w-full flex justify-start mb-3"><span class="text-[9px] text-[#CB8572] border border-[#CB8572] px-1 py-0.5 rounded-[2px] leading-none font-normal bg-white">必去</span></div>` : '';
 
-                const card = document.createElement('div');
-                
-                // ✅ 關鍵修正：這裡移除了 'overflow-hidden'
-                // 保留 'h-[100px]' 確保高度固定，但允許線條(::before)和陰影顯示在框外
-                card.className = 'trip-card flex w-full mb-3 relative h-[100px]'; 
-                
-                const visualWrapper = document.createElement('div');
-                // 內層 wrapper 已經有 CSS class 設定 overflow: hidden，所以內容不會跑出來
-                visualWrapper.className = 'trip-card-visual-wrapper';
+                const card = document.createElement('div');
+                card.className = 'trip-card flex w-full mb-3 relative h-[100px]'; 
+                
+                const visualWrapper = document.createElement('div');
+                visualWrapper.className = 'trip-card-visual-wrapper';
 
-                const swipeActions = document.createElement('div');
-                swipeActions.className = 'swipe-item-delete-bg';
-                swipeActions.innerHTML = `<button class="px-2 py-1 h-full text-xs font-bold bg-[#7E92A1] text-white" data-action="modify" data-schedule='${scheduleJson}'>修改</button><button class="px-2 py-1 h-full text-xs font-bold bg-[#CB8572] text-white" data-action="delete" data-id="${schedule.id}">刪除</button>`;
-                
-                visualWrapper.appendChild(swipeActions);
+                const swipeActions = document.createElement('div');
+                swipeActions.className = 'swipe-item-delete-bg';
+                // 注意：這裡使用 scheduleJson (已轉義)
+                swipeActions.innerHTML = `<button class="px-2 py-1 h-full text-xs font-bold bg-[#7E92A1] text-white" data-action="modify" data-schedule='${scheduleJson}'>修改</button><button class="px-2 py-1 h-full text-xs font-bold bg-[#CB8572] text-white" data-action="delete" data-id="${schedule.id}">刪除</button>`;
+                
+                visualWrapper.appendChild(swipeActions);
 
-                const content = document.createElement('div');
-                content.className = 'swipe-item-content flex w-full bg-white relative items-stretch h-full z-10';
-                
-                content.innerHTML = `
-                    <div class="${config.bg} w-14 flex-none flex flex-col items-center justify-start gap-2 text-white relative z-10 h-full py-3">
-                        <span class="text-[10px] font-bold tracking-tight leading-none">${schedule.Time}</span>
-                        <span class="text-2xl leading-none mb-1">${style.icon}</span>
-                        <span class="text-[9px] font-medium opacity-90 leading-none">${CATEGORY_NAMES[schedule.Type] || schedule.Type}</span>
-                    </div>
-                    
-                    <div class="flex-grow py-2 pl-2 pr-1 flex flex-col justify-start min-w-0 relative overflow-hidden">
-                        <div class="flex justify-between items-start w-full">
-                            <h3 class="text-xs font-bold text-[#4A4B4D] leading-tight mb-0.5 flex-grow mr-1 truncate">
-                                <a href="#" class="location-link map-link hover:underline">${schedule.Location}</a>
-                            </h3>
-                            ${memberHtml}
-                        </div>
-                        
-                        <p class="text-[#888888] text-[10px] line-clamp-4 whitespace-pre-wrap leading-normal mt-0.5">${schedule.說明 || ''}</p>
-                    </div>
-                    
-                    <div class="card-right-col h-full flex flex-col">
-                        <div class="card-static-actions"> 
-                            <button class="bg-[#7E92A1] text-white modify-btn-static rounded px-1.5 py-0.5 text-[9px] font-bold" data-schedule='${scheduleJson}'>修改</button>
-                            <button class="bg-[#CB8572] text-white delete-btn-static rounded px-1.5 py-0.5 text-[9px] font-bold" data-id="${schedule.id}">刪除</button>
-                        </div>
-                        
-                        <div class="flex flex-col gap-1 mt-1">
-                            <div class="flex items-center justify-start w-full"><span class="text-[#8F9E8B] font-bold text-[10px]">💰 TWD$${amountTWD.toFixed(0)}</span></div>
-                            <div class="flex items-center justify-start w-full"><span class="text-[#888888] font-bold text-[10px]">👫 TWD$${formatCurrency(perPersonTWD)}</span></div>
-                        </div>
-                        
-                        ${mustGoHtml}
-                    </div>`;
-                
-                visualWrapper.appendChild(content);
-                card.appendChild(visualWrapper);
+                const content = document.createElement('div');
+                content.className = 'swipe-item-content flex w-full bg-white relative items-stretch h-full z-10';
+                
+                content.innerHTML = `
+                    <div class="${config.bg} w-14 flex-none flex flex-col items-center justify-start gap-2 text-white relative z-10 h-full py-3">
+                        <span class="text-[10px] font-bold tracking-tight leading-none">${schedule.Time}</span>
+                        <span class="text-2xl leading-none mb-1">${style.icon}</span>
+                        <span class="text-[9px] font-medium opacity-90 leading-none">${CATEGORY_NAMES[schedule.Type] || schedule.Type}</span>
+                    </div>
+                    
+                    <div class="flex-grow py-2 pl-2 pr-1 flex flex-col justify-start min-w-0 relative overflow-hidden">
+                        <div class="flex justify-between items-start w-full">
+                            <h3 class="text-xs font-bold text-[#4A4B4D] leading-tight mb-0.5 flex-grow mr-1 truncate">
+                                <a href="#" class="location-link map-link hover:underline">${schedule.Location}</a>
+                            </h3>
+                            ${memberHtml}
+                        </div>
+                        
+                        <p class="text-[#888888] text-[10px] line-clamp-4 whitespace-pre-wrap leading-normal mt-0.5">${schedule.說明 || ''}</p>
+                    </div>
+                    
+                    <div class="card-right-col h-full flex flex-col">
+                        <div class="card-static-actions"> 
+                            <button class="bg-[#7E92A1] text-white modify-btn-static rounded px-1.5 py-0.5 text-[9px] font-bold" data-schedule='${scheduleJson}'>修改</button>
+                            <button class="bg-[#CB8572] text-white delete-btn-static rounded px-1.5 py-0.5 text-[9px] font-bold" data-id="${schedule.id}">刪除</button>
+                        </div>
+                        
+                        <div class="flex flex-col gap-1 mt-1">
+                            <div class="flex items-center justify-start w-full"><span class="text-[#8F9E8B] font-bold text-[10px]">💰 TWD$${amountTWD.toFixed(0)}</span></div>
+                            <div class="flex items-center justify-start w-full"><span class="text-[#888888] font-bold text-[10px]">👫 TWD$${formatCurrency(perPersonTWD)}</span></div>
+                        </div>
+                        
+                        ${mustGoHtml}
+                    </div>`;
+                
+                visualWrapper.appendChild(content);
+                card.appendChild(visualWrapper);
 
-                card.querySelector('.map-link').onclick = (e) => { e.preventDefault(); navigateToMap(schedule.Address || schedule.Location); };
-                card.querySelector('.modify-btn-static').onclick = () => openEditScheduleModal(scheduleJson);
-                card.querySelector('.delete-btn-static').onclick = () => deleteSchedule(schedule.id);
-                content.onclick = (e) => { if (window.innerWidth > 500 && !e.target.closest('button') && !e.target.classList.contains('map-link')) openEditScheduleModal(scheduleJson); };
-                enableSwipeToDelete(content, swipeActions, 'schedule');
-                return card;
-            }
+                card.querySelector('.map-link').onclick = (e) => { e.preventDefault(); navigateToMap(schedule.Address || schedule.Location); };
+                // 這裡使用 rawJson 傳入 JS 閉包，避免轉義字元影響編輯功能
+                card.querySelector('.modify-btn-static').onclick = () => openEditScheduleModal(rawJson); 
+                card.querySelector('.delete-btn-static').onclick = () => deleteSchedule(schedule.id);
+                content.onclick = (e) => { if (window.innerWidth > 500 && !e.target.closest('button') && !e.target.classList.contains('map-link')) openEditScheduleModal(rawJson); };
+                enableSwipeToDelete(content, swipeActions, 'schedule');
+                return card;
+            }
             const loadSchedules = function(tripId, dayId) {
                 if (unsubscribeSchedule) unsubscribeSchedule();
                 const container = document.getElementById('schedule-list-container'); container.innerHTML = '<div class="p-4 text-center text-[#A9A9A9] text-xs">載入中...</div>';
@@ -1302,5 +1304,3 @@ END:VEVENT
     </script>
 </body>
 </html>
-
-
