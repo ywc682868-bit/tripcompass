@@ -357,8 +357,8 @@
                     perPersonTWD = (unspecifiedCount > 0) ? (amountTWD - specifiedTWD) / unspecifiedCount : (members.length > 0 ? amountTWD / members.length : amountTWD);
                 }
                 
-                // ✅ 關鍵修正：跳脫單引號，防止 SyntaxError
-                const scheduleJson = JSON.stringify({ ...schedule, Amount: schedule.Amount || 0 }).replace(/'/g, "'");
+                // ✅ 關鍵修正：改用 encodeURIComponent 防止 SyntaxError
+                const scheduleStr = encodeURIComponent(JSON.stringify({ ...schedule, Amount: schedule.Amount || 0 }));
                 
                 let memberHtml = '';
                 if (members.length > 0) {
@@ -380,7 +380,7 @@
 
                 const swipeActions = document.createElement('div');
                 swipeActions.className = 'swipe-item-delete-bg';
-                swipeActions.innerHTML = `<button class="px-2 py-1 h-full text-xs font-bold bg-[#7E92A1] text-white" data-action="modify" data-schedule='${scheduleJson}'>修改</button><button class="px-2 py-1 h-full text-xs font-bold bg-[#CB8572] text-white" data-action="delete" data-id="${schedule.id}">刪除</button>`;
+                swipeActions.innerHTML = `<button class="px-2 py-1 h-full text-xs font-bold bg-[#7E92A1] text-white" data-action="modify" data-schedule="${scheduleStr}">修改</button><button class="px-2 py-1 h-full text-xs font-bold bg-[#CB8572] text-white" data-action="delete" data-id="${schedule.id}">刪除</button>`;
                 
                 visualWrapper.appendChild(swipeActions);
 
@@ -407,7 +407,7 @@
                     
                     <div class="card-right-col h-full flex flex-col">
                         <div class="card-static-actions"> 
-                            <button class="bg-[#7E92A1] text-white modify-btn-static rounded px-1.5 py-0.5 text-[9px] font-bold" data-schedule='${scheduleJson}'>修改</button>
+                            <button class="bg-[#7E92A1] text-white modify-btn-static rounded px-1.5 py-0.5 text-[9px] font-bold" data-schedule="${scheduleStr}">修改</button>
                             <button class="bg-[#CB8572] text-white delete-btn-static rounded px-1.5 py-0.5 text-[9px] font-bold" data-id="${schedule.id}">刪除</button>
                         </div>
                         
@@ -425,7 +425,12 @@
                 card.querySelector('.map-link').onclick = (e) => { e.preventDefault(); navigateToMap(schedule.Address || schedule.Location); };
                 card.querySelector('.modify-btn-static').onclick = () => openEditScheduleModal(scheduleJson);
                 card.querySelector('.delete-btn-static').onclick = () => deleteSchedule(schedule.id);
-                content.onclick = (e) => { if (window.innerWidth > 500 && !e.target.closest('button') && !e.target.classList.contains('map-link')) openEditScheduleModal(scheduleJson); };
+                // ✅ 修正：內容點擊也改用 decode
+                content.onclick = (e) => { 
+                    if (window.innerWidth > 500 && !e.target.closest('button') && !e.target.classList.contains('map-link')) {
+                        openEditScheduleModal(JSON.stringify(schedule));
+                    }
+                };
                 enableSwipeToDelete(content, swipeActions, 'schedule');
                 return card;
             }
@@ -554,7 +559,8 @@
                             const container = btn.closest('.swipe-item-delete-bg');
                             const modifyBtn = container.querySelector('[data-action="modify"]');
                             if (modifyBtn) {
-                                const s = JSON.parse(modifyBtn.getAttribute('data-schedule')); 
+                                // ✅ 修正：使用 decodeURIComponent 解碼
+                                const s = JSON.parse(decodeURIComponent(modifyBtn.getAttribute('data-schedule'))); 
                                 if (action === 'modify') openEditScheduleModal(JSON.stringify(s)); 
                                 else deleteSchedule(s.id); 
                             }
@@ -592,7 +598,6 @@
                 const mems = s.members || []; 
                 if(mems.length) {
                     mems.forEach(m => {
-                        // ✅ 修正：傳入更多參數 (name, amount, isPayer, method)
                         const name = typeof m === 'string' ? m : m.name;
                         const amt = (typeof m === 'string' || m.amount === null) ? '' : m.amount;
                         const isPayer = m.isPayer || false;
@@ -605,10 +610,10 @@
                 document.getElementById('add-schedule-modal').style.display = 'flex';
             }
             
-            // ✅ 大改版：單行排列，刪除按鈕在最右邊
+            // ✅ 成員列表 UI 優化：單行排列
             function addMemberInput(name='', amt='', isPayer=false, method='cash') { 
                 const d = document.createElement('div'); 
-                d.className = 'flex items-center w-full gap-2 border-b border-gray-100 pb-2 mb-2 last:border-0 last:mb-0'; 
+                d.className = 'flex items-center gap-1.5 border-b border-gray-100 pb-2 mb-2 last:border-0 last:mb-0'; 
                 d.innerHTML = `
                     <input type="text" name="schedule-member-name" value="${name}" placeholder="名字" class="compact-input w-16 rounded-md font-bold text-[11px] flex-shrink-0">
                     <input type="number" name="schedule-member-amount" value="${amt}" placeholder="金額" class="compact-input w-16 rounded-md text-[11px] flex-shrink-0">
@@ -634,7 +639,6 @@
                     const dateVal = document.getElementById('form-date').value; if (!dateVal) return alert("請選日期");
                     const trip = tripData[currentTripId]; const dayId = `Day ${dateDiffInDays(new Date(dateVal), new Date(trip.startDate)) + 1}`;
                     
-                    // ✅ 修正：讀取新欄位資料
                     const members = []; 
                     const memberRows = document.getElementById('form-members-container').children;
                     for (let row of memberRows) {
@@ -679,7 +683,7 @@
                     if (editingScheduleId) await updateDoc(doc(col, editingScheduleId), data); else await addDoc(col, data);
                     
                     if (setAlarm) {
-                        // downloadSingleEventIcs(data);
+                        downloadSingleEventIcs(data);
                     }
 
                     document.getElementById('add-schedule-modal').style.display = 'none'; 
@@ -687,6 +691,47 @@
                     renderDayTabs(); 
                     loadSchedules(currentTripId, currentDayId);
                 } catch(e) { console.error(e); }
+            }
+
+            function downloadSingleEventIcs(schedule) {
+                if (!schedule.Date || !schedule.Time) return;
+
+                const cleanDate = schedule.Date.replace(/-/g, '');
+                const cleanTime = schedule.Time.replace(/:/g, '');
+                const startDateTime = `${cleanDate}T${cleanTime}00`;
+                
+                let endHour = parseInt(schedule.Time.split(':')[0]) + 1;
+                let endMinute = schedule.Time.split(':')[1];
+                if (endHour > 23) { endHour = 23; endMinute = "59"; } 
+                const endDateTime = `${cleanDate}T${String(endHour).padStart(2, '0')}${endMinute}00`;
+
+                let icsContent = 
+`BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Trip Compass//TW
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+DTSTART:${startDateTime}
+DTEND:${endDateTime}
+SUMMARY:${schedule.Location}
+DESCRIPTION:${schedule.說明 || ''}
+LOCATION:${schedule.Address || ''}
+BEGIN:VALARM
+TRIGGER:-PT1H
+DESCRIPTION:Trip Reminder
+ACTION:DISPLAY
+END:VALARM
+END:VEVENT
+END:VCALENDAR`;
+
+                const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+                const link = document.createElement('a');
+                link.href = window.URL.createObjectURL(blob);
+                link.setAttribute('download', `${schedule.Location || '行程'}.ics`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
             }
 
             async function checkAndCreateDefaultLists(tripId) { 
@@ -1024,7 +1069,7 @@
                                     </div>
                                     <div id="form-members-container" class="space-y-1 mb-2"></div>
                                     
-                                    <div class="grid grid-cols-[1fr_10px_1fr] gap-2 items-center mt-2 border-t border-gray-200 pt-2">
+                                    <div class="grid grid-cols-[1fr_20px_1fr] gap-2 items-center mt-2 border-t border-gray-200 pt-2">
                                         <div class="flex items-center gap-1 justify-start">
                                             <label id="form-currency-label" class="text-[10px] font-bold text-[#7E92A1] w-8 text-right">USD</label>
                                             <input type="number" id="form-amount" min="0" placeholder="0" class="w-16 p-1 border border-[#E0E0E0] rounded text-right text-[11px] text-[#5F6368] bg-white text-left">
