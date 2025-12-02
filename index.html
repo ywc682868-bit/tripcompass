@@ -1144,21 +1144,21 @@
                                     </div>
                                 </div>
 
-                                <div class="flex gap-2 items-end">
+                                <div class="flex gap-2 items-center"> 
                                     <div class="flex-grow min-w-0">
                                         <label class="block compact-label mb-0.5">地點</label>
                                         <input type="text" id="form-location" class="compact-input block w-full rounded border shadow-sm px-2 text-xs" style="height: 32px !important;" placeholder="輸入地點名稱">
                                     </div>
 
-                                    <div class="flex gap-2 flex-shrink-0 pb-1 items-center" style="height: 32px;">
-                                        <label class="flex items-center cursor-pointer group">
-                                            <input type="checkbox" id="form-must-go" class="w-3.5 h-3.5 accent-[#CB8572] cursor-pointer mr-1">
-                                            <span class="compact-label leading-none text-[10px] font-bold text-[#CB8572]">必去</span>
-                                        </label>
-                                        <label class="flex items-center cursor-pointer group">
-                                            <input type="checkbox" id="form-set-alarm" class="w-3.5 h-3.5 accent-[#7E92A1] cursor-pointer mr-1">
-                                            <span class="compact-label leading-none text-[10px] font-bold text-[#7E92A1]">鬧鐘</span>
-                                        </label>
+                                    <div class="flex gap-2 flex-shrink-0 pb-1 h-8 items-end">
+                                        <div class="flex flex-col items-center justify-end h-full">
+                                            <span class="compact-label leading-none text-[10px] font-bold text-[#CB8572] mb-0.5">必去</span>
+                                            <input type="checkbox" id="form-must-go" class="w-3.5 h-3.5 accent-[#CB8572] cursor-pointer">
+                                        </div>
+                                        <div class="flex flex-col items-center justify-end h-full">
+                                            <span class="compact-label leading-none text-[10px] font-bold text-[#7E92A1] mb-0.5">鬧鐘</span>
+                                            <input type="checkbox" id="form-set-alarm" class="w-3.5 h-3.5 accent-[#7E92A1] cursor-pointer">
+                                        </div>
                                     </div>
                                 </div>
 
@@ -1172,15 +1172,12 @@
                                 </div>
                                 
                                 <div class="bg-gray-50 p-2 rounded border border-gray-100 mt-1">
-                                    <div class="flex justify-between items-center mb-1">
+                                    <div class="flex items-center mb-1 gap-2">
                                         <label class="block compact-label">成員</label>
+                                        <button type="button" id="add-member-btn" class="text-[#7E92A1] text-xs font-bold hover:text-[#5F6368] px-1 leading-none">＋</button>
                                     </div>
                                     <div id="form-members-container" class="space-y-1 mb-2"></div>
                                     
-                                    <div class="flex justify-center mb-1">
-                                        <button type="button" id="add-member-btn" class="text-[#7E92A1] text-xs font-bold hover:text-[#5F6368] px-2 leading-none">＋</button>
-                                    </div>
-
                                     <div class="grid grid-cols-[1fr_20px_1fr] gap-2 items-center mt-2 border-t border-gray-200 pt-2">
                                         <div class="flex items-center gap-1 justify-start">
                                             <label id="form-currency-label" class="text-[10px] font-bold text-[#7E92A1] w-8 text-right">USD</label>
