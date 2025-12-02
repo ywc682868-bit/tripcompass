@@ -13,7 +13,6 @@
     <style>
     /* --- 全域設定 --- */
     html {
-        /* 修改：改為 mandatory (強制磁吸)，滑動停止時一定會停在某個卡片上 */
         scroll-snap-type: y mandatory;
         scroll-padding-top: 170px; 
         scroll-behavior: smooth;
@@ -29,14 +28,13 @@
         min-height: 100vh;
         background-color: white;
         padding-top: 0px; 
-        padding-bottom: 0px; /* 修改：移除這裡的 padding，統一在 list-container 控制 */
+        padding-bottom: 140px;
         position: relative;
         box-shadow: 0 0 10px rgba(0,0,0,0.05);
     }
     #schedule-list-container {
         padding-top: 170px; 
-        /* 修改：大幅增加底部間距 (60vh)，確保最後一個卡片能被捲動到頂部進行磁吸 */
-        padding-bottom: 60vh;
+        padding-bottom: 60vh; /* 底部留白確保最後一張卡片能磁吸 */
         margin-top: 0; 
         position: relative; 
         z-index: 1; 
@@ -58,12 +56,10 @@
         height: 100px; 
         display: flex; 
         z-index: 0;
-        /* 修改：所有卡片都設定磁吸對齊點 */
         scroll-snap-align: start;
         scroll-margin-top: 10px;
     }
 
-    /* 修改：移除原本只針對 first-child 的 scroll-snap 設定，保留 margin */
     #schedule-list-container .trip-card:first-child {
         margin-top: 10px; 
     }
@@ -182,8 +178,14 @@
         .desktop-del-btn { display: block !important; }
     }
     @media (max-width: 500px) {
-        html { scroll-padding-top: 215px; }
-        #schedule-list-container { padding-top: 215px; }
+        html { 
+            /* 調整：加大手機版的 scroll-padding，配合下方增加的 padding-top */
+            scroll-padding-top: 250px; 
+        }
+        #schedule-list-container { 
+            /* 修改：將 padding-top 加大到 250px，解決第一個卡片被遮擋的問題 */
+            padding-top: 250px; 
+        }
         .trip-card:first-child::before { top: -35px; }
         .trip-card .content-text-block { margin-top: 8px; }
         .desktop-del-btn { display: none !important; } 
