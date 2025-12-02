@@ -647,60 +647,6 @@
                 } catch(e) { console.error(e); }
             }
 
-            // ✅ 關鍵修復：補上這個函式，解決 ReferenceError
-            async function exportToCalendar() {
-                if(!currentTripId) return alert("請先選擇行程");
-                try {
-                    const q = query(collection(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`));
-                    const snapshot = await getDocs(q);
-                    
-                    let icsContent = 
-`BEGIN:VCALENDAR
-VERSION:2.0
-PRODID:-//Trip Compass//TW
-CALSCALE:GREGORIAN
-METHOD:PUBLISH
-`;
-                    snapshot.forEach(doc => {
-                        const s = doc.data();
-                        if(!s.Date || !s.Time) return;
-                        
-                        const cleanDate = s.Date.replace(/-/g, '');
-                        const cleanTime = s.Time.replace(/:/g, '');
-                        const start = `${cleanDate}T${cleanTime}00`;
-                        
-                        let endH = parseInt(s.Time.split(':')[0]) + 1;
-                        let endM = s.Time.split(':')[1];
-                        if(endH > 23) { endH = 23; endM = "59"; }
-                        const end = `${cleanDate}T${String(endH).padStart(2,'0')}${endM}00`;
-                        
-                        icsContent += 
-`BEGIN:VEVENT
-DTSTART:${start}
-DTEND:${end}
-SUMMARY:${s.Location}
-DESCRIPTION:${s.說明 || ''}
-LOCATION:${s.Address || ''}
-END:VEVENT
-`;
-                    });
-                    
-                    icsContent += "END:VCALENDAR";
-                    
-                    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
-                    const link = document.createElement('a');
-                    link.href = window.URL.createObjectURL(blob);
-                    link.setAttribute('download', `trip_export.ics`);
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    
-                } catch(e) { 
-                    console.error(e); 
-                    alert("匯出失敗，請檢查 Console"); 
-                }
-            }
-
             function downloadSingleEventIcs(schedule) {
                 if (!schedule.Date || !schedule.Time) return;
 
@@ -1102,6 +1048,8 @@ END:VCALENDAR`;
 
                     const settingsModalContent = document.querySelector('#settings-modal > div');
                     if (settingsModalContent) {
+                        // ✅ 修改：刪除了「匯出行事曆」按鈕
+                        // ✅ 修改：調整「天數」input 高度為 h-[28px] (原本 h-[32px])
                         settingsModalContent.innerHTML = `
                             <h3 class="text-base font-bold mb-3 flex justify-between items-center text-[#4A4B4D]">
                                 計畫設定 <button id="settings-modal-close-btn" class="text-[#A9A9A9] hover:text-[#5F6368] text-xl leading-none">×</button>
@@ -1111,7 +1059,7 @@ END:VCALENDAR`;
                                 <div class="grid grid-cols-[0.8fr_1.5fr_0.7fr] gap-1">
                                     <div><label class="block text-xs font-medium text-[#7E92A1]">國家</label><select id="settings-trip-country" class="compact-input mt-0.5 block w-full rounded border h-[28px]" style="width: 88% !important; min-width: 0;"><option value="USA">🇺🇸 美國</option><option value="JP">🇯🇵 日本</option><option value="KR">🇰🇷 韓國</option><option value="UK">🇬🇧 英國</option><option value="TW">🇹🇼 台灣</option></select></div>
                                     <div><label class="block text-xs font-medium text-[#7E92A1]">開始日期</label><input type="date" id="settings-start-date" class="compact-input mt-0.5 block w-full rounded border text-center h-[28px] text-[10px]" style="width: 88% !important; min-width: 0;"></div>
-                                    <div><label class="block text-xs font-medium text-[#7E92A1]">天數</label><input type="number" id="settings-num-days" min="1" class="compact-input mt-0.5 block w-full rounded border text-center h-[32px]" style="width: 88% !important; min-width: 0;"></div>
+                                    <div><label class="block text-xs font-medium text-[#7E92A1]">天數</label><input type="number" id="settings-num-days" min="1" class="compact-input mt-0.5 block w-full rounded border text-center h-[28px]" style="width: 88% !important; min-width: 0;"></div>
                                 </div>
                                 <div>
                                     <label class="block text-xs font-medium text-[#7E92A1] mb-1">成員</label>
@@ -1120,8 +1068,7 @@ END:VCALENDAR`;
                                 </div>
                                 <div class="pt-3 flex justify-between items-center border-t border-gray-100 mt-2">
                                     <button type="button" id="new-trip-from-settings-btn" class="px-3 py-1.5 text-xs text-[#7E92A1] bg-[#EBF2FA] rounded hover:bg-[#DCE6F2]">新計畫</button>
-                                    <div class="flex space-x-2">
-                                        <button type="button" id="export-calendar-btn" class="px-3 py-1.5 text-white bg-[#8F9E8B] rounded text-xs hover:bg-[#7A8B76]">匯出行事曆</button>
+                                    <div class="flex space-x-2 justify-end flex-grow">
                                         <button type="button" id="delete-trip-btn" class="px-3 py-1.5 text-white bg-[#CB8572] rounded text-xs hover:bg-[#B56B5A]">刪除</button>
                                         <button type="button" id="settings-modal-save-btn" class="px-3 py-1.5 text-white bg-[#7E92A1] rounded text-xs hover:bg-[#64748B]">儲存</button>
                                     </div>
@@ -1212,7 +1159,7 @@ END:VCALENDAR`;
                     document.getElementById('settings-modal-close-btn').onclick = () => document.getElementById('settings-modal').style.display='none'; document.getElementById('image-zoom-modal').onclick = () => document.getElementById('image-zoom-modal').style.display='none';
                     document.getElementById('delete-trip-btn').onclick = async () => { if(confirm("刪除此計畫？")) { await deleteDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}`)); document.getElementById('settings-modal').style.display='none'; } };
                     
-                    document.getElementById('export-calendar-btn').onclick = exportToCalendar;
+                    // ✅ 這裡也移除了匯出行事曆按鈕的綁定，徹底解決 TypeError
 
                     document.getElementById('settings-add-member-btn').onclick = () => addSettingsMemberInput();
                     
