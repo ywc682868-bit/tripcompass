@@ -353,93 +353,90 @@
             }
 
             function createTripCard(schedule) {
-                const style = getCardStyle(schedule.Type);
-                const config = CATEGORY_COLORS[schedule.Type] || CATEGORY_COLORS['default'];
-                const rate = schedule.Rate || 1;
-                const amountTWD = (schedule.Amount || 0) * rate;
-                let perPersonTWD = 0, specifiedTWD = 0, unspecifiedCount = 0;
-                const members = schedule.members || [];
-                if (amountTWD > 0) {
-                    members.forEach(m => { const amt = typeof m === 'string' ? null : m.amount; if(amt !== null && !isNaN(amt)) specifiedTWD += (schedule.isTwdSplit ? amt : amt * rate); else unspecifiedCount++; });
-                    perPersonTWD = (unspecifiedCount > 0) ? (amountTWD - specifiedTWD) / unspecifiedCount : (members.length > 0 ? amountTWD / members.length : amountTWD);
-                }
-                
-                // ✅ 核心修復：將 JSON 字串中的單引號轉義，防止 HTML 屬性被截斷導致跑版
-                const rawJson = JSON.stringify({ ...schedule, Amount: schedule.Amount || 0 });
-                const scheduleJson = rawJson.replace(/'/g, "&apos;");
-                
-                let memberHtml = '';
-                if (members.length > 0) {
-                    memberHtml = `<div class="flex flex-nowrap overflow-hidden justify-end gap-x-1.5 ml-2 max-w-[120px]">`;
-                    members.forEach((m, i) => {
-                         memberHtml += `<span class="${MEMBER_COLORS[i % MEMBER_COLORS.length]} text-[10px] font-bold whitespace-nowrap">${typeof m === 'string' ? m : m.name}</span>`;
-                    });
-                    memberHtml += `</div>`;
-                }
+                const style = getCardStyle(schedule.Type);
+                const config = CATEGORY_COLORS[schedule.Type] || CATEGORY_COLORS['default'];
+                const rate = schedule.Rate || 1;
+                const amountTWD = (schedule.Amount || 0) * rate;
+                let perPersonTWD = 0, specifiedTWD = 0, unspecifiedCount = 0;
+                const members = schedule.members || [];
+                if (amountTWD > 0) {
+                    members.forEach(m => { const amt = typeof m === 'string' ? null : m.amount; if(amt !== null && !isNaN(amt)) specifiedTWD += (schedule.isTwdSplit ? amt : amt * rate); else unspecifiedCount++; });
+                    perPersonTWD = (unspecifiedCount > 0) ? (amountTWD - specifiedTWD) / unspecifiedCount : (members.length > 0 ? amountTWD / members.length : amountTWD);
+                }
+                const scheduleJson = JSON.stringify({ ...schedule, Amount: schedule.Amount || 0 });
+                
+                let memberHtml = '';
+                if (members.length > 0) {
+                    memberHtml = `<div class="flex flex-nowrap overflow-hidden justify-end gap-x-1.5 ml-2 max-w-[120px]">`;
+                    members.forEach((m, i) => {
+                         memberHtml += `<span class="${MEMBER_COLORS[i % MEMBER_COLORS.length]} text-[10px] font-bold whitespace-nowrap">${typeof m === 'string' ? m : m.name}</span>`;
+                    });
+                    memberHtml += `</div>`;
+                }
 
-                const mustGoHtml = schedule.MustGo ? `<div class="mt-auto w-full flex justify-start mb-3"><span class="text-[9px] text-[#CB8572] border border-[#CB8572] px-1 py-0.5 rounded-[2px] leading-none font-normal bg-white">必去</span></div>` : '';
+                const mustGoHtml = schedule.MustGo ? `<div class="mt-auto w-full flex justify-start mb-3"><span class="text-[9px] text-[#CB8572] border border-[#CB8572] px-1 py-0.5 rounded-[2px] leading-none font-normal bg-white">必去</span></div>` : '';
 
-                const card = document.createElement('div');
-                card.className = 'trip-card flex w-full mb-3 relative h-[100px]'; 
-                
-                const visualWrapper = document.createElement('div');
-                visualWrapper.className = 'trip-card-visual-wrapper';
+                const card = document.createElement('div');
+                
+                // ✅ 關鍵修正：這裡移除了 'overflow-hidden'
+                // 保留 'h-[100px]' 確保高度固定，但允許線條(::before)和陰影顯示在框外
+                card.className = 'trip-card flex w-full mb-3 relative h-[100px]'; 
+                
+                const visualWrapper = document.createElement('div');
+                // 內層 wrapper 已經有 CSS class 設定 overflow: hidden，所以內容不會跑出來
+                visualWrapper.className = 'trip-card-visual-wrapper';
 
-                const swipeActions = document.createElement('div');
-                swipeActions.className = 'swipe-item-delete-bg';
-                
-                // 注意：這裡使用轉義後的 scheduleJson
-                swipeActions.innerHTML = `<button class="px-2 py-1 h-full text-xs font-bold bg-[#7E92A1] text-white" data-action="modify" data-schedule='${scheduleJson}'>修改</button><button class="px-2 py-1 h-full text-xs font-bold bg-[#CB8572] text-white" data-action="delete" data-id="${schedule.id}">刪除</button>`;
-                
-                visualWrapper.appendChild(swipeActions);
+                const swipeActions = document.createElement('div');
+                swipeActions.className = 'swipe-item-delete-bg';
+                swipeActions.innerHTML = `<button class="px-2 py-1 h-full text-xs font-bold bg-[#7E92A1] text-white" data-action="modify" data-schedule='${scheduleJson}'>修改</button><button class="px-2 py-1 h-full text-xs font-bold bg-[#CB8572] text-white" data-action="delete" data-id="${schedule.id}">刪除</button>`;
+                
+                visualWrapper.appendChild(swipeActions);
 
-                const content = document.createElement('div');
-                content.className = 'swipe-item-content flex w-full bg-white relative items-stretch h-full z-10';
-                
-                content.innerHTML = `
-                    <div class="${config.bg} w-14 flex-none flex flex-col items-center justify-start gap-2 text-white relative z-10 h-full py-3">
-                        <span class="text-[10px] font-bold tracking-tight leading-none">${schedule.Time}</span>
-                        <span class="text-2xl leading-none mb-1">${style.icon}</span>
-                        <span class="text-[9px] font-medium opacity-90 leading-none">${CATEGORY_NAMES[schedule.Type] || schedule.Type}</span>
-                    </div>
-                    
-                    <div class="flex-grow py-2 pl-2 pr-1 flex flex-col justify-start min-w-0 relative overflow-hidden">
-                        <div class="flex justify-between items-start w-full">
-                            <h3 class="text-xs font-bold text-[#4A4B4D] leading-tight mb-0.5 flex-grow mr-1 truncate">
-                                <a href="#" class="location-link map-link hover:underline">${schedule.Location}</a>
-                            </h3>
-                            ${memberHtml}
-                        </div>
-                        
-                        <p class="text-[#888888] text-[10px] line-clamp-4 whitespace-pre-wrap leading-normal mt-0.5">${schedule.說明 || ''}</p>
-                    </div>
-                    
-                    <div class="card-right-col h-full flex flex-col">
-                        <div class="card-static-actions"> 
-                            <button class="bg-[#7E92A1] text-white modify-btn-static rounded px-1.5 py-0.5 text-[9px] font-bold" data-schedule='${scheduleJson}'>修改</button>
-                            <button class="bg-[#CB8572] text-white delete-btn-static rounded px-1.5 py-0.5 text-[9px] font-bold" data-id="${schedule.id}">刪除</button>
-                        </div>
-                        
-                        <div class="flex flex-col gap-1 mt-1">
-                            <div class="flex items-center justify-start w-full"><span class="text-[#8F9E8B] font-bold text-[10px]">💰 TWD$${amountTWD.toFixed(0)}</span></div>
-                            <div class="flex items-center justify-start w-full"><span class="text-[#888888] font-bold text-[10px]">👫 TWD$${formatCurrency(perPersonTWD)}</span></div>
-                        </div>
-                        
-                        ${mustGoHtml}
-                    </div>`;
-                
-                visualWrapper.appendChild(content);
-                card.appendChild(visualWrapper);
+                const content = document.createElement('div');
+                content.className = 'swipe-item-content flex w-full bg-white relative items-stretch h-full z-10';
+                
+                content.innerHTML = `
+                    <div class="${config.bg} w-14 flex-none flex flex-col items-center justify-start gap-2 text-white relative z-10 h-full py-3">
+                        <span class="text-[10px] font-bold tracking-tight leading-none">${schedule.Time}</span>
+                        <span class="text-2xl leading-none mb-1">${style.icon}</span>
+                        <span class="text-[9px] font-medium opacity-90 leading-none">${CATEGORY_NAMES[schedule.Type] || schedule.Type}</span>
+                    </div>
+                    
+                    <div class="flex-grow py-2 pl-2 pr-1 flex flex-col justify-start min-w-0 relative overflow-hidden">
+                        <div class="flex justify-between items-start w-full">
+                            <h3 class="text-xs font-bold text-[#4A4B4D] leading-tight mb-0.5 flex-grow mr-1 truncate">
+                                <a href="#" class="location-link map-link hover:underline">${schedule.Location}</a>
+                            </h3>
+                            ${memberHtml}
+                        </div>
+                        
+                        <p class="text-[#888888] text-[10px] line-clamp-4 whitespace-pre-wrap leading-normal mt-0.5">${schedule.說明 || ''}</p>
+                    </div>
+                    
+                    <div class="card-right-col h-full flex flex-col">
+                        <div class="card-static-actions"> 
+                            <button class="bg-[#7E92A1] text-white modify-btn-static rounded px-1.5 py-0.5 text-[9px] font-bold" data-schedule='${scheduleJson}'>修改</button>
+                            <button class="bg-[#CB8572] text-white delete-btn-static rounded px-1.5 py-0.5 text-[9px] font-bold" data-id="${schedule.id}">刪除</button>
+                        </div>
+                        
+                        <div class="flex flex-col gap-1 mt-1">
+                            <div class="flex items-center justify-start w-full"><span class="text-[#8F9E8B] font-bold text-[10px]">💰 TWD$${amountTWD.toFixed(0)}</span></div>
+                            <div class="flex items-center justify-start w-full"><span class="text-[#888888] font-bold text-[10px]">👫 TWD$${formatCurrency(perPersonTWD)}</span></div>
+                        </div>
+                        
+                        ${mustGoHtml}
+                    </div>`;
+                
+                visualWrapper.appendChild(content);
+                card.appendChild(visualWrapper);
 
-                card.querySelector('.map-link').onclick = (e) => { e.preventDefault(); navigateToMap(schedule.Address || schedule.Location); };
-                // 這裡傳入 rawJson 給 Modal，確保資料正確
-                card.querySelector('.modify-btn-static').onclick = () => openEditScheduleModal(rawJson);
-                card.querySelector('.delete-btn-static').onclick = () => deleteSchedule(schedule.id);
-                // 這裡也傳入 rawJson
-                content.onclick = (e) => { if (window.innerWidth > 500 && !e.target.closest('button') && !e.target.classList.contains('map-link')) openEditScheduleModal(rawJson); };
-                enableSwipeToDelete(content, swipeActions, 'schedule');
-                return card;
-            }
+                card.querySelector('.map-link').onclick = (e) => { e.preventDefault(); navigateToMap(schedule.Address || schedule.Location); };
+                card.querySelector('.modify-btn-static').onclick = () => openEditScheduleModal(scheduleJson);
+                card.querySelector('.delete-btn-static').onclick = () => deleteSchedule(schedule.id);
+                content.onclick = (e) => { if (window.innerWidth > 500 && !e.target.closest('button') && !e.target.classList.contains('map-link')) openEditScheduleModal(scheduleJson); };
+                enableSwipeToDelete(content, swipeActions, 'schedule');
+                return card;
+            }
             const loadSchedules = function(tripId, dayId) {
                 if (unsubscribeSchedule) unsubscribeSchedule();
                 const container = document.getElementById('schedule-list-container'); container.innerHTML = '<div class="p-4 text-center text-[#A9A9A9] text-xs">載入中...</div>';
@@ -980,95 +977,96 @@ END:VCALENDAR`;
 
                     // --- 2. 填充「新增行程」Modal HTML (新版佈局：日期/時間/類型第一列) ---
                     const addScheduleModalContent = document.querySelector('#add-schedule-modal > div');
-if(addScheduleModalContent) {
-    addScheduleModalContent.innerHTML = `
-        <h3 class="text-base font-bold mb-2 text-[#4A4B4D] pr-8 truncate"> 
-            <span id="add-schedule-modal-title">新增行程</span> 
-        </h3>
-        <button id="modal-close-btn" class="absolute top-3 right-3 text-[#A9A9A9] hover:text-[#5F6368] text-2xl leading-none w-6 h-6 flex items-center justify-center">×</button>
-        
-        <form id="add-schedule-form" class="space-y-2">
+                    if(addScheduleModalContent) {
+                        addScheduleModalContent.innerHTML = `
+                            <h3 class="text-base font-bold mb-2 text-[#4A4B4D] pr-8 truncate"> 
+                                <span id="add-schedule-modal-title">新增行程</span> 
+                            </h3>
+                            <button id="modal-close-btn" class="absolute top-3 right-3 text-[#A9A9A9] hover:text-[#5F6368] text-2xl leading-none w-6 h-6 flex items-center justify-center">×</button>
+                            
+                            <form id="add-schedule-form" class="space-y-2">
 
-            <div class="grid grid-cols-[1.3fr_1fr_1.1fr] gap-1.5 w-full"> 
-                <div class="min-w-0">
-                    <label class="block compact-label mb-0.5">日期</label>
-                    <input type="date" id="form-date" class="compact-input block w-full rounded border shadow-sm text-center p-0 text-[11px]" style="height: 28px !important; min-height: 28px !important;">
-                </div> 
+                                <div class="grid grid-cols-[1.3fr_1fr_1.1fr] gap-1.5 w-full"> 
+                                    <div class="min-w-0">
+                                        <label class="block compact-label mb-0.5">日期</label>
+                                        <input type="date" id="form-date" class="compact-input block w-full rounded border shadow-sm text-center p-0 text-[11px]" style="height: 28px !important; min-height: 28px !important;">
+                                    </div> 
 
-                <div class="min-w-0">
-                    <label class="block compact-label mb-0.5">時間</label>
-                    <input type="time" id="form-time" class="compact-input block w-full rounded border shadow-sm text-center p-0 text-[11px]" style="height: 28px !important; min-height: 28px !important;">
-                </div>
+                                    <div class="min-w-0">
+                                        <label class="block compact-label mb-0.5">時間</label>
+                                        <input type="time" id="form-time" class="compact-input block w-full rounded border shadow-sm text-center p-0 text-[11px]" style="height: 28px !important; min-height: 28px !important;">
+                                    </div>
 
-                <div class="min-w-0">
-                    <label class="block compact-label mb-0.5">類型</label>
-                    <select id="form-type" class="compact-input block w-full rounded border shadow-sm py-0 pl-1 pr-0 text-[11px]" style="height: 28px !important; min-height: 28px !important;">
-                        <option value="location">📍 景點</option>
-                        <option value="restaurant">🍽️ 餐廳</option>
-                        <option value="coffee">☕ 咖啡</option>
-                        <option value="accommodation">🛏️ 住宿</option>
-                        <option value="交通">🚗 交通</option>
-                        <option value="shopping">🛍️ 購物</option>
-                    </select>
-                </div>
-            </div>
+                                    <div class="min-w-0">
+                                        <label class="block compact-label mb-0.5">類型</label>
+                                        <select id="form-type" class="compact-input block w-full rounded border shadow-sm py-0 pl-1 pr-0 text-[11px]" style="height: 28px !important; min-height: 28px !important;">
+                                            <option value="location">📍 景點</option>
+                                            <option value="restaurant">🍽️ 餐廳</option>
+                                            <option value="coffee">☕ 咖啡</option>
+                                            <option value="accommodation">🛏️ 住宿</option>
+                                            <option value="交通">🚗 交通</option>
+                                            <option value="shopping">🛍️ 購物</option>
+                                        </select>
+                                    </div>
+                                </div>
 
-            <div class="flex gap-2 items-end">
-                <div class="flex-grow min-w-0">
-                    <label class="block compact-label mb-0.5">地點</label>
-                    <input type="text" id="form-location" class="compact-input block w-full rounded border shadow-sm px-2 text-xs" style="height: 32px !important;" placeholder="輸入地點名稱">
-                </div>
+                                <div class="flex gap-2 items-end">
+                                    <div class="flex-grow min-w-0">
+                                        <label class="block compact-label mb-0.5">地點</label>
+                                        <input type="text" id="form-location" class="compact-input block w-full rounded border shadow-sm px-2 text-xs" style="height: 32px !important;" placeholder="輸入地點名稱">
+                                    </div>
 
-                <div class="flex gap-2 flex-shrink-0 pb-1">
-                    <label class="flex flex-col items-center justify-end cursor-pointer group">
-                        <span class="compact-label mb-0.5 leading-none text-[9px] text-[#CB8572]">必去</span>
-                        <input type="checkbox" id="form-must-go" class="w-5 h-5 accent-[#CB8572] cursor-pointer">
-                    </label>
-                    <label class="flex flex-col items-center justify-end cursor-pointer group">
-                        <span class="compact-label mb-0.5 leading-none text-[9px] text-[#7E92A1]">鬧鐘</span>
-                        <input type="checkbox" id="form-set-alarm" class="w-5 h-5 accent-[#7E92A1] cursor-pointer">
-                    </label>
-                </div>
-            </div>
+                                    <div class="flex gap-2 flex-shrink-0 pb-1">
+                                        <label class="flex flex-col items-center justify-end cursor-pointer group">
+                                            <span class="compact-label mb-0.5 leading-none text-[9px] text-[#CB8572]">必去</span>
+                                            <input type="checkbox" id="form-must-go" class="w-5 h-5 accent-[#CB8572] cursor-pointer">
+                                        </label>
+                                        <label class="flex flex-col items-center justify-end cursor-pointer group">
+                                            <span class="compact-label mb-0.5 leading-none text-[9px] text-[#7E92A1]">鬧鐘</span>
+                                            <input type="checkbox" id="form-set-alarm" class="w-5 h-5 accent-[#7E92A1] cursor-pointer">
+                                        </label>
+                                    </div>
+                                </div>
 
-            <div>
-                <label class="block compact-label mb-0.5">地址</label>
-                <input type="text" id="form-address" class="compact-input block w-full rounded border shadow-sm px-2 text-xs" style="height: 28px !important;" placeholder="Google Map 連結或地址">
-            </div>
-            
-            <div>
-                <textarea id="form-details" rows="2" class="compact-input block w-full rounded border shadow-sm !h-auto leading-normal p-2 text-xs" placeholder="備註說明..."></textarea>
-            </div>
-            
-            <div class="flex gap-2 items-start mt-1 bg-gray-50 p-2 rounded border border-gray-100">
-                <div class="flex-grow">
-                    <div class="flex justify-start items-center mb-1 gap-2">
-                        <label class="block compact-label">分帳成員</label>
-                        <button type="button" id="add-member-btn" class="ml-auto text-sm font-bold text-white bg-[#7E92A1] rounded-full w-5 h-5 flex items-center justify-center hover:bg-[#64748B] transition-colors leading-none">+</button>
-                    </div>
-                    <div id="form-members-container" class="space-y-1"></div>
-                </div>
-                <div class="w-24 flex-shrink-0 flex flex-col gap-1">
-                    <div class="flex items-center gap-1">
-                        <label id="form-currency-label" class="text-[10px] text-[#7E92A1] font-bold w-6 text-right">USD</label>
-                        <input type="number" id="form-amount" min="0" placeholder="0" class="w-full p-1 border border-[#E0E0E0] rounded text-right text-[11px] text-[#5F6368] bg-white" style="height: 28px !important;">
-                    </div>
-                    <div class="flex items-center gap-1">
-                        <span class="text-[10px] text-[#A9A9A9] font-bold w-6 text-right">TWD</span>
-                        <input type="number" id="form-amount-twd" placeholder="0" class="w-full p-1 border border-[#E0E0E0] bg-[#E0E0E0] rounded text-right text-[11px]" style="height: 28px !important;">
-                    </div>
-                </div>
-            </div>
+                                <div>
+                                    <label class="block compact-label mb-0.5">地址</label>
+                                    <input type="text" id="form-address" class="compact-input block w-full rounded border shadow-sm px-2 text-xs" style="height: 28px !important;" placeholder="Google Map 連結或地址">
+                                </div>
+                                
+                                <div>
+                                    <textarea id="form-details" rows="2" class="compact-input block w-full rounded border shadow-sm !h-auto leading-normal p-2 text-xs" placeholder="備註說明..."></textarea>
+                                </div>
+                                
+                                <div class="flex gap-2 items-start mt-1 bg-gray-50 p-2 rounded border border-gray-100">
+                                    <div class="flex-grow">
+                                        <div class="flex justify-start items-center mb-1 gap-2">
+                                            <label class="block compact-label">分帳成員</label>
+                                            <button type="button" id="add-member-btn" class="ml-auto text-sm font-bold text-white bg-[#7E92A1] rounded-full w-5 h-5 flex items-center justify-center hover:bg-[#64748B] transition-colors leading-none">+</button>
+                                        </div>
+                                        <div id="form-members-container" class="space-y-1"></div>
+                                    </div>
+                                    <div class="w-24 flex-shrink-0 flex flex-col gap-1">
+                                         <div class="flex items-center gap-1">
+                                             <label id="form-currency-label" class="text-[10px] text-[#7E92A1] font-bold w-6 text-right">USD</label>
+                                             <input type="number" id="form-amount" min="0" placeholder="0" class="w-full p-1 border border-[#E0E0E0] rounded text-right text-[11px] text-[#5F6368] bg-white" style="height: 28px !important;">
+                                         </div>
+                                         <div class="flex items-center gap-1">
+                                             <span class="text-[10px] text-[#A9A9A9] font-bold w-6 text-right">TWD</span>
+                                             <input type="number" id="form-amount-twd" placeholder="0" class="w-full p-1 border border-[#E0E0E0] bg-[#E0E0E0] rounded text-right text-[11px]" style="height: 28px !important;">
+                                         </div>
+                                    </div>
+                                </div>
 
-            <div class="flex justify-between items-center pt-2 mt-2 border-t border-[#E0E0E0]">
-                <button type="button" id="modal-delete-btn" class="px-3 py-1 h-7 text-white bg-[#CB8572] rounded text-xs font-bold flex-shrink-0 hover:bg-[#B56B5A] hidden">刪除</button>
-                <div class="flex-grow flex justify-end">
-                    <button type="button" id="modal-save-btn" class="px-6 py-1 h-8 text-white bg-[#7E92A1] rounded text-xs font-bold flex-shrink-0 hover:bg-[#64748B] shadow-sm">儲存行程</button>
-                </div>
-            </div>
-        </form>
-    `;
-}
+                                <div class="flex justify-between items-center pt-2 mt-2 border-t border-[#E0E0E0]">
+                                    <button type="button" id="modal-delete-btn" class="px-3 py-1 h-7 text-white bg-[#CB8572] rounded text-xs font-bold flex-shrink-0 hover:bg-[#B56B5A] hidden">刪除</button>
+                                    <div class="flex-grow flex justify-end">
+                                        <button type="button" id="modal-save-btn" class="px-6 py-1 h-8 text-white bg-[#7E92A1] rounded text-xs font-bold flex-shrink-0 hover:bg-[#64748B] shadow-sm">儲存行程</button>
+                                    </div>
+                                </div>
+                            </form>
+                        `;
+                    }
+
                     // --- 3. 填充「計畫設定」Modal HTML (加入匯出按鈕) ---
                     const settingsModalContent = document.querySelector('#settings-modal > div');
                     if (settingsModalContent) {
@@ -1242,116 +1240,7 @@ if(addScheduleModalContent) {
                     };
                 });
             }
-            async function exportToCalendar() {
-                if (!currentTripId) return alert("請先選擇計畫");
-                try {
-                    const q = query(collection(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`));
-                    const snapshot = await getDocs(q);
-                    if (snapshot.empty) return alert("沒有行程可匯出");
-
-                    let icsContent = 
-`BEGIN:VCALENDAR
-VERSION:2.0
-PRODID:-//Trip Compass//TW
-CALSCALE:GREGORIAN
-METHOD:PUBLISH
-`;
-                    
-                    snapshot.forEach(doc => {
-                        const s = doc.data();
-                        if (!s.Date || !s.Time) return;
-                        
-                        const cleanDate = s.Date.replace(/-/g, '');
-                        const cleanTime = s.Time.replace(/:/g, '');
-                        const startDateTime = `${cleanDate}T${cleanTime}00`;
-                        
-                        // 預設行程長度為 1 小時
-                        let endHour = parseInt(s.Time.split(':')[0]) + 1;
-                        let endMinute = s.Time.split(':')[1];
-                        if (endHour > 23) { endHour = 23; endMinute = "59"; }
-                        const endDateTime = `${cleanDate}T${String(endHour).padStart(2, '0')}${endMinute}00`;
-                        
-                        icsContent += 
-`BEGIN:VEVENT
-DTSTART:${startDateTime}
-DTEND:${endDateTime}
-SUMMARY:${s.Location}
-DESCRIPTION:${s.說明 || ''}
-LOCATION:${s.Address || ''}
-END:VEVENT
-`;
-                    });
-
-                    icsContent += "END:VCALENDAR";
-
-                    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
-                    const link = document.createElement('a');
-                    link.href = window.URL.createObjectURL(blob);
-                    link.setAttribute('download', 'travel_plan.ics');
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-
-                } catch (e) {
-                    console.error("匯出失敗", e);
-                    alert("匯出失敗");
-                }
-            }
-          async function exportToCalendar() {
-                if (!currentTripId) return alert("請先選擇計畫");
-                try {
-                    const q = query(collection(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`));
-                    const snapshot = await getDocs(q);
-                    if (snapshot.empty) return alert("沒有行程可匯出");
-
-                    let icsContent = 
-`BEGIN:VCALENDAR
-VERSION:2.0
-PRODID:-//Trip Compass//TW
-CALSCALE:GREGORIAN
-METHOD:PUBLISH
-`;
-                    
-                    snapshot.forEach(doc => {
-                        const s = doc.data();
-                        if (!s.Date || !s.Time) return;
-                        
-                        const cleanDate = s.Date.replace(/-/g, '');
-                        const cleanTime = s.Time.replace(/:/g, '');
-                        const startDateTime = `${cleanDate}T${cleanTime}00`;
-                        
-                        // 預設行程長度為 1 小時
-                        let endHour = parseInt(s.Time.split(':')[0]) + 1;
-                        let endMinute = s.Time.split(':')[1];
-                        if (endHour > 23) { endHour = 23; endMinute = "59"; }
-                        const endDateTime = `${cleanDate}T${String(endHour).padStart(2, '0')}${endMinute}00`;
-                        
-                        icsContent += 
-`BEGIN:VEVENT
-DTSTART:${startDateTime}
-DTEND:${endDateTime}
-SUMMARY:${s.Location}
-DESCRIPTION:${s.說明 || ''}
-LOCATION:${s.Address || ''}
-END:VEVENT
-`;
-                    });
-
-                    icsContent += "END:VCALENDAR";
-
-                    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
-                    const link = document.createElement('a');
-                    link.href = window.URL.createObjectURL(blob);
-                    link.setAttribute('download', 'travel_plan.ics');
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-
-                } catch (e) {
-                    console.error("匯出失敗", e);
-                    alert("匯出失敗");
-                }
-            }
+            
             function addSettingsMemberInput(val='') { const d=document.createElement('div'); d.className='flex gap-1 items-center'; d.innerHTML=`<input type="text" name="settings-member-name" value="${val}" class="compact-input w-full rounded text-center" placeholder="成員"><button type="button" class="text-red-300 font-bold px-1 rm-btn">×</button>`; d.querySelector('.rm-btn').onclick=()=>d.remove(); document.getElementById('settings-members-container').appendChild(d); }
 
             return { initApp };
@@ -1360,4 +1249,3 @@ END:VEVENT
     </script>
 </body>
 </html>
-
