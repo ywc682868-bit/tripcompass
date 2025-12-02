@@ -371,8 +371,8 @@
                 const mustGoHtml = schedule.MustGo ? `<div class="mt-auto w-full flex justify-start mb-3"><span class="text-[9px] text-[#CB8572] border border-[#CB8572] px-1 py-0.5 rounded-[2px] leading-none font-normal bg-white">必去</span></div>` : '';
 
                 const card = document.createElement('div');
+                // ✅ 關鍵修正：這裡確保高度固定且隱藏溢出，解決按鈕亂飛
                 card.className = 'trip-card flex w-full mb-3 relative'; 
-                // ✅ 強制固定高度，隱藏溢出，解決按鈕亂飛
                 card.style.height = '100px'; 
                 card.style.overflow = 'hidden'; 
                 
@@ -640,8 +640,6 @@
                     loadSchedules(currentTripId, currentDayId);
                 } catch(e) { console.error(e); }
             }
-
-            // ✅ 移除 exportToCalendar 函式，因為按鈕已刪除，不需要它了
 
             function downloadSingleEventIcs(schedule) {
                 if (!schedule.Date || !schedule.Time) return;
@@ -952,7 +950,7 @@ END:VCALENDAR`;
 
                     const addScheduleModalContent = document.querySelector('#add-schedule-modal > div');
                     if(addScheduleModalContent) {
-                        // ✅ 已恢復為原始版面配置
+                        // ✅ 恢復為原始設計：grid-cols-[1.3fr_1fr_1.1fr]
                         addScheduleModalContent.innerHTML = `
                             <h3 class="text-base font-bold mb-2 text-[#4A4B4D] pr-8 truncate"> 
                                 <span id="add-schedule-modal-title">新增行程</span> 
