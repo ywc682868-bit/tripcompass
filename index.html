@@ -940,7 +940,64 @@ END:VCALENDAR`;
                 });
                 document.getElementById('split-expense-modal').style.display = 'flex';
             }
-
+async function exportToCalendar() {
+                if(!currentTripId) return alert("請先選擇行程");
+                try {
+                    // 抓取目前行程的所有活動
+                    const q = query(collection(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`));
+                    const snapshot = await getDocs(q);
+                    
+                    // 建立 ICS 檔案標頭
+                    let icsContent = 
+`BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Trip Compass//TW
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+`;
+                    
+                    snapshot.forEach(doc => {
+                        const s = doc.data();
+                        // 略過沒有日期或時間的行程
+                        if(!s.Date || !s.Time) return;
+                        
+                        const cleanDate = s.Date.replace(/-/g, '');
+                        const cleanTime = s.Time.replace(/:/g, '');
+                        const start = `${cleanDate}T${cleanTime}00`;
+                        
+                        // 預設結束時間為 1 小時後 (簡單計算)
+                        let endH = parseInt(s.Time.split(':')[0]) + 1;
+                        let endM = s.Time.split(':')[1];
+                        if(endH > 23) { endH = 23; endM = "59"; }
+                        const end = `${cleanDate}T${String(endH).padStart(2,'0')}${endM}00`;
+                        
+                        icsContent += 
+`BEGIN:VEVENT
+DTSTART:${start}
+DTEND:${end}
+SUMMARY:${s.Location}
+DESCRIPTION:${s.說明 || ''}
+LOCATION:${s.Address || ''}
+END:VEVENT
+`;
+                    });
+                    
+                    icsContent += "END:VCALENDAR";
+                    
+                    // 下載檔案
+                    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+                    const link = document.createElement('a');
+                    link.href = window.URL.createObjectURL(blob);
+                    link.setAttribute('download', `trip_export.ics`);
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                } catch(e) { 
+                    console.error(e); 
+                    alert("匯出失敗，請檢查 Console"); 
+                }
+            }
             function initApp() {
                 document.addEventListener('DOMContentLoaded', async () => {
                     document.getElementById('rate-display-label').textContent = '匯率 ≈ ...';
@@ -1302,4 +1359,5 @@ END:VEVENT
     </script>
 </body>
 </html>
+
 
