@@ -984,14 +984,20 @@ END:VCALENDAR`;
                             
                             <form id="add-schedule-form" class="space-y-2">
     
-    <div class="flex justify-start gap-2"> 
-    <div style="width: 110px;"> <label class="block compact-label mb-0.5">日期</label>
+    <div class="flex gap-2"> 
+    
+    <div class="flex-1 min-w-0">
+        <label class="block compact-label mb-0.5">日期</label>
         <input type="date" id="form-date" class="compact-input block w-full rounded border shadow-sm text-center h-7 p-0 text-[11px]">
     </div> 
-    <div style="width: 85px;"> <label class="block compact-label mb-0.5">時間</label>
+
+    <div class="flex-1 min-w-0">
+        <label class="block compact-label mb-0.5">時間</label>
         <input type="time" id="form-time" class="compact-input block w-full rounded border shadow-sm text-center h-7 p-0 text-[11px]">
     </div>
-    <div style="width: 90px;"> <label class="block compact-label mb-0.5">類型</label>
+
+    <div class="flex-none" style="width: 76px;">
+        <label class="block compact-label mb-0.5">類型</label>
         <select id="form-type" class="compact-input block w-full rounded border shadow-sm h-7 py-0 pl-1 pr-0 text-[11px]">
             <option value="location">📍 景點</option>
             <option value="restaurant">🍽️ 餐廳</option>
@@ -1241,6 +1247,7 @@ END:VCALENDAR`;
     </script>
 </body>
 </html>
+
 
 
 
