@@ -982,78 +982,79 @@ END:VCALENDAR`;
                             <h3 class="text-base font-bold mb-2 text-[#4A4B4D] pr-8 truncate"> <span id="add-schedule-modal-title">新增行程</span> </h3>
                             <button id="modal-close-btn" class="absolute top-3 right-3 text-[#A9A9A9] hover:text-[#5F6368] text-2xl leading-none w-6 h-6 flex items-center justify-center">×</button>
                             
-                            <form id="add-schedule-form" class="space-y-2">
-                                <div class="grid grid-cols-[1.3fr_0.9fr_1.1fr] gap-2 items-start"> 
-                                    <div>
-                                        <label class="block compact-label">日期</label>
-                                        <input type="date" id="form-date" class="compact-input block w-full rounded border shadow-sm text-center h-6 leading-6 p-0 box-border" style="width: 100% !important; min-width: 0;">
-                                    </div> 
-                                    <div>
-                                        <label class="block compact-label">時間</label>
-                                        <input type="time" id="form-time" class="compact-input block w-full rounded border shadow-sm text-center h-6 leading-6 p-0 box-border" style="width: 100% !important; min-width: 0;">
-                                    </div>
-                                    <div>
-                                        <label class="block compact-label">類型</label>
-                                        <select id="form-type" class="compact-input block w-full rounded border shadow-sm" style="width: 100% !important; min-width: 0; padding-left: 2px; padding-right: 2px;">
-                                            <option value="location">📍 景點</option>
-                                            <option value="restaurant">🍽️ 餐廳</option>
-                                            <option value="coffee">☕ 咖啡廳</option>
-                                            <option value="accommodation">🛏️ 住宿</option>
-                                            <option value="交通">🚗 交通</option>
-                                            <option value="shopping">🛍️ 購物</option>
-                                        </select>
-                                    </div>
-                                </div>
+                            <form id="add-schedule-form" class="space-y-1.5">
+    
+    <div class="grid grid-cols-[1.3fr_0.9fr_1.1fr] gap-1.5 items-end"> 
+        <div>
+            <label class="block compact-label mb-0.5">日期</label>
+            <input type="date" id="form-date" class="compact-input block w-full rounded border shadow-sm text-center h-6 leading-6 p-0 text-[10px]" style="min-width: 0;">
+        </div> 
+        <div>
+            <label class="block compact-label mb-0.5">時間</label>
+            <input type="time" id="form-time" class="compact-input block w-full rounded border shadow-sm text-center h-6 leading-6 p-0 text-[10px]" style="min-width: 0;">
+        </div>
+        <div>
+            <label class="block compact-label mb-0.5">類型</label>
+            <select id="form-type" class="compact-input block w-full rounded border shadow-sm h-6 py-0 pl-1 pr-0 text-[10px]" style="min-width: 0;">
+                <option value="location">📍 景點</option>
+                <option value="restaurant">🍽️ 餐廳</option>
+                <option value="coffee">☕ 咖啡廳</option>
+                <option value="accommodation">🛏️ 住宿</option>
+                <option value="交通">🚗 交通</option>
+                <option value="shopping">🛍️ 購物</option>
+            </select>
+        </div>
+    </div>
 
-                                <div class="flex gap-2 items-start mt-1">
-                                    <div class="flex-grow min-w-0">
-                                        <label class="block compact-label">地點</label>
-                                        <input type="text" id="form-location" class="compact-input block w-full rounded border shadow-sm" style="width: 100% !important; box-sizing: border-box;" placeholder="輸入地點名稱">
-                                    </div>
+    <div class="flex gap-1.5 items-end">
+        <div class="flex-grow min-w-0">
+            <label class="block compact-label mb-0.5">地點</label>
+            <input type="text" id="form-location" class="compact-input block w-full rounded border shadow-sm h-7 px-1 text-[11px]" placeholder="輸入地點名稱">
+        </div>
 
-                                    <div class="flex gap-2 flex-shrink-0 pt-0.5">
-                                        <div class="flex flex-col items-center justify-start w-8">
-                                            <label class="compact-label mb-0 leading-tight">必去</label>
-                                            <input type="checkbox" id="form-must-go" class="mt-1 w-3.5 h-3.5 accent-[#CB8572] cursor-pointer">
-                                        </div>
-                                        <div class="flex flex-col items-center justify-start w-8">
-                                            <label class="compact-label mb-0 leading-tight">鬧鐘</label>
-                                            <input type="checkbox" id="form-set-alarm" class="mt-1 w-3.5 h-3.5 accent-[#7E92A1] cursor-pointer">
-                                        </div>
-                                    </div>
-                                </div>
+        <div class="flex gap-2 flex-shrink-0 pb-0.5">
+            <div class="flex flex-col items-center justify-end">
+                <label class="compact-label mb-1 leading-none">必去</label>
+                <input type="checkbox" id="form-must-go" class="w-3.5 h-3.5 accent-[#CB8572] cursor-pointer">
+            </div>
+            <div class="flex flex-col items-center justify-end">
+                <label class="compact-label mb-1 leading-none">鬧鐘</label>
+                <input type="checkbox" id="form-set-alarm" class="w-3.5 h-3.5 accent-[#7E92A1] cursor-pointer">
+            </div>
+        </div>
+    </div>
 
-                                <div><label class="block compact-label">地址</label><input type="text" id="form-address" class="compact-input block w-full rounded border shadow-sm" placeholder="Google Maps URL 或地址"></div>
-                                
-                                <div><label class="block compact-label">說明</label><textarea id="form-details" rows="4" class="compact-input block w-full rounded border shadow-sm !h-auto leading-normal"></textarea></div>
-                                
-                                <div class="flex gap-2 items-start">
-                                    <div class="flex-grow">
-                                        <div class="flex justify-start items-center mb-1 gap-2">
-                                            <label class="block compact-label">成員</label>
-                                            <button type="button" id="add-member-btn" class="ml-[115px] text-xl font-bold text-[#7E92A1] hover:text-[#64748B] transition-colors leading-none">+</button>
-                                        </div>
-                                        <div id="form-members-container" class="space-y-1"></div>
-                                    </div>
-                                    <div class="w-24 flex-shrink-0 flex flex-col gap-1 mt-6">
-                                         <div class="flex items-center gap-1">
-                                             <label id="form-currency-label" class="text-[10px] text-[#7E92A1] font-bold w-6 text-right">USD</label>
-                                             <input type="number" id="form-amount" min="0" placeholder="0" class="w-full p-1 border border-[#E0E0E0] rounded text-right text-[11px] h-7 text-[#5F6368]">
-                                         </div>
-                                         <div class="flex items-center gap-1">
-                                             <span class="text-[10px] text-[#A9A9A9] font-bold w-6 text-right">TWD</span>
-                                             <input type="number" id="form-amount-twd" placeholder="0" class="w-full p-1 border border-[#E0E0E0] bg-[#F0F0F0] rounded text-right text-[11px] h-7">
-                                         </div>
-                                    </div>
-                                </div>
+    <div><label class="block compact-label mb-0.5">地址</label><input type="text" id="form-address" class="compact-input block w-full rounded border shadow-sm h-7 px-1" placeholder="Google Maps URL 或地址"></div>
+    
+    <div><label class="block compact-label mb-0.5">說明</label><textarea id="form-details" rows="4" class="compact-input block w-full rounded border shadow-sm !h-auto leading-normal p-1"></textarea></div>
+    
+    <div class="flex gap-2 items-start mt-1">
+        <div class="flex-grow">
+            <div class="flex justify-start items-center mb-1 gap-2">
+                <label class="block compact-label">成員</label>
+                <button type="button" id="add-member-btn" class="ml-[115px] text-xl font-bold text-[#7E92A1] hover:text-[#64748B] transition-colors leading-none">+</button>
+            </div>
+            <div id="form-members-container" class="space-y-1"></div>
+        </div>
+        <div class="w-24 flex-shrink-0 flex flex-col gap-1 mt-6">
+             <div class="flex items-center gap-1">
+                 <label id="form-currency-label" class="text-[10px] text-[#7E92A1] font-bold w-6 text-right">USD</label>
+                 <input type="number" id="form-amount" min="0" placeholder="0" class="w-full p-1 border border-[#E0E0E0] rounded text-right text-[11px] h-7 text-[#5F6368]">
+             </div>
+             <div class="flex items-center gap-1">
+                 <span class="text-[10px] text-[#A9A9A9] font-bold w-6 text-right">TWD</span>
+                 <input type="number" id="form-amount-twd" placeholder="0" class="w-full p-1 border border-[#E0E0E0] bg-[#F0F0F0] rounded text-right text-[11px] h-7">
+             </div>
+        </div>
+    </div>
 
-                                <div class="flex justify-between items-center pt-3 mt-2 border-t border-[#E0E0E0]">
-                                    <button type="button" id="modal-delete-btn" class="px-2 py-0.5 h-6 text-white bg-[#CB8572] rounded text-[9px] font-bold flex-shrink-0 hover:bg-[#B56B5A] hidden">刪除</button>
-                                    <div class="flex-grow flex justify-end">
-                                        <button type="button" id="modal-save-btn" class="px-2 py-0.5 h-6 text-white bg-[#7E92A1] rounded text-[9px] font-bold flex-shrink-0 hover:bg-[#64748B]">儲存</button>
-                                    </div>
-                                </div>
-                            </form>
+    <div class="flex justify-between items-center pt-3 mt-2 border-t border-[#E0E0E0]">
+        <button type="button" id="modal-delete-btn" class="px-2 py-0.5 h-6 text-white bg-[#CB8572] rounded text-[9px] font-bold flex-shrink-0 hover:bg-[#B56B5A] hidden">刪除</button>
+        <div class="flex-grow flex justify-end">
+            <button type="button" id="modal-save-btn" class="px-2 py-0.5 h-6 text-white bg-[#7E92A1] rounded text-[9px] font-bold flex-shrink-0 hover:bg-[#64748B]">儲存</button>
+        </div>
+    </div>
+</form>
                         `;
                     }
 
@@ -1239,6 +1240,7 @@ END:VCALENDAR`;
     </script>
 </body>
 </html>
+
 
 
 
