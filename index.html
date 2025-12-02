@@ -941,18 +941,6 @@ END:VCALENDAR`;
 
                     const headerWrapper = document.getElementById('header-content-wrapper');
                     const weatherInfo = document.getElementById('weather-info-container');
-                    if (weatherInfo && weatherInfo.nextElementSibling) {
-                        const btnContainer = weatherInfo.nextElementSibling;
-                        if (!document.getElementById('notification-btn')) {
-                            const notifBtn = document.createElement('button');
-                            notifBtn.id = 'notification-btn';
-                            notifBtn.className = 'w-8 h-8 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center text-sm shadow-sm transition-colors duration-200 mr-2';
-                            notifBtn.textContent = '🔔';
-                            btnContainer.insertBefore(notifBtn, btnContainer.firstChild);
-                            btnContainer.classList.add('gap-2'); 
-                        }
-                    }
-
                     const addScheduleModalContent = document.querySelector('#add-schedule-modal > div');
                     if(addScheduleModalContent) {
                         // ✅ 已恢復為原始版面配置
@@ -1220,3 +1208,4 @@ END:VCALENDAR`;
     </script>
 </body>
 </html>
+
