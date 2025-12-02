@@ -123,6 +123,7 @@
         box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08); 
         background-color: white; 
         z-index: 10; 
+        /* 修復圓角灰邊 */
         mask-image: -webkit-radial-gradient(white, black);
         -webkit-mask-image: -webkit-radial-gradient(white, black);
     }
@@ -606,10 +607,12 @@
             // ✅ 大改版：支援墊付與付款方式，排版優化
             function addMemberInput(name='', amt='', isPayer=false, method='cash') { 
                 const d = document.createElement('div'); 
+                // Change from flex col to flex items-center for row layout
                 d.className = 'flex items-center gap-1 border-b border-gray-100 pb-2 mb-2 last:border-0 last:mb-0'; 
                 d.innerHTML = `
                     <input type="text" name="schedule-member-name" value="${name}" placeholder="名字" class="compact-input w-16 rounded-md font-bold text-[11px]">
                     <input type="number" name="schedule-member-amount" value="${amt}" placeholder="金額" class="compact-input w-20 rounded-md text-[11px]">
+                    
                     <div class="flex flex-col gap-1 ml-1">
                         <label class="flex items-center text-[9px] text-[#7E92A1] cursor-pointer leading-none">
                             <input type="checkbox" class="payer-check mr-1 h-3 w-3" ${isPayer ? 'checked' : ''}> 墊付
