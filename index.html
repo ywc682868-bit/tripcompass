@@ -13,7 +13,8 @@
     <style>
     /* --- 全域設定 --- */
     html {
-        scroll-snap-type: y proximity;
+        /* 修改：改為 mandatory (強制磁吸)，滑動停止時一定會停在某個卡片上 */
+        scroll-snap-type: y mandatory;
         scroll-padding-top: 170px; 
         scroll-behavior: smooth;
     }
@@ -28,13 +29,14 @@
         min-height: 100vh;
         background-color: white;
         padding-top: 0px; 
-        padding-bottom: 140px;
+        padding-bottom: 0px; /* 修改：移除這裡的 padding，統一在 list-container 控制 */
         position: relative;
         box-shadow: 0 0 10px rgba(0,0,0,0.05);
     }
     #schedule-list-container {
         padding-top: 170px; 
-        padding-bottom: 40px;
+        /* 修改：大幅增加底部間距 (60vh)，確保最後一個卡片能被捲動到頂部進行磁吸 */
+        padding-bottom: 60vh;
         margin-top: 0; 
         position: relative; 
         z-index: 1; 
@@ -48,10 +50,52 @@
         z-index: -2; 
     }    
     
-    #schedule-list-container .trip-card:first-child {
-        margin-top: 10px; 
+    /* --- 行程卡片 (Trip Card) --- */
+    .trip-card { 
+        width: 100%; 
+        margin-bottom: 2rem; 
+        position: relative; 
+        height: 100px; 
+        display: flex; 
+        z-index: 0;
+        /* 修改：所有卡片都設定磁吸對齊點 */
         scroll-snap-align: start;
         scroll-margin-top: 10px;
+    }
+
+    /* 修改：移除原本只針對 first-child 的 scroll-snap 設定，保留 margin */
+    #schedule-list-container .trip-card:first-child {
+        margin-top: 10px; 
+    }
+
+    .trip-card::before {
+        content: '';
+        position: absolute;
+        left: 28px; 
+        top: -6px;        
+        bottom: -6px;       
+        width: 2px;
+        background-color: #9C8B74; 
+        z-index: -1; 
+        transform: translateX(-50%);
+    }
+    
+    .trip-card:first-child::before { 
+        top: -60px; 
+        bottom: -6px; 
+        height: auto; 
+    }
+    .trip-card:last-child::before { bottom: auto; height: 100%; }
+
+    /* 卡片視覺容器 */
+    .trip-card-visual-wrapper {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        border-radius: 0.75rem; 
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.1); 
+        background-color: white; 
+        z-index: 10; 
     }
 
     /* --- Header 固定區 --- */
@@ -84,47 +128,6 @@
     .prominent-integrated-btn:active { transform: scale(0.95); }
     #rate-display-label { font-size: 0.85rem; font-weight: bold; color: #7E92A1; line-height: 20px; }
     #bar-calc-result { font-size: 0.7rem; font-weight: bold; color: #7E92A1; }
-
-    /* --- 行程卡片 (Trip Card) --- */
-    .trip-card { 
-        width: 100%; 
-        margin-bottom: 2rem; 
-        position: relative; 
-        height: 100px; 
-        display: flex; 
-        z-index: 0;
-    }
-
-    .trip-card::before {
-        content: '';
-        position: absolute;
-        left: 28px; 
-        top: -6px;        
-        bottom: -6px;       
-        width: 2px;
-        background-color: #9C8B74; 
-        z-index: -1; 
-        transform: translateX(-50%);
-    }
-    
-    .trip-card:first-child::before { 
-        top: -60px; 
-        bottom: -6px; 
-        height: auto; 
-    }
-    .trip-card:last-child::before { bottom: auto; height: 100%; }
-
-    /* 卡片視覺容器 */
-    .trip-card-visual-wrapper {
-        position: relative;
-        width: 100%;
-        height: 100%;
-        border-radius: 0.75rem; 
-        /* 修改：移除 mask-image，加強 box-shadow */
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.1); 
-        background-color: white; 
-        z-index: 10; 
-    }
 
     .swipe-item-container { position: relative; overflow: hidden; border-radius: 0.375rem; margin-bottom: 0.5rem; touch-action: pan-y; }
     
@@ -1048,6 +1051,7 @@
                 if (debtors.length === 0 && creditors.length === 0) {
                     l.innerHTML += `<div class="text-[10px] text-gray-400 py-1 text-center mt-2">目前沒有需要結算的款項</div>`;
                 } else {
+                    // 修改：移除標題，移除紅底，統一字體大小
                     l.innerHTML += `<div class="mt-4 border-t border-gray-100"></div>`; // 分隔線
                     let i=0, j=0;
                     while(i < debtors.length && j < creditors.length){
