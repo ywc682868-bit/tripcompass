@@ -1168,4 +1168,218 @@
                                 </div>
                                 
                                 <div>
-                                    <textarea id="form-details" rows="4" class="compact-input block w-full rounded border shadow-sm !h-
+                                    <textarea id="form-details" rows="4" class="compact-input block w-full rounded border shadow-sm !h-auto leading-normal p-2 text-xs" placeholder="備註說明..."></textarea>
+                                </div>
+                                
+                                <div class="bg-gray-50 p-2 rounded border border-gray-100 mt-1">
+                                    <div class="flex justify-between items-center mb-1">
+                                        <label class="block compact-label">成員</label>
+                                    </div>
+                                    <div id="form-members-container" class="space-y-1 mb-2"></div>
+                                    
+                                    <div class="flex justify-center mb-1">
+                                        <button type="button" id="add-member-btn" class="text-[#7E92A1] text-xs font-bold hover:text-[#5F6368] px-2 leading-none">＋</button>
+                                    </div>
+
+                                    <div class="grid grid-cols-[1fr_20px_1fr] gap-2 items-center mt-2 border-t border-gray-200 pt-2">
+                                        <div class="flex items-center gap-1 justify-start">
+                                            <label id="form-currency-label" class="text-[10px] font-bold text-[#7E92A1] w-8 text-right">USD</label>
+                                            <input type="number" id="form-amount" min="0" placeholder="0" class="w-full p-1 border border-[#E0E0E0] rounded text-right text-[11px] text-[#5F6368] bg-white text-left">
+                                        </div>
+                                        <div class="text-center text-gray-400 text-xs font-bold">=</div>
+                                        <div class="flex items-center gap-1 justify-start">
+                                            <span class="text-[10px] font-bold text-[#A9A9A9] w-8 text-right">TWD</span>
+                                            <input type="number" id="form-amount-twd" placeholder="0" class="w-full p-1 border border-[#E0E0E0] bg-[#E0E0E0] rounded text-right text-[11px] text-left">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="flex justify-between items-center pt-2 mt-2 border-t border-[#E0E0E0]">
+                                    <button type="button" id="modal-delete-btn" class="px-3 py-1 h-7 text-white bg-[#CB8572] rounded text-xs font-bold flex-shrink-0 hover:bg-[#B56B5A] hidden">刪除</button>
+                                    <div class="flex-grow flex justify-end">
+                                        <button type="button" id="modal-save-btn" class="px-3 py-1 h-7 text-white bg-[#7E92A1] rounded text-xs font-bold flex-shrink-0 hover:bg-[#64748B] shadow-sm">儲存</button>
+                                    </div>
+                                </div>
+                            </form>
+                        `;
+                    }
+
+                    const settingsModalContent = document.querySelector('#settings-modal > div');
+                    if (settingsModalContent) {
+                        settingsModalContent.innerHTML = `
+                            <h3 class="text-base font-bold mb-3 flex justify-between items-center text-[#4A4B4D]">
+                                計畫設定 <button id="settings-modal-close-btn" class="text-[#A9A9A9] hover:text-[#5F6368] text-xl leading-none">×</button>
+                            </h3>
+                            <form id="settings-form" class="space-y-3">
+                                <div><label class="block text-xs font-medium text-[#7E92A1]">計畫名稱</label><input type="text" id="settings-trip-name" class="compact-input mt-0.5 block w-full rounded border"></div>
+                                <div class="grid grid-cols-[0.8fr_1.5fr_0.7fr] gap-1">
+                                    <div><label class="block text-xs font-medium text-[#7E92A1]">國家</label><select id="settings-trip-country" class="compact-input mt-0.5 block w-full rounded border h-[28px]" style="width: 88% !important; min-width: 0;"><option value="USA">🇺🇸 美國</option><option value="JP">🇯🇵 日本</option><option value="KR">🇰🇷 韓國</option><option value="UK">🇬🇧 英國</option><option value="TW">🇹🇼 台灣</option></select></div>
+                                    <div><label class="block text-xs font-medium text-[#7E92A1]">開始日期</label><input type="date" id="settings-start-date" class="compact-input mt-0.5 block w-full rounded border text-center h-[28px] text-[10px]" style="width: 88% !important; min-width: 0;"></div>
+                                    <div><label class="block text-xs font-medium text-[#7E92A1]">天數</label><input type="number" id="settings-num-days" min="1" class="compact-input mt-0.5 block w-full rounded border text-center h-[28px]" style="width: 88% !important; min-width: 0;"></div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-[#7E92A1] mb-1">成員</label>
+                                    <div id="settings-members-container" class="grid grid-cols-3 gap-2"></div>
+                                    <button type="button" id="settings-add-member-btn" class="mt-2 text-[10px] text-[#7E92A1] font-medium">+ 新增成員</button>
+                                </div>
+                                <div class="pt-3 flex justify-between items-center border-t border-gray-100 mt-2">
+                                    <button type="button" id="new-trip-from-settings-btn" class="px-3 py-1.5 text-xs text-[#7E92A1] bg-[#EBF2FA] rounded hover:bg-[#DCE6F2]">新計畫</button>
+                                    <div class="flex space-x-2 justify-end flex-grow">
+                                        <button type="button" id="delete-trip-btn" class="px-3 py-1.5 text-white bg-[#CB8572] rounded text-xs hover:bg-[#B56B5A]">刪除</button>
+                                        <button type="button" id="settings-modal-save-btn" class="px-3 py-1.5 text-white bg-[#7E92A1] rounded text-xs hover:bg-[#64748B]">儲存</button>
+                                    </div>
+                                </div>
+                            </form>
+                        `;
+                    }
+                    
+                    const newTripModalContent = document.querySelector('#new-trip-modal > div');
+                    if (newTripModalContent) {
+                        newTripModalContent.innerHTML = `
+                            <h3 class="text-base font-bold mb-3 flex justify-between items-center text-[#4A4B4D]">新增旅行計畫<button id="new-trip-modal-close-btn" class="text-[#A9A9A9] hover:text-[#5F6368] text-xl">×</button></h3>
+                            <form id="new-trip-form" class="space-y-3">
+                                <div><label class="block text-xs font-medium text-[#7E92A1]">計畫名稱</label><input type="text" id="new-trip-name" class="compact-input mt-0.5 block w-full rounded border"></div>
+                                <div class="grid grid-cols-[0.8fr_1.5fr_0.7fr] gap-1">
+                                    <div><label class="block text-xs font-medium text-[#7E92A1]">國家</label><select id="new-trip-country" class="compact-input mt-0.5 block w-full rounded border h-[28px]" style="width: 88% !important; min-width: 0;"><option value="USA">🇺🇸 美國</option><option value="JP">🇯🇵 日本</option><option value="KR">🇰🇷 韓國</option><option value="UK">🇬🇧 英國</option><option value="TW">🇹🇼 台灣</option></select></div>
+                                    <div><label class="block text-xs font-medium text-[#7E92A1]">開始日期</label><input type="date" id="new-trip-start-date" class="compact-input mt-0.5 block w-full rounded border text-center h-[28px] text-[10px]" style="width: 88% !important; min-width: 0;"></div>
+                                    <div><label class="block text-xs font-medium text-[#7E92A1]">天數</label><input type="number" id="new-trip-days" min="1" class="compact-input mt-0.5 block w-full rounded border text-center h-[32px]" style="width: 88% !important; min-width: 0;"></div>
+                                </div>
+                                <div class="pt-3 flex justify-end"><button type="button" id="new-trip-modal-save-btn" class="px-3 py-1.5 text-white bg-[#7E92A1] rounded text-xs hover:bg-[#64748B]">新增</button></div>
+                            </form>
+                        `;
+                    }
+
+                    loadTripList();
+
+                    safeBind('trip-select', 'onchange', (e) => changeTrip(e.target.value));
+                    safeBind('bar-calc-currency', 'onchange', calculateCurrency);
+                    safeBind('bar-calc-amount', 'oninput', calculateCurrency);
+                    
+                    safeBind('center-add-btn', 'onclick', () => { 
+                        if(!currentTripId) return alert('請先建計畫'); 
+                        document.getElementById('add-schedule-form').reset(); 
+                        document.getElementById('form-must-go').checked = false; 
+                        document.getElementById('form-set-alarm').checked = false;
+                        
+                        editingScheduleId=null; 
+                        document.getElementById('modal-delete-btn').style.display='none'; 
+                        document.getElementById('add-schedule-modal-title').textContent = '新增行程'; 
+                        const t=tripData[currentTripId]; 
+                        const d = getDateFromDayId(t, currentDayId);
+                        if(d) document.getElementById('form-date').value=d.toISOString().split('T')[0]; 
+                        document.getElementById('form-members-container').innerHTML=''; 
+                        (t.members||[]).forEach(n=>addMemberInput(n)); 
+                        if(!(t.members||[]).length){addMemberInput();addMemberInput();} 
+                        document.getElementById('add-schedule-modal').style.display='flex'; 
+                    });
+                    
+                    safeBind('modal-close-btn', 'onclick', () => document.getElementById('add-schedule-modal').style.display='none');
+                    safeBind('modal-save-btn', 'onclick', submitSchedule);
+                    
+                    safeBind('form-amount', 'oninput', (e) => document.getElementById('form-amount-twd').value = (e.target.value * currentTripRate).toFixed(0));
+                    safeBind('form-amount-twd', 'oninput', (e) => {
+                        const twd = parseFloat(e.target.value);
+                        if (!isNaN(twd) && currentTripRate > 0) {
+                            document.getElementById('form-amount').value = (twd / currentTripRate).toFixed(2);
+                        } else if (e.target.value === '') {
+                            document.getElementById('form-amount').value = '';
+                        }
+                    });
+
+                    safeBind('btn-lists', 'onclick', loadLists);
+                    safeBind('lists-modal-close-btn', 'onclick', () => document.getElementById('lists-modal').style.display='none');
+                    safeBind('split-expense-btn', 'onclick', loadExpenseSummary);
+                    safeBind('split-expense-close-btn', 'onclick', () => document.getElementById('split-expense-modal').style.display='none');
+                    
+                    safeBind('settings-btn', 'onclick', () => { 
+                        const trip = tripData[currentTripId];
+                        if (!trip) return;
+                        document.getElementById('settings-trip-name').value = trip.name; 
+                        document.getElementById('settings-trip-country').value = trip.country || 'TW';
+                        document.getElementById('settings-start-date').value = trip.startDate;
+                        document.getElementById('settings-num-days').value = trip.numDays;
+                        document.getElementById('settings-modal').style.display = 'flex'; 
+                        document.getElementById('settings-members-container').innerHTML = ''; 
+                        (trip.members||[]).forEach(m => addSettingsMemberInput(m));
+                    });
+                    
+                    safeBind('new-trip-btn', 'onclick', () => document.getElementById('new-trip-modal').style.display='flex');
+                    safeBind('new-trip-from-settings-btn', 'onclick', () => { document.getElementById('settings-modal').style.display='none'; document.getElementById('new-trip-from-settings-btn').style.display='none'; document.getElementById('new-trip-modal').style.display='flex'; });
+                    safeBind('new-trip-modal-close-btn', 'onclick', () => document.getElementById('new-trip-modal').style.display='none');
+                    safeBind('new-trip-modal-save-btn', 'onclick', async () => {
+                        const name = document.getElementById('new-trip-name').value;
+                        const country = document.getElementById('new-trip-country').value;
+                        const start = document.getElementById('new-trip-start-date').value;
+                        const numDays = parseInt(document.getElementById('new-trip-days').value) || 1;
+                        if(!name || !start) return alert("請填寫完整");
+                        const uid = auth.currentUser ? auth.currentUser.uid : null;
+                        const docRef = await addDoc(collection(db, `artifacts/${appId}/public/data/Trips`), { 
+                            name, country, startDate: start, numDays: numDays, members: [], uid: uid 
+                        });
+                        pendingTripSwitchId = docRef.id;
+                        document.getElementById('new-trip-modal').style.display='none';
+                    });
+
+                    safeBind('settings-modal-close-btn', 'onclick', () => document.getElementById('settings-modal').style.display='none');
+                    safeBind('image-zoom-modal', 'onclick', () => document.getElementById('image-zoom-modal').style.display='none');
+                    
+                    safeBind('delete-trip-btn', 'onclick', async () => { if(confirm("刪除此計畫？")) { await deleteDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}`)); document.getElementById('settings-modal').style.display='none'; } });
+                    
+                    safeBind('settings-add-member-btn', 'onclick', () => addSettingsMemberInput());
+                    safeBind('add-member-btn', 'onclick', () => addMemberInput());
+
+                    safeBind('settings-modal-save-btn', 'onclick', async () => {
+                        const newName = document.getElementById('settings-trip-name').value;
+                        const newCountry = document.getElementById('settings-trip-country').value;
+                        const newStart = document.getElementById('settings-start-date').value;
+                        const newDays = parseInt(document.getElementById('settings-num-days').value) || 1;
+                        
+                        const memInputs = document.querySelectorAll('input[name="settings-member-name"]');
+                        const newMembersList = []; 
+                        memInputs.forEach(i => { if(i.value.trim()) newMembersList.push(i.value.trim()); });
+                        
+                        const trip = tripData[currentTripId];
+                        const oldMembers = trip.members || [];
+                        const addedMembers = newMembersList.filter(m => !oldMembers.includes(m));
+                        const removedMembers = oldMembers.filter(m => !newMembersList.includes(m));
+
+                        await updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}`), { 
+                            name: newName, country: newCountry, startDate: newStart, numDays: newDays, members: newMembersList 
+                        });
+
+                        if (addedMembers.length > 0 || removedMembers.length > 0) {
+                            const originalBtnText = document.getElementById('settings-modal-save-btn').textContent;
+                            document.getElementById('settings-modal-save-btn').textContent = "更新行程中...";
+                            try {
+                                const schedulesRef = collection(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`);
+                                const snapshot = await getDocs(schedulesRef);
+                                const updatePromises = snapshot.docs.map(scheduleDoc => {
+                                    const sData = scheduleDoc.data();
+                                    let currentSchedMembers = sData.members || [];
+                                    if (removedMembers.length > 0) {
+                                        currentSchedMembers = currentSchedMembers.filter(m => {
+                                            const name = typeof m === 'string' ? m : m.name;
+                                            return !removedMembers.includes(name);
+                                        });
+                                    }
+                                    const membersToAdd = addedMembers.map(name => ({ name: name, amount: null }));
+                                    const finalMembers = [...currentSchedMembers, ...membersToAdd];
+                                    return updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`, scheduleDoc.id), { members: finalMembers });
+                                });
+                                await Promise.all(updatePromises);
+                            } catch (err) { console.error("批次更新失敗", err); }
+                            document.getElementById('settings-modal-save-btn').textContent = originalBtnText;
+                        }
+
+                        document.getElementById('settings-modal').style.display='none';
+                        changeTrip(currentTripId); 
+                    });
+                });
+            }
+            
+            return { initApp };
+        })();
+        window.App.initApp();
+    </script>
+</body>
+</html>
