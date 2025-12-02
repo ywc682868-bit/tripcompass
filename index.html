@@ -14,7 +14,7 @@
     /* --- 全域設定 --- */
     html {
         scroll-snap-type: y proximity;
-        scroll-padding-top: 170px; /* 電腦版預設 */
+        scroll-padding-top: 170px; 
         scroll-behavior: smooth;
     }
     body { font-family: 'Inter', sans-serif; background-color: #f7f7f7; margin: 0; padding: 0; color: #5F6368; overflow-x: hidden; }
@@ -33,7 +33,7 @@
         box-shadow: 0 0 10px rgba(0,0,0,0.05);
     }
     #schedule-list-container {
-        padding-top: 170px; /* 電腦版預設 */
+        padding-top: 170px; 
         padding-bottom: 40px;
         margin-top: 0; 
         position: relative; 
@@ -377,7 +377,7 @@
                 const mustGoHtml = schedule.MustGo ? `<div class="mt-auto w-full flex justify-start mb-3"><span class="text-[9px] text-[#CB8572] border border-[#CB8572] px-1 py-0.5 rounded-[2px] leading-none font-normal bg-white">必去</span></div>` : '';
 
                 const card = document.createElement('div');
-                // ✅ 關鍵修正：這裡確保高度固定且隱藏溢出
+                // ✅ 關鍵修正：這裡確保高度固定且隱藏溢出，解決按鈕亂飛
                 card.className = 'trip-card flex w-full mb-3 relative'; 
                 card.style.height = '100px'; 
                 card.style.overflow = 'hidden'; 
@@ -645,6 +645,60 @@
                     renderDayTabs(); 
                     loadSchedules(currentTripId, currentDayId);
                 } catch(e) { console.error(e); }
+            }
+
+            // ✅ 關鍵修復：補上這個函式，解決 ReferenceError
+            async function exportToCalendar() {
+                if(!currentTripId) return alert("請先選擇行程");
+                try {
+                    const q = query(collection(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`));
+                    const snapshot = await getDocs(q);
+                    
+                    let icsContent = 
+`BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Trip Compass//TW
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+`;
+                    snapshot.forEach(doc => {
+                        const s = doc.data();
+                        if(!s.Date || !s.Time) return;
+                        
+                        const cleanDate = s.Date.replace(/-/g, '');
+                        const cleanTime = s.Time.replace(/:/g, '');
+                        const start = `${cleanDate}T${cleanTime}00`;
+                        
+                        let endH = parseInt(s.Time.split(':')[0]) + 1;
+                        let endM = s.Time.split(':')[1];
+                        if(endH > 23) { endH = 23; endM = "59"; }
+                        const end = `${cleanDate}T${String(endH).padStart(2,'0')}${endM}00`;
+                        
+                        icsContent += 
+`BEGIN:VEVENT
+DTSTART:${start}
+DTEND:${end}
+SUMMARY:${s.Location}
+DESCRIPTION:${s.說明 || ''}
+LOCATION:${s.Address || ''}
+END:VEVENT
+`;
+                    });
+                    
+                    icsContent += "END:VCALENDAR";
+                    
+                    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+                    const link = document.createElement('a');
+                    link.href = window.URL.createObjectURL(blob);
+                    link.setAttribute('download', `trip_export.ics`);
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                } catch(e) { 
+                    console.error(e); 
+                    alert("匯出失敗，請檢查 Console"); 
+                }
             }
 
             function downloadSingleEventIcs(schedule) {
@@ -918,59 +972,6 @@ END:VCALENDAR`;
                 document.getElementById('split-expense-modal').style.display = 'flex';
             }
 
-            async function exportToCalendar() {
-                if(!currentTripId) return alert("請先選擇行程");
-                try {
-                    const q = query(collection(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`));
-                    const snapshot = await getDocs(q);
-                    
-                    let icsContent = 
-`BEGIN:VCALENDAR
-VERSION:2.0
-PRODID:-//Trip Compass//TW
-CALSCALE:GREGORIAN
-METHOD:PUBLISH
-`;
-                    snapshot.forEach(doc => {
-                        const s = doc.data();
-                        if(!s.Date || !s.Time) return;
-                        
-                        const cleanDate = s.Date.replace(/-/g, '');
-                        const cleanTime = s.Time.replace(/:/g, '');
-                        const start = `${cleanDate}T${cleanTime}00`;
-                        
-                        let endH = parseInt(s.Time.split(':')[0]) + 1;
-                        let endM = s.Time.split(':')[1];
-                        if(endH > 23) { endH = 23; endM = "59"; }
-                        const end = `${cleanDate}T${String(endH).padStart(2,'0')}${endM}00`;
-                        
-                        icsContent += 
-`BEGIN:VEVENT
-DTSTART:${start}
-DTEND:${end}
-SUMMARY:${s.Location}
-DESCRIPTION:${s.說明 || ''}
-LOCATION:${s.Address || ''}
-END:VEVENT
-`;
-                    });
-                    
-                    icsContent += "END:VCALENDAR";
-                    
-                    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
-                    const link = document.createElement('a');
-                    link.href = window.URL.createObjectURL(blob);
-                    link.setAttribute('download', `trip_export.ics`);
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    
-                } catch(e) { 
-                    console.error(e); 
-                    alert("匯出失敗，請檢查 Console"); 
-                }
-            }
-
             async function deleteSchedule(id) {
                 if(!confirm('確定刪除?')) return;
                 await deleteDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`, id));
@@ -1009,21 +1010,26 @@ END:VEVENT
 
                     const addScheduleModalContent = document.querySelector('#add-schedule-modal > div');
                     if(addScheduleModalContent) {
+                        // ✅ 恢復為原始設計：grid-cols-[1.3fr_1fr_1.1fr]
                         addScheduleModalContent.innerHTML = `
                             <h3 class="text-base font-bold mb-2 text-[#4A4B4D] pr-8 truncate"> 
                                 <span id="add-schedule-modal-title">新增行程</span> 
                             </h3>
                             <button id="modal-close-btn" class="absolute top-3 right-3 text-[#A9A9A9] hover:text-[#5F6368] text-2xl leading-none w-6 h-6 flex items-center justify-center">×</button>
+                            
                             <form id="add-schedule-form" class="space-y-2">
-                                <div class="grid grid-cols-3 gap-2 w-full"> 
+
+                                <div class="grid grid-cols-[1.3fr_1fr_1.1fr] gap-1.5 w-full"> 
                                     <div class="min-w-0">
                                         <label class="block compact-label mb-0.5">日期</label>
                                         <input type="date" id="form-date" class="compact-input block w-full rounded border shadow-sm text-center p-0 text-[11px]" style="height: 28px !important; min-height: 28px !important;">
                                     </div> 
+
                                     <div class="min-w-0">
                                         <label class="block compact-label mb-0.5">時間</label>
                                         <input type="time" id="form-time" class="compact-input block w-full rounded border shadow-sm text-center p-0 text-[11px]" style="height: 28px !important; min-height: 28px !important;">
                                     </div>
+
                                     <div class="min-w-0">
                                         <label class="block compact-label mb-0.5">類型</label>
                                         <select id="form-type" class="compact-input block w-full rounded border shadow-sm py-0 pl-1 pr-0 text-[11px]" style="height: 28px !important; min-height: 28px !important;">
@@ -1036,11 +1042,13 @@ END:VEVENT
                                         </select>
                                     </div>
                                 </div>
+
                                 <div class="flex gap-2 items-end">
                                     <div class="flex-grow min-w-0">
                                         <label class="block compact-label mb-0.5">地點</label>
                                         <input type="text" id="form-location" class="compact-input block w-full rounded border shadow-sm px-2 text-xs" style="height: 32px !important;" placeholder="輸入地點名稱">
                                     </div>
+
                                     <div class="flex gap-2 flex-shrink-0 pb-1">
                                         <label class="flex flex-col items-center justify-end cursor-pointer group">
                                             <span class="compact-label mb-0.5 leading-none text-[9px] text-[#CB8572]">必去</span>
@@ -1052,13 +1060,16 @@ END:VEVENT
                                         </label>
                                     </div>
                                 </div>
+
                                 <div>
                                     <label class="block compact-label mb-0.5">地址</label>
                                     <input type="text" id="form-address" class="compact-input block w-full rounded border shadow-sm px-2 text-xs" style="height: 28px !important;" placeholder="Google Map 連結或地址">
                                 </div>
+                                
                                 <div>
                                     <textarea id="form-details" rows="2" class="compact-input block w-full rounded border shadow-sm !h-auto leading-normal p-2 text-xs" placeholder="備註說明..."></textarea>
                                 </div>
+                                
                                 <div class="flex gap-2 items-start mt-1 bg-gray-50 p-2 rounded border border-gray-100">
                                     <div class="flex-grow">
                                         <div class="flex justify-start items-center mb-1 gap-2">
@@ -1078,6 +1089,7 @@ END:VEVENT
                                          </div>
                                     </div>
                                 </div>
+
                                 <div class="flex justify-between items-center pt-2 mt-2 border-t border-[#E0E0E0]">
                                     <button type="button" id="modal-delete-btn" class="px-3 py-1 h-7 text-white bg-[#CB8572] rounded text-xs font-bold flex-shrink-0 hover:bg-[#B56B5A] hidden">刪除</button>
                                     <div class="flex-grow flex justify-end">
