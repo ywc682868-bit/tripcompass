@@ -642,7 +642,8 @@
                 
                 // Payer Checkbox
                 const label = document.createElement('label');
-                label.className = 'flex items-center text-[9px] text-[#7E92A1] cursor-pointer leading-none select-none whitespace-nowrap';
+                // 修改處：字體調整為 text-[11px]
+                label.className = 'flex items-center text-[11px] text-[#7E92A1] cursor-pointer leading-none select-none whitespace-nowrap';
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
                 checkbox.className = 'payer-check mr-1 h-3 w-3';
@@ -652,7 +653,8 @@
                 
                 // Payment Method
                 const select = document.createElement('select');
-                select.className = 'payment-method text-[9px] border border-gray-200 rounded px-0 py-0 text-[#5F6368] bg-white h-4 leading-none w-12 text-center';
+                // 修改處：字體調整為 text-[11px]
+                select.className = 'payment-method text-[11px] border border-gray-200 rounded px-0 py-0 text-[#5F6368] bg-white h-4 leading-none w-12 text-center';
                 const op1 = document.createElement('option'); op1.value='cash'; op1.text='現金';
                 const op2 = document.createElement('option'); op2.value='card'; op2.text='刷卡';
                 select.add(op1); select.add(op2);
@@ -1062,10 +1064,13 @@
                                 <div class="bg-gray-50 p-2 rounded border border-gray-100 mt-1">
                                     <div class="flex justify-start items-center mb-1 gap-2">
                                         <label class="block compact-label">分帳成員</label>
-                                        <button type="button" id="add-member-btn" class="ml-auto text-sm font-bold text-white bg-[#7E92A1] rounded-full w-5 h-5 flex items-center justify-center hover:bg-[#64748B] transition-colors leading-none">+</button>
                                     </div>
                                     <div id="form-members-container" class="space-y-1 mb-2"></div>
                                     
+                                    <div class="flex justify-center w-full mb-2">
+                                         <button type="button" id="add-member-btn" class="text-[#7E92A1] text-2xl leading-none font-bold hover:text-[#5F6368] transition-colors w-full text-center py-1">＋</button>
+                                    </div>
+
                                     <div class="grid grid-cols-[1fr_20px_1fr] gap-2 items-center mt-2 border-t border-gray-200 pt-2">
                                         <div class="flex items-center gap-1 justify-start">
                                             <label id="form-currency-label" class="text-[10px] font-bold text-[#7E92A1] w-8 text-right">USD</label>
@@ -1082,7 +1087,7 @@
                                 <div class="flex justify-between items-center pt-2 mt-2 border-t border-[#E0E0E0]">
                                     <button type="button" id="modal-delete-btn" class="px-3 py-1 h-7 text-white bg-[#CB8572] rounded text-xs font-bold flex-shrink-0 hover:bg-[#B56B5A] hidden">刪除</button>
                                     <div class="flex-grow flex justify-end">
-                                        <button type="button" id="modal-save-btn" class="px-6 py-1 h-8 text-white bg-[#7E92A1] rounded text-xs font-bold flex-shrink-0 hover:bg-[#64748B] shadow-sm">儲存</button>
+                                        <button type="button" id="modal-save-btn" class="px-3 py-1 h-7 text-white bg-[#7E92A1] rounded text-xs font-bold flex-shrink-0 hover:bg-[#64748B] shadow-sm">儲存</button>
                                     </div>
                                 </div>
                             </form>
