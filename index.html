@@ -914,394 +914,75 @@ END:VCALENDAR`;
             }
 
             async function loadExpenseSummary() {
-                if(!currentTripId) return; const snap = await getDocs(collection(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`));
-                let total=0, types={}, mems={};
-                snap.forEach(d => {
-                    const da = d.data(); const tTWD = (da.Amount||0)*(da.Rate||1);
-                    if(tTWD>0) { total+=tTWD; types[da.Type]=(types[da.Type]||0)+tTWD; let spSum=0, unSpUsers=[]; (da.members||[]).forEach(m=>{ const amt = typeof m==='string'?null:m.amount; const name = typeof m==='string'?m:m.name; if(amt!==null && !isNaN(amt)) { spSum+=amt; addMemExp(mems, name, da.Type, amt*(da.Rate||1)); } else unSpUsers.push(name); }); if(unSpUsers.length) { const split = ((da.Amount||0)-spSum)*(da.Rate||1)/unSpUsers.length; unSpUsers.forEach(u=>addMemExp(mems, u, da.Type, split)); } }
-                });
-                function addMemExp(s, n, t, a) { if(!s[n]) s[n]={total:0, cats:{}}; s[n].total+=a; s[n].cats[t]=(s[n].cats[t]||0)+a; }
-                document.getElementById('expense-total-amount').textContent = total.toFixed(0);
-                const ctx = document.getElementById('expense-chart').getContext('2d'); if(expenseChart) expenseChart.destroy();
-                expenseChart = new Chart(ctx, { type:'pie', data:{labels:Object.keys(types).map(k=>CATEGORY_NAMES[k]||k), datasets:[{data:Object.values(types), backgroundColor:Object.keys(types).map(k=>(CATEGORY_COLORS[k]||CATEGORY_COLORS.default).hex), borderWidth:0}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}} });
-                
-                const l = document.getElementById('expense-member-list'); 
-                l.innerHTML = `<div class="grid grid-cols-[40%_20%_40%] border-b border-[#E0E0E0] pb-1 mb-2 font-bold text-[#5F6368] text-[10px]"><span>成員</span><span class="text-center">類別</span><span class="text-right">金額</span></div>`;
-                
-                Object.keys(mems).sort().forEach(n => { 
-                    let first=true; 
-                    Object.keys(mems[n].cats).forEach(c => { 
-                        l.innerHTML += `<div class="grid grid-cols-[40%_20%_40%] py-0.5 text-[10px] border-b border-[#F0F0F0] items-center">
-                            ${first ? `<span class="font-bold truncate">${n}</span>` : '<span></span>'}
-                            <span class="text-center ${(CATEGORY_COLORS[c]||CATEGORY_COLORS.default).text}">${CATEGORY_NAMES[c]}</span>
-                            <span class="text-right text-[#888888]">$${mems[n].cats[c].toFixed(0)}</span>
-                        </div>`; 
-                        first=false; 
-                    }); 
-                    l.innerHTML += `<div class="grid grid-cols-[40%_20%_40%] py-1 mb-2 bg-[#F9F9F9] border-b border-[#E0E0E0] text-[10px] font-bold"><span></span><span class="text-center">個人總計</span><span class="text-right">$${mems[n].total.toFixed(0)}</span></div>`; 
-                });
-                document.getElementById('split-expense-modal').style.display = 'flex';
-            }
-async function exportToCalendar() {
-                if(!currentTripId) return alert("請先選擇行程");
-                try {
-                    // 抓取目前行程的所有活動
-                    const q = query(collection(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`));
-                    const snapshot = await getDocs(q);
-                    
-                    // 建立 ICS 檔案標頭
-                    let icsContent = 
-`BEGIN:VCALENDAR
-VERSION:2.0
-PRODID:-//Trip Compass//TW
-CALSCALE:GREGORIAN
-METHOD:PUBLISH
-`;
-                    
-                    snapshot.forEach(doc => {
-                        const s = doc.data();
-                        // 略過沒有日期或時間的行程
-                        if(!s.Date || !s.Time) return;
-                        
-                        const cleanDate = s.Date.replace(/-/g, '');
-                        const cleanTime = s.Time.replace(/:/g, '');
-                        const start = `${cleanDate}T${cleanTime}00`;
-                        
-                        // 預設結束時間為 1 小時後 (簡單計算)
-                        let endH = parseInt(s.Time.split(':')[0]) + 1;
-                        let endM = s.Time.split(':')[1];
-                        if(endH > 23) { endH = 23; endM = "59"; }
-                        const end = `${cleanDate}T${String(endH).padStart(2,'0')}${endM}00`;
-                        
-                        icsContent += 
-`BEGIN:VEVENT
-DTSTART:${start}
-DTEND:${end}
-SUMMARY:${s.Location}
-DESCRIPTION:${s.說明 || ''}
-LOCATION:${s.Address || ''}
-END:VEVENT
-`;
-                    });
-                    
-                    icsContent += "END:VCALENDAR";
-                    
-                    // 下載檔案
-                    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
-                    const link = document.createElement('a');
-                    link.href = window.URL.createObjectURL(blob);
-                    link.setAttribute('download', `trip_export.ics`);
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    
-                } catch(e) { 
-                    console.error(e); 
-                    alert("匯出失敗，請檢查 Console"); 
-                }
+                if(!currentTripId) return; 
+                const snap = await getDocs(collection(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`));
+                let total=0, types={}, mems={};
+                
+                snap.forEach(d => {
+                    const da = d.data(); 
+                    const tTWD = (da.Amount||0)*(da.Rate||1);
+                    if(tTWD>0) { 
+                        total+=tTWD; 
+                        types[da.Type]=(types[da.Type]||0)+tTWD; 
+                        let spSum=0, unSpUsers=[]; 
+                        (da.members||[]).forEach(m=>{ 
+                            const amt = typeof m==='string'?null:m.amount; 
+                            const name = typeof m==='string'?m:m.name; 
+                            if(amt!==null && !isNaN(amt)) { 
+                                spSum+=amt; 
+                                addMemExp(mems, name, da.Type, amt*(da.Rate||1)); 
+                            } else {
+                                unSpUsers.push(name);
+                            }
+                        }); 
+                        if(unSpUsers.length) { 
+                            const split = ((da.Amount||0)-spSum)*(da.Rate||1)/unSpUsers.length; 
+                            unSpUsers.forEach(u=>addMemExp(mems, u, da.Type, split)); 
+                        } 
+                    }
+                });
+                
+                function addMemExp(s, n, t, a) { if(!s[n]) s[n]={total:0, cats:{}}; s[n].total+=a; s[n].cats[t]=(s[n].cats[t]||0)+a; }
+                
+                document.getElementById('expense-total-amount').textContent = total.toFixed(0);
+                
+                const ctx = document.getElementById('expense-chart').getContext('2d'); 
+                if(expenseChart) expenseChart.destroy();
+                
+                expenseChart = new Chart(ctx, { 
+                    type:'pie', 
+                    data:{
+                        labels:Object.keys(types).map(k=>CATEGORY_NAMES[k]||k), 
+                        datasets:[{
+                            data:Object.values(types), 
+                            backgroundColor:Object.keys(types).map(k=>(CATEGORY_COLORS[k]||CATEGORY_COLORS.default).hex), 
+                            borderWidth:0
+                        }]
+                    }, 
+                    options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}} 
+                });
+                
+                const l = document.getElementById('expense-member-list'); 
+                l.innerHTML = `<div class="grid grid-cols-[40%_20%_40%] border-b border-[#E0E0E0] pb-1 mb-2 font-bold text-[#5F6368] text-[10px]"><span>成員</span><span class="text-center">類別</span><span class="text-right">金額</span></div>`;
+                
+                Object.keys(mems).sort().forEach(n => { 
+                    let first=true; 
+                    Object.keys(mems[n].cats).forEach(c => { 
+                        l.innerHTML += `<div class="grid grid-cols-[40%_20%_40%] py-0.5 text-[10px] border-b border-[#F0F0F0] items-center">
+                            ${first ? `<span class="font-bold truncate">${n}</span>` : '<span></span>'}
+                            <span class="text-center ${(CATEGORY_COLORS[c]||CATEGORY_COLORS.default).text}">${CATEGORY_NAMES[c]}</span>
+                            <span class="text-right text-[#888888]">$${mems[n].cats[c].toFixed(0)}</span>
+                        </div>`; 
+                        first=false; 
+                    }); 
+                    l.innerHTML += `<div class="grid grid-cols-[40%_20%_40%] py-1 mb-2 bg-[#F9F9F9] border-b border-[#E0E0E0] text-[10px] font-bold"><span></span><span class="text-center">個人總計</span><span class="text-right">$${mems[n].total.toFixed(0)}</span></div>`; 
+                });
+                
+                document.getElementById('split-expense-modal').style.display = 'flex';
             }
-            function initApp() {
-                document.addEventListener('DOMContentLoaded', async () => {
-                    document.getElementById('rate-display-label').textContent = '匯率 ≈ ...';
 
-                    const app = initializeApp(firebaseConfig); 
-                    db = getFirestore(app); 
-                    auth = getAuth(app); 
-                    const userCred = await signInAnonymously(auth); 
-                    currentUser = userCred.user;
-                    
-                    // 修正 Modal Container 定位問題
-                    document.querySelectorAll('.modal-overlay > div').forEach(el => el.style.position = 'relative');
-
-                    // ✅ 初始化通知按鈕 (確保這個函式有被定義在 initApp 之外)
-                    if (typeof initNotifications === 'function') initNotifications();
-
-                    // --- 1. 填充 Header 內容 (加入鈴鐺按鈕) ---
-                    const headerWrapper = document.getElementById('header-content-wrapper');
-                    // 注意：這裡我們只針對按鈕區塊做微調，不破壞原本結構
-                    // 為了方便，我們直接操作 DOM 找到 weather-info-container 後面的按鈕容器
-                    const weatherInfo = document.getElementById('weather-info-container');
-                    if (weatherInfo && weatherInfo.nextElementSibling) {
-                        const btnContainer = weatherInfo.nextElementSibling;
-                        // 如果還沒加入鈴鐺，就加進去
-                        if (!document.getElementById('notification-btn')) {
-                            const notifBtn = document.createElement('button');
-                            notifBtn.id = 'notification-btn';
-                            notifBtn.className = 'w-8 h-8 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center text-sm shadow-sm transition-colors duration-200 mr-2';
-                            notifBtn.textContent = '🔔';
-                            btnContainer.insertBefore(notifBtn, btnContainer.firstChild);
-                            btnContainer.classList.add('gap-2'); // 增加間距
-                        }
-                    }
-
-                    // --- 2. 填充「新增行程」Modal HTML (新版佈局：日期/時間/類型第一列) ---
-                    const addScheduleModalContent = document.querySelector('#add-schedule-modal > div');
-                    if(addScheduleModalContent) {
-                        addScheduleModalContent.innerHTML = `
-                            <h3 class="text-base font-bold mb-2 text-[#4A4B4D] pr-8 truncate"> 
-                                <span id="add-schedule-modal-title">新增行程</span> 
-                            </h3>
-                            <button id="modal-close-btn" class="absolute top-3 right-3 text-[#A9A9A9] hover:text-[#5F6368] text-2xl leading-none w-6 h-6 flex items-center justify-center">×</button>
-                            
-                            <form id="add-schedule-form" class="space-y-2">
-
-                                <div class="grid grid-cols-[1.3fr_1fr_1.1fr] gap-1.5 w-full"> 
-                                    <div class="min-w-0">
-                                        <label class="block compact-label mb-0.5">日期</label>
-                                        <input type="date" id="form-date" class="compact-input block w-full rounded border shadow-sm text-center p-0 text-[11px]" style="height: 28px !important; min-height: 28px !important;">
-                                    </div> 
-
-                                    <div class="min-w-0">
-                                        <label class="block compact-label mb-0.5">時間</label>
-                                        <input type="time" id="form-time" class="compact-input block w-full rounded border shadow-sm text-center p-0 text-[11px]" style="height: 28px !important; min-height: 28px !important;">
-                                    </div>
-
-                                    <div class="min-w-0">
-                                        <label class="block compact-label mb-0.5">類型</label>
-                                        <select id="form-type" class="compact-input block w-full rounded border shadow-sm py-0 pl-1 pr-0 text-[11px]" style="height: 28px !important; min-height: 28px !important;">
-                                            <option value="location">📍 景點</option>
-                                            <option value="restaurant">🍽️ 餐廳</option>
-                                            <option value="coffee">☕ 咖啡</option>
-                                            <option value="accommodation">🛏️ 住宿</option>
-                                            <option value="交通">🚗 交通</option>
-                                            <option value="shopping">🛍️ 購物</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <div class="flex gap-2 items-end">
-                                    <div class="flex-grow min-w-0">
-                                        <label class="block compact-label mb-0.5">地點</label>
-                                        <input type="text" id="form-location" class="compact-input block w-full rounded border shadow-sm px-2 text-xs" style="height: 32px !important;" placeholder="輸入地點名稱">
-                                    </div>
-
-                                    <div class="flex gap-2 flex-shrink-0 pb-1">
-                                        <label class="flex flex-col items-center justify-end cursor-pointer group">
-                                            <span class="compact-label mb-0.5 leading-none text-[9px] text-[#CB8572]">必去</span>
-                                            <input type="checkbox" id="form-must-go" class="w-5 h-5 accent-[#CB8572] cursor-pointer">
-                                        </label>
-                                        <label class="flex flex-col items-center justify-end cursor-pointer group">
-                                            <span class="compact-label mb-0.5 leading-none text-[9px] text-[#7E92A1]">鬧鐘</span>
-                                            <input type="checkbox" id="form-set-alarm" class="w-5 h-5 accent-[#7E92A1] cursor-pointer">
-                                        </label>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label class="block compact-label mb-0.5">地址</label>
-                                    <input type="text" id="form-address" class="compact-input block w-full rounded border shadow-sm px-2 text-xs" style="height: 28px !important;" placeholder="Google Map 連結或地址">
-                                </div>
-                                
-                                <div>
-                                    <textarea id="form-details" rows="2" class="compact-input block w-full rounded border shadow-sm !h-auto leading-normal p-2 text-xs" placeholder="備註說明..."></textarea>
-                                </div>
-                                
-                                <div class="flex gap-2 items-start mt-1 bg-gray-50 p-2 rounded border border-gray-100">
-                                    <div class="flex-grow">
-                                        <div class="flex justify-start items-center mb-1 gap-2">
-                                            <label class="block compact-label">分帳成員</label>
-                                            <button type="button" id="add-member-btn" class="ml-auto text-sm font-bold text-white bg-[#7E92A1] rounded-full w-5 h-5 flex items-center justify-center hover:bg-[#64748B] transition-colors leading-none">+</button>
-                                        </div>
-                                        <div id="form-members-container" class="space-y-1"></div>
-                                    </div>
-                                    <div class="w-24 flex-shrink-0 flex flex-col gap-1">
-                                         <div class="flex items-center gap-1">
-                                             <label id="form-currency-label" class="text-[10px] text-[#7E92A1] font-bold w-6 text-right">USD</label>
-                                             <input type="number" id="form-amount" min="0" placeholder="0" class="w-full p-1 border border-[#E0E0E0] rounded text-right text-[11px] text-[#5F6368] bg-white" style="height: 28px !important;">
-                                         </div>
-                                         <div class="flex items-center gap-1">
-                                             <span class="text-[10px] text-[#A9A9A9] font-bold w-6 text-right">TWD</span>
-                                             <input type="number" id="form-amount-twd" placeholder="0" class="w-full p-1 border border-[#E0E0E0] bg-[#E0E0E0] rounded text-right text-[11px]" style="height: 28px !important;">
-                                         </div>
-                                    </div>
-                                </div>
-
-                                <div class="flex justify-between items-center pt-2 mt-2 border-t border-[#E0E0E0]">
-                                    <button type="button" id="modal-delete-btn" class="px-3 py-1 h-7 text-white bg-[#CB8572] rounded text-xs font-bold flex-shrink-0 hover:bg-[#B56B5A] hidden">刪除</button>
-                                    <div class="flex-grow flex justify-end">
-                                        <button type="button" id="modal-save-btn" class="px-6 py-1 h-8 text-white bg-[#7E92A1] rounded text-xs font-bold flex-shrink-0 hover:bg-[#64748B] shadow-sm">儲存行程</button>
-                                    </div>
-                                </div>
-                            </form>
-                        `;
-                    }
-
-                    // --- 3. 填充「計畫設定」Modal HTML (加入匯出按鈕) ---
-                    const settingsModalContent = document.querySelector('#settings-modal > div');
-                    if (settingsModalContent) {
-                        settingsModalContent.innerHTML = `
-                            <h3 class="text-base font-bold mb-3 flex justify-between items-center text-[#4A4B4D]">
-                                計畫設定 <button id="settings-modal-close-btn" class="text-[#A9A9A9] hover:text-[#5F6368] text-xl leading-none">×</button>
-                            </h3>
-                            <form id="settings-form" class="space-y-3">
-                                <div><label class="block text-xs font-medium text-[#7E92A1]">計畫名稱</label><input type="text" id="settings-trip-name" class="compact-input mt-0.5 block w-full rounded border"></div>
-                                <div class="grid grid-cols-[0.8fr_1.5fr_0.7fr] gap-1">
-                                    <div><label class="block text-xs font-medium text-[#7E92A1]">國家</label><select id="settings-trip-country" class="compact-input mt-0.5 block w-full rounded border h-[28px]" style="width: 88% !important; min-width: 0;"><option value="USA">🇺🇸 美國</option><option value="JP">🇯🇵 日本</option><option value="KR">🇰🇷 韓國</option><option value="UK">🇬🇧 英國</option><option value="TW">🇹🇼 台灣</option></select></div>
-                                    <div><label class="block text-xs font-medium text-[#7E92A1]">開始日期</label><input type="date" id="settings-start-date" class="compact-input mt-0.5 block w-full rounded border text-center h-[28px] text-[10px]" style="width: 88% !important; min-width: 0;"></div>
-                                    <div><label class="block text-xs font-medium text-[#7E92A1]">天數</label><input type="number" id="settings-num-days" min="1" class="compact-input mt-0.5 block w-full rounded border text-center h-[32px]" style="width: 88% !important; min-width: 0;"></div>
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-medium text-[#7E92A1] mb-1">成員</label>
-                                    <div id="settings-members-container" class="grid grid-cols-3 gap-2"></div>
-                                    <button type="button" id="settings-add-member-btn" class="mt-2 text-[10px] text-[#7E92A1] font-medium">+ 新增成員</button>
-                                </div>
-                                <div class="pt-3 flex justify-between items-center border-t border-gray-100 mt-2">
-                                    <button type="button" id="new-trip-from-settings-btn" class="px-3 py-1.5 text-xs text-[#7E92A1] bg-[#EBF2FA] rounded hover:bg-[#DCE6F2]">新計畫</button>
-                                    <div class="flex space-x-2">
-                                        <button type="button" id="export-calendar-btn" class="px-3 py-1.5 text-white bg-[#8F9E8B] rounded text-xs hover:bg-[#7A8B76]">匯出行事曆</button>
-                                        <button type="button" id="delete-trip-btn" class="px-3 py-1.5 text-white bg-[#CB8572] rounded text-xs hover:bg-[#B56B5A]">刪除</button>
-                                        <button type="button" id="settings-modal-save-btn" class="px-3 py-1.5 text-white bg-[#7E92A1] rounded text-xs hover:bg-[#64748B]">儲存</button>
-                                    </div>
-                                </div>
-                            </form>
-                        `;
-                    }
-                    
-                    // --- 4. 填充「新增旅行計畫」Modal HTML ---
-                    const newTripModalContent = document.querySelector('#new-trip-modal > div');
-                    if (newTripModalContent) {
-                        newTripModalContent.innerHTML = `
-                            <h3 class="text-base font-bold mb-3 flex justify-between items-center text-[#4A4B4D]">新增旅行計畫<button id="new-trip-modal-close-btn" class="text-[#A9A9A9] hover:text-[#5F6368] text-xl">×</button></h3>
-                            <form id="new-trip-form" class="space-y-3">
-                                <div><label class="block text-xs font-medium text-[#7E92A1]">計畫名稱</label><input type="text" id="new-trip-name" class="compact-input mt-0.5 block w-full rounded border"></div>
-                                <div class="grid grid-cols-[0.8fr_1.5fr_0.7fr] gap-1">
-                                    <div><label class="block text-xs font-medium text-[#7E92A1]">國家</label><select id="new-trip-country" class="compact-input mt-0.5 block w-full rounded border h-[28px]" style="width: 88% !important; min-width: 0;"><option value="USA">🇺🇸 美國</option><option value="JP">🇯🇵 日本</option><option value="KR">🇰🇷 韓國</option><option value="UK">🇬🇧 英國</option><option value="TW">🇹🇼 台灣</option></select></div>
-                                    <div><label class="block text-xs font-medium text-[#7E92A1]">開始日期</label><input type="date" id="new-trip-start-date" class="compact-input mt-0.5 block w-full rounded border text-center h-[28px] text-[10px]" style="width: 88% !important; min-width: 0;"></div>
-                                    <div><label class="block text-xs font-medium text-[#7E92A1]">天數</label><input type="number" id="new-trip-days" min="1" value="3" class="compact-input mt-0.5 block w-full rounded border text-center h-[32px]" style="width: 88% !important; min-width: 0;"></div>
-                                </div>
-                                <div class="pt-3 flex justify-end"><button type="button" id="new-trip-modal-save-btn" class="px-3 py-1.5 text-white bg-[#7E92A1] rounded text-xs hover:bg-[#64748B]">新增</button></div>
-                            </form>
-                        `;
-                    }
-
-                    loadTripList();
-
-                    // --- 5. 事件綁定 ---
-                    document.getElementById('trip-select').onchange = (e) => changeTrip(e.target.value);
-                    document.getElementById('bar-calc-currency').onchange = calculateCurrency; document.getElementById('bar-calc-amount').oninput = calculateCurrency;
-                    
-                    document.getElementById('center-add-btn').onclick = () => { 
-                        if(!currentTripId) return alert('請先建計畫'); 
-                        document.getElementById('add-schedule-form').reset(); 
-                        
-                        // 初始化勾選狀態
-                        document.getElementById('form-must-go').checked = false; 
-                        document.getElementById('form-set-alarm').checked = false;
-                        
-                        editingScheduleId=null; 
-                        document.getElementById('modal-delete-btn').style.display='none'; 
-                        document.getElementById('add-schedule-modal-title').textContent = '新增行程'; 
-                        const t=tripData[currentTripId]; 
-                        document.getElementById('form-date').value=getDateFromDayId(t, currentDayId).toISOString().split('T')[0]; 
-                        document.getElementById('form-members-container').innerHTML=''; 
-                        (t.members||[]).forEach(n=>addMemberInput(n)); 
-                        if(!(t.members||[]).length){addMemberInput();addMemberInput();} 
-                        document.getElementById('add-schedule-modal').style.display='flex'; 
-                    };
-                    
-                    document.getElementById('modal-close-btn').onclick = () => document.getElementById('add-schedule-modal').style.display='none'; document.getElementById('modal-save-btn').onclick = submitSchedule; document.getElementById('form-amount').oninput = (e) => document.getElementById('form-amount-twd').value = (e.target.value * currentTripRate).toFixed(0);
-                    
-                    document.getElementById('form-amount-twd').oninput = (e) => {
-                        const twd = parseFloat(e.target.value);
-                        if (!isNaN(twd) && currentTripRate > 0) {
-                            document.getElementById('form-amount').value = (twd / currentTripRate).toFixed(2);
-                        } else if (e.target.value === '') {
-                             document.getElementById('form-amount').value = '';
-                        }
-                    };
-
-                    document.getElementById('btn-lists').onclick = loadLists; document.getElementById('lists-modal-close-btn').onclick = () => document.getElementById('lists-modal').style.display='none';
-                    document.getElementById('split-expense-btn').onclick = loadExpenseSummary; document.getElementById('split-expense-close-btn').onclick = () => document.getElementById('split-expense-modal').style.display='none';
-                    document.getElementById('settings-btn').onclick = () => { 
-                        const trip = tripData[currentTripId];
-                        document.getElementById('settings-trip-name').value = trip.name; 
-                        document.getElementById('settings-trip-country').value = trip.country || 'TW';
-                        document.getElementById('settings-start-date').value = trip.startDate;
-                        document.getElementById('settings-num-days').value = trip.numDays;
-                        document.getElementById('settings-modal').style.display = 'flex'; 
-                        document.getElementById('settings-members-container').innerHTML = ''; 
-                        (trip.members||[]).forEach(m => addSettingsMemberInput(m));
-                    };
-                    
-                    document.getElementById('new-trip-btn').onclick = () => document.getElementById('new-trip-modal').style.display='flex';
-                    document.getElementById('new-trip-from-settings-btn').onclick = () => { document.getElementById('settings-modal').style.display='none'; document.getElementById('new-trip-from-settings-btn').style.display='none'; document.getElementById('new-trip-modal').style.display='flex'; };
-                    document.getElementById('new-trip-modal-close-btn').onclick = () => document.getElementById('new-trip-modal').style.display='none';
-                    document.getElementById('new-trip-modal-save-btn').onclick = async () => {
-                        const name = document.getElementById('new-trip-name').value;
-                        const country = document.getElementById('new-trip-country').value;
-                        const start = document.getElementById('new-trip-start-date').value;
-                        const numDays = parseInt(document.getElementById('new-trip-days').value) || 1;
-                        if(!name || !start) return alert("請填寫完整");
-                        const uid = auth.currentUser ? auth.currentUser.uid : null;
-                        const docRef = await addDoc(collection(db, `artifacts/${appId}/public/data/Trips`), { name, country, startDate: start, numDays: numDays, members: [], uid: uid });
-                        pendingTripSwitchId = docRef.id;
-                        document.getElementById('new-trip-modal').style.display='none';
-                    };
-
-                    document.getElementById('settings-modal-close-btn').onclick = () => document.getElementById('settings-modal').style.display='none'; document.getElementById('image-zoom-modal').onclick = () => document.getElementById('image-zoom-modal').style.display='none';
-                    document.getElementById('delete-trip-btn').onclick = async () => { if(confirm("刪除此計畫？")) { await deleteDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}`)); document.getElementById('settings-modal').style.display='none'; } };
-                    
-                    // ✅ 綁定匯出按鈕
-                    document.getElementById('export-calendar-btn').onclick = exportToCalendar;
-
-                    document.getElementById('settings-add-member-btn').onclick = () => addSettingsMemberInput();
-                    
-                    const addMemBtn = document.getElementById('add-member-btn');
-                    if(addMemBtn) addMemBtn.onclick = () => addMemberInput();
-
-                    document.getElementById('settings-modal-save-btn').onclick = async () => {
-                        const newName = document.getElementById('settings-trip-name').value;
-                        const newCountry = document.getElementById('settings-trip-country').value;
-                        const newStart = document.getElementById('settings-start-date').value;
-                        const newDays = parseInt(document.getElementById('settings-num-days').value) || 1;
-                        
-                        const memInputs = document.querySelectorAll('input[name="settings-member-name"]');
-                        const newMembersList = []; 
-                        memInputs.forEach(i => { if(i.value.trim()) newMembersList.push(i.value.trim()); });
-                        
-                        const oldMembers = tripData[currentTripId].members || [];
-                        const addedMembers = newMembersList.filter(m => !oldMembers.includes(m));
-                        const removedMembers = oldMembers.filter(m => !newMembersList.includes(m));
-
-                        await updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}`), { 
-                            name: newName, country: newCountry, startDate: newStart, numDays: newDays, members: newMembersList 
-                        });
-
-                        if (addedMembers.length > 0 || removedMembers.length > 0) {
-                            const originalBtnText = document.getElementById('settings-modal-save-btn').textContent;
-                            document.getElementById('settings-modal-save-btn').textContent = "更新行程中...";
-                            try {
-                                const schedulesRef = collection(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`);
-                                const snapshot = await getDocs(schedulesRef);
-                                const updatePromises = snapshot.docs.map(scheduleDoc => {
-                                    const sData = scheduleDoc.data();
-                                    let currentSchedMembers = sData.members || [];
-                                    
-                                    if (removedMembers.length > 0) {
-                                        currentSchedMembers = currentSchedMembers.filter(m => {
-                                            const name = typeof m === 'string' ? m : m.name;
-                                            return !removedMembers.includes(name);
-                                        });
-                                    }
-
-                                    const membersToAdd = addedMembers.map(name => ({ name: name, amount: null }));
-                                    const finalMembers = [...currentSchedMembers, ...membersToAdd];
-
-                                    return updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`, scheduleDoc.id), { members: finalMembers });
-                                });
-                                await Promise.all(updatePromises);
-                            } catch (err) { console.error("批次更新失敗", err); }
-                            document.getElementById('settings-modal-save-btn').textContent = originalBtnText;
-                        }
-
-                        document.getElementById('settings-modal').style.display='none';
-                        changeTrip(currentTripId); 
-                    };
-                });
-            }
-            
-            function addSettingsMemberInput(val='') { const d=document.createElement('div'); d.className='flex gap-1 items-center'; d.innerHTML=`<input type="text" name="settings-member-name" value="${val}" class="compact-input w-full rounded text-center" placeholder="成員"><button type="button" class="text-red-300 font-bold px-1 rm-btn">×</button>`; d.querySelector('.rm-btn').onclick=()=>d.remove(); document.getElementById('settings-members-container').appendChild(d); }
-async function exportToCalendar() {
+            // 2. 匯出行事曆 (修正位置，確保在 initApp 之外)
+            async function exportToCalendar() {
                 if(!currentTripId) return alert("請先選擇行程");
                 try {
                     const q = query(collection(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`));
@@ -1323,7 +1004,6 @@ METHOD:PUBLISH
                         const cleanTime = s.Time.replace(/:/g, '');
                         const start = `${cleanDate}T${cleanTime}00`;
                         
-                        // 預設結束時間為 1 小時後
                         let endH = parseInt(s.Time.split(':')[0]) + 1;
                         let endM = s.Time.split(':')[1];
                         if(endH > 23) { endH = 23; endM = "59"; }
@@ -1355,9 +1035,187 @@ END:VEVENT
                     alert("匯出失敗，請檢查 Console"); 
                 }
             }
-            return { initApp };
-        })();
-        window.App.initApp();
+
+            // 3. 設定成員輸入框輔助函式
+            function addSettingsMemberInput(val='') { 
+                const d=document.createElement('div'); 
+                d.className='flex gap-1 items-center'; 
+                d.innerHTML=`<input type="text" name="settings-member-name" value="${val}" class="compact-input w-full rounded text-center" placeholder="成員"><button type="button" class="text-red-300 font-bold px-1 rm-btn">×</button>`; 
+                d.querySelector('.rm-btn').onclick=()=>d.remove(); 
+                document.getElementById('settings-members-container').appendChild(d); 
+            }
+
+            // 4. 初始化應用程式
+            function initApp() {
+                document.addEventListener('DOMContentLoaded', async () => {
+                    document.getElementById('rate-display-label').textContent = '匯率 ≈ ...';
+
+                    const app = initializeApp(firebaseConfig); 
+                    db = getFirestore(app); 
+                    auth = getAuth(app); 
+                    const userCred = await signInAnonymously(auth); 
+                    currentUser = userCred.user;
+                    
+                    // 修正 Modal Container 定位問題
+                    document.querySelectorAll('.modal-overlay > div').forEach(el => el.style.position = 'relative');
+
+                    // 綁定匯出按鈕 (這裡呼叫上面定義的函式)
+                    const exportBtn = document.getElementById('export-calendar-btn');
+                    if(exportBtn) exportBtn.onclick = exportToCalendar;
+
+                    // 綁定其他主要按鈕
+                    document.getElementById('trip-select').onchange = (e) => changeTrip(e.target.value);
+                    document.getElementById('bar-calc-currency').onchange = calculateCurrency; 
+                    document.getElementById('bar-calc-amount').oninput = calculateCurrency;
+                    
+                    document.getElementById('center-add-btn').onclick = () => { 
+                        if(!currentTripId) return alert('請先建計畫'); 
+                        document.getElementById('add-schedule-form').reset(); 
+                        document.getElementById('form-must-go').checked = false; 
+                        document.getElementById('form-set-alarm').checked = false;
+                        
+                        editingScheduleId=null; 
+                        document.getElementById('modal-delete-btn').style.display='none'; 
+                        document.getElementById('add-schedule-modal-title').textContent = '新增行程'; 
+                        const t=tripData[currentTripId]; 
+                        // 安全取得日期
+                        const defaultDate = getDateFromDayId(t, currentDayId);
+                        if(defaultDate) document.getElementById('form-date').value = defaultDate.toISOString().split('T')[0];
+                        
+                        document.getElementById('form-members-container').innerHTML=''; 
+                        (t.members||[]).forEach(n=>addMemberInput(n)); 
+                        if(!(t.members||[]).length){addMemberInput();addMemberInput();} 
+                        document.getElementById('add-schedule-modal').style.display='flex'; 
+                    };
+                    
+                    document.getElementById('modal-close-btn').onclick = () => document.getElementById('add-schedule-modal').style.display='none'; 
+                    document.getElementById('modal-save-btn').onclick = submitSchedule; 
+                    
+                    // 金額換算
+                    const amtInput = document.getElementById('form-amount');
+                    if(amtInput) amtInput.oninput = (e) => document.getElementById('form-amount-twd').value = (e.target.value * currentTripRate).toFixed(0);
+                    
+                    const twdInput = document.getElementById('form-amount-twd');
+                    if(twdInput) twdInput.oninput = (e) => {
+                        const twd = parseFloat(e.target.value);
+                        if (!isNaN(twd) && currentTripRate > 0) {
+                            document.getElementById('form-amount').value = (twd / currentTripRate).toFixed(2);
+                        } else if (e.target.value === '') {
+                            document.getElementById('form-amount').value = '';
+                        }
+                    };
+
+                    document.getElementById('btn-lists').onclick = loadLists; 
+                    document.getElementById('lists-modal-close-btn').onclick = () => document.getElementById('lists-modal').style.display='none';
+                    document.getElementById('split-expense-btn').onclick = loadExpenseSummary; 
+                    document.getElementById('split-expense-close-btn').onclick = () => document.getElementById('split-expense-modal').style.display='none';
+                    
+                    // 設定按鈕
+                    document.getElementById('settings-btn').onclick = () => { 
+                        const trip = tripData[currentTripId];
+                        if(!trip) return;
+                        document.getElementById('settings-trip-name').value = trip.name; 
+                        document.getElementById('settings-trip-country').value = trip.country || 'TW';
+                        document.getElementById('settings-start-date').value = trip.startDate;
+                        document.getElementById('settings-num-days').value = trip.numDays;
+                        document.getElementById('settings-modal').style.display = 'flex'; 
+                        document.getElementById('settings-members-container').innerHTML = ''; 
+                        (trip.members||[]).forEach(m => addSettingsMemberInput(m));
+                    };
+                    
+                    // 新增計畫相關
+                    document.getElementById('new-trip-btn').onclick = () => document.getElementById('new-trip-modal').style.display='flex';
+                    const newTripFromSettings = document.getElementById('new-trip-from-settings-btn');
+                    if(newTripFromSettings) newTripFromSettings.onclick = () => { 
+                        document.getElementById('settings-modal').style.display='none'; 
+                        newTripFromSettings.style.display='none'; 
+                        document.getElementById('new-trip-modal').style.display='flex'; 
+                    };
+                    document.getElementById('new-trip-modal-close-btn').onclick = () => document.getElementById('new-trip-modal').style.display='none';
+                    
+                    document.getElementById('new-trip-modal-save-btn').onclick = async () => {
+                        const name = document.getElementById('new-trip-name').value;
+                        const country = document.getElementById('new-trip-country').value;
+                        const start = document.getElementById('new-trip-start-date').value;
+                        const numDays = parseInt(document.getElementById('new-trip-days').value) || 1;
+                        if(!name || !start) return alert("請填寫完整");
+                        const uid = auth.currentUser ? auth.currentUser.uid : null;
+                        const docRef = await addDoc(collection(db, `artifacts/${appId}/public/data/Trips`), { name, country, startDate: start, numDays: numDays, members: [], uid: uid });
+                        pendingTripSwitchId = docRef.id;
+                        document.getElementById('new-trip-modal').style.display='none';
+                    };
+
+                    document.getElementById('settings-modal-close-btn').onclick = () => document.getElementById('settings-modal').style.display='none'; 
+                    document.getElementById('image-zoom-modal').onclick = () => document.getElementById('image-zoom-modal').style.display='none';
+                    
+                    document.getElementById('delete-trip-btn').onclick = async () => { 
+                        if(confirm("刪除此計畫？")) { 
+                            await deleteDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}`)); 
+                            document.getElementById('settings-modal').style.display='none'; 
+                        } 
+                    };
+                    
+                    document.getElementById('settings-add-member-btn').onclick = () => addSettingsMemberInput();
+                    
+                    const addMemBtn = document.getElementById('add-member-btn');
+                    if(addMemBtn) addMemBtn.onclick = () => addMemberInput();
+
+                    // 設定儲存
+                    document.getElementById('settings-modal-save-btn').onclick = async () => {
+                        const newName = document.getElementById('settings-trip-name').value;
+                        const newCountry = document.getElementById('settings-trip-country').value;
+                        const newStart = document.getElementById('settings-start-date').value;
+                        const newDays = parseInt(document.getElementById('settings-num-days').value) || 1;
+                        
+                        const memInputs = document.querySelectorAll('input[name="settings-member-name"]');
+                        const newMembersList = []; 
+                        memInputs.forEach(i => { if(i.value.trim()) newMembersList.push(i.value.trim()); });
+                        
+                        const trip = tripData[currentTripId];
+                        const oldMembers = trip ? (trip.members || []) : [];
+                        const addedMembers = newMembersList.filter(m => !oldMembers.includes(m));
+                        const removedMembers = oldMembers.filter(m => !newMembersList.includes(m));
+
+                        await updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}`), { 
+                            name: newName, country: newCountry, startDate: newStart, numDays: newDays, members: newMembersList 
+                        });
+
+                        if (addedMembers.length > 0 || removedMembers.length > 0) {
+                            const originalBtnText = document.getElementById('settings-modal-save-btn').textContent;
+                            document.getElementById('settings-modal-save-btn').textContent = "更新行程中...";
+                            try {
+                                const schedulesRef = collection(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`);
+                                const snapshot = await getDocs(schedulesRef);
+                                const updatePromises = snapshot.docs.map(scheduleDoc => {
+                                    const sData = scheduleDoc.data();
+                                    let currentSchedMembers = sData.members || [];
+                                    if (removedMembers.length > 0) {
+                                        currentSchedMembers = currentSchedMembers.filter(m => {
+                                            const name = typeof m === 'string' ? m : m.name;
+                                            return !removedMembers.includes(name);
+                                        });
+                                    }
+                                    const membersToAdd = addedMembers.map(name => ({ name: name, amount: null }));
+                                    const finalMembers = [...currentSchedMembers, ...membersToAdd];
+                                    return updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`, scheduleDoc.id), { members: finalMembers });
+                                });
+                                await Promise.all(updatePromises);
+                            } catch (err) { console.error("批次更新失敗", err); }
+                            document.getElementById('settings-modal-save-btn').textContent = originalBtnText;
+                        }
+
+                        document.getElementById('settings-modal').style.display='none';
+                        changeTrip(currentTripId); 
+                    };
+
+                    loadTripList();
+                });
+            }
+            
+            return { initApp };
+        })();
+        window.App.initApp();
     </script>
 </body>
 </html>
+
