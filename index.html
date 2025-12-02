@@ -393,38 +393,46 @@
                 visualWrapper.appendChild(swipeActions);
 
                 const content = document.createElement('div');
-                content.className = 'swipe-item-content flex w-full bg-white relative items-stretch h-full z-10';
+                content.className = 'swipe-item-content flex flex-col w-full bg-white relative items-stretch h-full z-10';
                 
                 content.innerHTML = `
-                    <div class="${config.bg} w-14 flex-none flex flex-col items-center justify-start gap-2 text-white relative z-10 h-full py-3">
-                        <span class="text-[10px] font-bold tracking-tight leading-none">${schedule.Time}</span>
-                        <span class="text-2xl leading-none mb-1">${style.icon}</span>
-                        <span class="text-[9px] font-medium opacity-90 leading-none">${CATEGORY_NAMES[schedule.Type] || schedule.Type}</span>
+                    <div class="row-1 flex justify-between items-center px-3 py-1.5 border-b border-gray-100 h-[32px] flex-none bg-gray-50/50">
+                        <div class="flex items-center gap-2">
+                            <span class="${config.text} text-xs font-extrabold tracking-wide">${schedule.Time}</span>
+                            <span class="text-sm leading-none opacity-80">${style.icon}</span>
+                        </div>
+
+                        <div class="px-2 py-0.5 rounded text-[10px] font-bold ${config.bg} text-white leading-none shadow-sm">
+                            ${CATEGORY_NAMES[schedule.Type] || schedule.Type}
+                        </div>
                     </div>
-                    
-                    <div class="flex-grow py-2 pl-2 pr-1 flex flex-col justify-start min-w-0 relative overflow-hidden">
-                        <div class="flex justify-between items-start w-full">
-                            <h3 class="text-xs font-bold text-[#4A4B4D] leading-tight mb-0.5 flex-grow mr-1 truncate">
-                                <a href="#" class="location-link map-link hover:underline">${schedule.Location}</a>
-                            </h3>
-                            ${memberHtml}
+
+                    <div class="row-2 flex flex-grow w-full relative overflow-hidden">
+                        
+                        <div class="flex-grow py-2 pl-3 pr-1 flex flex-col justify-start min-w-0 relative">
+                            <div class="flex justify-between items-start w-full">
+                                <h3 class="text-xs font-bold text-[#4A4B4D] leading-tight mb-0.5 flex-grow mr-1 truncate">
+                                    <a href="#" class="location-link map-link hover:underline">${schedule.Location}</a>
+                                </h3>
+                                ${memberHtml}
+                            </div>
+                            
+                            <p class="text-[#888888] text-[10px] line-clamp-2 whitespace-pre-wrap leading-normal mt-0.5">${schedule.說明 || ''}</p>
                         </div>
                         
-                        <p class="text-[#888888] text-[10px] line-clamp-4 whitespace-pre-wrap leading-normal mt-0.5">${schedule.說明 || ''}</p>
-                    </div>
-                    
-                    <div class="card-right-col h-full flex flex-col">
-                        <div class="card-static-actions"> 
-                            <button class="bg-[#7E92A1] text-white modify-btn-static rounded px-1.5 py-0.5 text-[9px] font-bold" data-schedule='${scheduleJson}'>修改</button>
-                            <button class="bg-[#CB8572] text-white delete-btn-static rounded px-1.5 py-0.5 text-[9px] font-bold" data-id="${schedule.id}">刪除</button>
+                        <div class="card-right-col h-full flex flex-col border-l border-gray-50 bg-white">
+                            <div class="card-static-actions"> 
+                                <button class="bg-[#7E92A1] text-white modify-btn-static rounded px-1.5 py-0.5 text-[9px] font-bold" data-schedule='${scheduleJson}'>修改</button>
+                                <button class="bg-[#CB8572] text-white delete-btn-static rounded px-1.5 py-0.5 text-[9px] font-bold" data-id="${schedule.id}">刪除</button>
+                            </div>
+                            
+                            <div class="flex flex-col gap-1 mt-1">
+                                <div class="flex items-center justify-start w-full"><span class="text-[#8F9E8B] font-bold text-[10px]">💰 TWD$${amountTWD.toFixed(0)}</span></div>
+                                <div class="flex items-center justify-start w-full"><span class="text-[#888888] font-bold text-[10px]">👫 TWD$${formatCurrency(perPersonTWD)}</span></div>
+                            </div>
+                            
+                            ${mustGoHtml}
                         </div>
-                        
-                        <div class="flex flex-col gap-1 mt-1">
-                            <div class="flex items-center justify-start w-full"><span class="text-[#8F9E8B] font-bold text-[10px]">💰 TWD$${amountTWD.toFixed(0)}</span></div>
-                            <div class="flex items-center justify-start w-full"><span class="text-[#888888] font-bold text-[10px]">👫 TWD$${formatCurrency(perPersonTWD)}</span></div>
-                        </div>
-                        
-                        ${mustGoHtml}
                     </div>`;
                 
                 visualWrapper.appendChild(content);
@@ -1249,35 +1257,3 @@ END:VCALENDAR`;
     </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
