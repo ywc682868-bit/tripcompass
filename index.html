@@ -984,30 +984,29 @@ END:VCALENDAR`;
                             
                             <form id="add-schedule-form" class="space-y-2">
     
-    <div class="flex gap-2"> 
-    
-    <div class="flex-1 min-w-0">
-        <label class="block compact-label mb-0.5">日期</label>
-        <input type="date" id="form-date" class="compact-input block w-full rounded border shadow-sm text-center h-7 p-0 text-[11px]">
-    </div> 
+    <div class="flex gap-2 w-full"> 
+        <div class="flex-[4] min-w-0">
+            <label class="block compact-label mb-0.5">日期</label>
+            <input type="date" id="form-date" class="compact-input block w-full rounded border shadow-sm text-center h-7 p-0 text-[11px]">
+        </div> 
 
-    <div class="flex-1 min-w-0">
-        <label class="block compact-label mb-0.5">時間</label>
-        <input type="time" id="form-time" class="compact-input block w-full rounded border shadow-sm text-center h-7 p-0 text-[11px]">
-    </div>
+        <div class="flex-[3] min-w-0">
+            <label class="block compact-label mb-0.5">時間</label>
+            <input type="time" id="form-time" class="compact-input block w-full rounded border shadow-sm text-center h-7 p-0 text-[11px]">
+        </div>
 
-    <div class="flex-none" style="width: 76px;">
-        <label class="block compact-label mb-0.5">類型</label>
-        <select id="form-type" class="compact-input block w-full rounded border shadow-sm h-7 py-0 pl-1 pr-0 text-[11px]">
-            <option value="location">📍 景點</option>
-            <option value="restaurant">🍽️ 餐廳</option>
-            <option value="coffee">☕ 咖啡廳</option>
-            <option value="accommodation">🛏️ 住宿</option>
-            <option value="交通">🚗 交通</option>
-            <option value="shopping">🛍️ 購物</option>
-        </select>
+        <div class="flex-[3] min-w-0">
+            <label class="block compact-label mb-0.5">類型</label>
+            <select id="form-type" class="compact-input block w-full rounded border shadow-sm h-7 py-0 pl-1 pr-0 text-[11px]">
+                <option value="location">📍 景點</option>
+                <option value="restaurant">🍽️ 餐廳</option>
+                <option value="coffee">☕ 咖啡廳</option>
+                <option value="accommodation">🛏️ 住宿</option>
+                <option value="交通">🚗 交通</option>
+                <option value="shopping">🛍️ 購物</option>
+            </select>
+        </div>
     </div>
-</div>
 
     <div class="flex gap-2 items-end">
         <div class="flex-grow" style="min-width: 0;">
@@ -1028,7 +1027,8 @@ END:VCALENDAR`;
     </div>
 
     <div>
-        <input type="text" id="form-address" class="compact-input block w-full rounded border shadow-sm h-7 px-2 text-xs" placeholder="地址">
+        <label class="block compact-label mb-0.5">地址</label>
+        <input type="text" id="form-address" class="compact-input block w-full rounded border shadow-sm h-7 px-2 text-xs" placeholder="地址或連結">
     </div>
     
     <div>
@@ -1247,6 +1247,7 @@ END:VCALENDAR`;
     </script>
 </body>
 </html>
+
 
 
 
