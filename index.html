@@ -364,8 +364,7 @@
                     perPersonTWD = (unspecifiedCount > 0) ? (amountTWD - specifiedTWD) / unspecifiedCount : (members.length > 0 ? amountTWD / members.length : amountTWD);
                 }
                 
-                // ✅ 關鍵修復：這裡加上 .replace(/'/g, "&apos;") 
-                // 防止資料內有單引號 (例如 "Ashley's") 導致 HTML 結構崩壞跑版
+                // ✅ 核心修復：將 JSON 字串中的單引號轉義，防止 HTML 屬性被截斷導致跑版
                 const rawJson = JSON.stringify({ ...schedule, Amount: schedule.Amount || 0 });
                 const scheduleJson = rawJson.replace(/'/g, "&apos;");
                 
@@ -388,7 +387,8 @@
 
                 const swipeActions = document.createElement('div');
                 swipeActions.className = 'swipe-item-delete-bg';
-                // 注意：這裡使用 scheduleJson (已轉義)
+                
+                // 注意：這裡使用轉義後的 scheduleJson
                 swipeActions.innerHTML = `<button class="px-2 py-1 h-full text-xs font-bold bg-[#7E92A1] text-white" data-action="modify" data-schedule='${scheduleJson}'>修改</button><button class="px-2 py-1 h-full text-xs font-bold bg-[#CB8572] text-white" data-action="delete" data-id="${schedule.id}">刪除</button>`;
                 
                 visualWrapper.appendChild(swipeActions);
@@ -432,9 +432,10 @@
                 card.appendChild(visualWrapper);
 
                 card.querySelector('.map-link').onclick = (e) => { e.preventDefault(); navigateToMap(schedule.Address || schedule.Location); };
-                // 這裡使用 rawJson 傳入 JS 閉包，避免轉義字元影響編輯功能
-                card.querySelector('.modify-btn-static').onclick = () => openEditScheduleModal(rawJson); 
+                // 這裡傳入 rawJson 給 Modal，確保資料正確
+                card.querySelector('.modify-btn-static').onclick = () => openEditScheduleModal(rawJson);
                 card.querySelector('.delete-btn-static').onclick = () => deleteSchedule(schedule.id);
+                // 這裡也傳入 rawJson
                 content.onclick = (e) => { if (window.innerWidth > 500 && !e.target.closest('button') && !e.target.classList.contains('map-link')) openEditScheduleModal(rawJson); };
                 enableSwipeToDelete(content, swipeActions, 'schedule');
                 return card;
@@ -1296,6 +1297,61 @@ END:VEVENT
                     alert("匯出失敗");
                 }
             }
+          async function exportToCalendar() {
+                if (!currentTripId) return alert("請先選擇計畫");
+                try {
+                    const q = query(collection(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`));
+                    const snapshot = await getDocs(q);
+                    if (snapshot.empty) return alert("沒有行程可匯出");
+
+                    let icsContent = 
+`BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Trip Compass//TW
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+`;
+                    
+                    snapshot.forEach(doc => {
+                        const s = doc.data();
+                        if (!s.Date || !s.Time) return;
+                        
+                        const cleanDate = s.Date.replace(/-/g, '');
+                        const cleanTime = s.Time.replace(/:/g, '');
+                        const startDateTime = `${cleanDate}T${cleanTime}00`;
+                        
+                        // 預設行程長度為 1 小時
+                        let endHour = parseInt(s.Time.split(':')[0]) + 1;
+                        let endMinute = s.Time.split(':')[1];
+                        if (endHour > 23) { endHour = 23; endMinute = "59"; }
+                        const endDateTime = `${cleanDate}T${String(endHour).padStart(2, '0')}${endMinute}00`;
+                        
+                        icsContent += 
+`BEGIN:VEVENT
+DTSTART:${startDateTime}
+DTEND:${endDateTime}
+SUMMARY:${s.Location}
+DESCRIPTION:${s.說明 || ''}
+LOCATION:${s.Address || ''}
+END:VEVENT
+`;
+                    });
+
+                    icsContent += "END:VCALENDAR";
+
+                    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+                    const link = document.createElement('a');
+                    link.href = window.URL.createObjectURL(blob);
+                    link.setAttribute('download', 'travel_plan.ics');
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+
+                } catch (e) {
+                    console.error("匯出失敗", e);
+                    alert("匯出失敗");
+                }
+            }
             function addSettingsMemberInput(val='') { const d=document.createElement('div'); d.className='flex gap-1 items-center'; d.innerHTML=`<input type="text" name="settings-member-name" value="${val}" class="compact-input w-full rounded text-center" placeholder="成員"><button type="button" class="text-red-300 font-bold px-1 rm-btn">×</button>`; d.querySelector('.rm-btn').onclick=()=>d.remove(); document.getElementById('settings-members-container').appendChild(d); }
 
             return { initApp };
@@ -1304,3 +1360,4 @@ END:VEVENT
     </script>
 </body>
 </html>
+
