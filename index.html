@@ -228,6 +228,7 @@
                           <div id="header-weather-icon" class="text-3xl leading-none mb-0"></div>
                           <span id="header-weather-temp" class="text-base font-bold"></span>
                           <span id="header-location-name" class="text-xs font-bold mt-0.5"></span>
+                          <span id="header-clothing-advice" class="text-[9px] font-bold text-[#CB8572] mt-0.5"></span>
                     </div>
                     <div class="flex items-center flex-shrink-0">
                         <button id="new-trip-btn" class="px-2 py-1 bg-[#7E92A1] text-white text-xs font-semibold rounded hover:bg-[#64748B] transition-colors hidden">+ 新增</button>
@@ -337,7 +338,26 @@
                 const barSelect = document.getElementById('bar-calc-currency'); 
                 if(barSelect) { barSelect.value = config.currency; calculateCurrency(); }
                 document.getElementById('header-members-list').innerHTML = (trip.members && trip.members.length) ? trip.members.map((m, i) => `<span class="${MEMBER_COLORS[i % MEMBER_COLORS.length]} mr-1">${m}</span>`).join('') : '尚未設定';
-                try { const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${config.lat}&longitude=${config.lon}&current=temperature_2m,weather_code&timezone=auto`); const data = await res.json(); let icon = '☀️'; if (data.current.weather_code > 3) icon = '☁️'; if (data.current.weather_code > 50) icon = '🌧️'; document.getElementById('header-weather-icon').textContent = icon; document.getElementById('header-weather-temp').textContent = `${data.current.temperature_2m}°C`; } catch (e) {}
+                try { 
+                    const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${config.lat}&longitude=${config.lon}&current=temperature_2m,weather_code&timezone=auto`); 
+                    const data = await res.json(); 
+                    let icon = '☀️'; if (data.current.weather_code > 3) icon = '☁️'; if (data.current.weather_code > 50) icon = '🌧️'; 
+                    document.getElementById('header-weather-icon').textContent = icon; 
+                    document.getElementById('header-weather-temp').textContent = `${data.current.temperature_2m}°C`; 
+                    
+                    // 穿衣建議邏輯
+                    const temp = data.current.temperature_2m;
+                    let clothing = '';
+                    if(temp >= 25) clothing = '🎽 短袖';
+                    else if(temp >= 20) clothing = '👕 薄外套';
+                    else if(temp >= 15) clothing = '🧥 外套';
+                    else if(temp >= 10) clothing = '🧥 大衣';
+                    else clothing = '🧣 羽絨';
+                    
+                    const adviceEl = document.getElementById('header-clothing-advice');
+                    if(adviceEl) adviceEl.textContent = clothing;
+
+                } catch (e) {}
             }
 
             function changeTrip(tripId) { 
@@ -635,10 +655,12 @@
                 
                 // Options Container
                 const optsDiv = document.createElement('div');
+                // 修改處：將 flex-col 改為 flex-row，並加上 items-center，讓「墊付」與「現金」併排
                 optsDiv.className = 'flex flex-row items-center gap-1'; 
                 
                 // Payer Checkbox
                 const label = document.createElement('label');
+                // 修改處：字體調整為 text-xs
                 label.className = 'flex items-center text-xs text-[#7E92A1] cursor-pointer leading-none select-none whitespace-nowrap';
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
