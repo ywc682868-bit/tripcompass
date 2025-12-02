@@ -637,7 +637,8 @@
                 
                 // Options Container
                 const optsDiv = document.createElement('div');
-                optsDiv.className = 'flex flex-col justify-center gap-0.5';
+                // 修改處：將 flex-col 改為 flex-row，並加上 items-center，讓「墊付」與「現金」併排
+                optsDiv.className = 'flex flex-row items-center gap-1'; 
                 
                 // Payer Checkbox
                 const label = document.createElement('label');
