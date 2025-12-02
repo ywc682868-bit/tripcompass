@@ -13,8 +13,9 @@
     <style>
     /* --- 全域設定 --- */
     html {
+        /* ✅ 關鍵設定：開啟 Y 軸的鄰近磁吸效果 */
         scroll-snap-type: y proximity;
-        scroll-padding-top: 170px; 
+        scroll-padding-top: 170px; /* 頂部保留空間給 Header */
         scroll-behavior: smooth;
     }
     body { font-family: 'Inter', sans-serif; background-color: #f7f7f7; margin: 0; padding: 0; color: #5F6368; overflow-x: hidden; }
@@ -48,10 +49,17 @@
         z-index: -2; 
     }    
     
+    /* ✅ 第一張卡片：對齊頂部 (start) */
     #schedule-list-container .trip-card:first-child {
         margin-top: 10px; 
         scroll-snap-align: start;
         scroll-margin-top: 10px;
+    }
+
+    /* ✅ 最後一張卡片：對齊底部 (end)，並預留底部工具列空間 */
+    #schedule-list-container .trip-card:last-child {
+        scroll-snap-align: end;
+        scroll-margin-bottom: 100px; /* 確保不被底部按鈕遮擋 */
     }
 
     /* --- Header 固定區 --- */
@@ -123,7 +131,6 @@
         box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08); 
         background-color: white; 
         z-index: 10; 
-        /* 修復圓角灰邊 */
         mask-image: -webkit-radial-gradient(white, black);
         -webkit-mask-image: -webkit-radial-gradient(white, black);
     }
@@ -1254,7 +1261,7 @@ END:VCALENDAR`;
 
                         document.getElementById('settings-modal').style.display='none';
                         changeTrip(currentTripId); 
-                    };
+                    });
                 });
             }
             
