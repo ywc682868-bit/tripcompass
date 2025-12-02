@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Trip Compass</title>
     <link rel="icon" type="image/png" href="icon.png">
     <link rel="apple-touch-icon" href="icon.png">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -123,7 +123,6 @@
         box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08); 
         background-color: white; 
         z-index: 10; 
-        /* 修復圓角灰邊 */
         mask-image: -webkit-radial-gradient(white, black);
         -webkit-mask-image: -webkit-radial-gradient(white, black);
     }
@@ -359,7 +358,7 @@
                 }
                 
                 // ✅ 關鍵修正：跳脫單引號，防止 SyntaxError
-                const scheduleJson = JSON.stringify({ ...schedule, Amount: schedule.Amount || 0 }).replace(/'/g, "&apos;");
+                const scheduleJson = JSON.stringify({ ...schedule, Amount: schedule.Amount || 0 }).replace(/'/g, "&#39;");
                 
                 let memberHtml = '';
                 if (members.length > 0) {
@@ -593,6 +592,7 @@
                 const mems = s.members || []; 
                 if(mems.length) {
                     mems.forEach(m => {
+                        // ✅ 修正：傳入更多參數 (name, amount, isPayer, method)
                         const name = typeof m === 'string' ? m : m.name;
                         const amt = (typeof m === 'string' || m.amount === null) ? '' : m.amount;
                         const isPayer = m.isPayer || false;
@@ -605,10 +605,10 @@
                 document.getElementById('add-schedule-modal').style.display = 'flex';
             }
             
-            // ✅ 成員列表 UI 大改版：Name | Amount | [Payer/Method] | X (Right Aligned)
+            // ✅ 大改版：單行排列，刪除按鈕在最右邊
             function addMemberInput(name='', amt='', isPayer=false, method='cash') { 
                 const d = document.createElement('div'); 
-                d.className = 'flex items-center gap-2 border-b border-gray-100 pb-2 mb-2 last:border-0 last:mb-0'; 
+                d.className = 'flex items-center w-full gap-2 border-b border-gray-100 pb-2 mb-2 last:border-0 last:mb-0'; 
                 d.innerHTML = `
                     <input type="text" name="schedule-member-name" value="${name}" placeholder="名字" class="compact-input w-16 rounded-md font-bold text-[11px] flex-shrink-0">
                     <input type="number" name="schedule-member-amount" value="${amt}" placeholder="金額" class="compact-input w-16 rounded-md text-[11px] flex-shrink-0">
