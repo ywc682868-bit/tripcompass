@@ -655,16 +655,13 @@
                 
                 // Options Container
                 const optsDiv = document.createElement('div');
-                // 修改處：將 flex-col 改為 flex-row，並加上 items-center，讓「墊付」與「現金」併排
                 optsDiv.className = 'flex flex-row items-center gap-1'; 
                 
                 // Payer Checkbox
                 const label = document.createElement('label');
-                // 修改處：字體調整為 text-xs
                 label.className = 'flex items-center text-xs text-[#7E92A1] cursor-pointer leading-none select-none whitespace-nowrap';
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
-                // 修改：勾選框大小 w-4 h-4
                 checkbox.className = 'payer-check mr-1 h-4 w-4';
                 checkbox.checked = isPayer;
                 label.appendChild(checkbox);
@@ -1091,12 +1088,7 @@
                     if (weatherInfo && weatherInfo.nextElementSibling) {
                         const btnContainer = weatherInfo.nextElementSibling;
                         if (!document.getElementById('notification-btn')) {
-                            const notifBtn = document.createElement('button');
-                            notifBtn.id = 'notification-btn';
-                            notifBtn.className = 'w-8 h-8 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center text-sm shadow-sm transition-colors duration-200 mr-2';
-                            notifBtn.textContent = '🔔';
-                            btnContainer.insertBefore(notifBtn, btnContainer.firstChild);
-                            btnContainer.classList.add('gap-2'); 
+                            // 已移除鈴鐺按鈕的建立代碼
                         }
                     }
 
