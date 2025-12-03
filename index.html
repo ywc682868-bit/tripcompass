@@ -984,14 +984,12 @@
                         total += tTWD; 
                         types[da.Type] = (types[da.Type]||0) + tTWD; 
                         
-                        // 計算代墊人 (Who Paid)
                         const payers = (da.members||[]).filter(m => typeof m !== 'string' && m.isPayer);
                         if(payers.length > 0) {
                             const payShare = tTWD / payers.length;
                             payers.forEach(p => { balances[p.name] = (balances[p.name] || 0) + payShare; });
                         }
 
-                        // 計算分帳人 (Who Consumed)
                         let spSum=0, unSpUsers=[]; 
                         (da.members||[]).forEach(m => { 
                             const amt = typeof m==='string'?null:m.amount; 
@@ -1001,7 +999,7 @@
                                 spSum += amt; 
                                 const share = amt * (da.Rate||1);
                                 addMemExp(mems, name, da.Type, share); 
-                                balances[name] = (balances[name] || 0) - share; // 扣除應付金額
+                                balances[name] = (balances[name] || 0) - share; 
                             } else {
                                 unSpUsers.push(name);
                             }
@@ -1011,7 +1009,7 @@
                             const split = ((da.Amount||0)-spSum)*(da.Rate||1)/unSpUsers.length; 
                             unSpUsers.forEach(u => {
                                 addMemExp(mems, u, da.Type, split);
-                                balances[u] = (balances[u] || 0) - split; // 扣除應付金額
+                                balances[u] = (balances[u] || 0) - split; 
                             }); 
                         } 
                     }
@@ -1023,21 +1021,22 @@
                 const ctx = document.getElementById('expense-chart').getContext('2d'); if(expenseChart) expenseChart.destroy();
                 expenseChart = new Chart(ctx, { type:'pie', data:{labels:Object.keys(types).map(k=>CATEGORY_NAMES[k]||k), datasets:[{data:Object.values(types), backgroundColor:Object.keys(types).map(k=>(CATEGORY_COLORS[k]||CATEGORY_COLORS.default).hex), borderWidth:0}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}} });
                 
+                // 上方列表標題
                 const l = document.getElementById('expense-member-list'); 
-                l.innerHTML = `<div class="grid grid-cols-[40%_20%_40%] border-b border-[#E0E0E0] pb-1 mb-2 font-bold text-[#5F6368] text-[10px]"><span>成員</span><span class="text-center">類別</span><span class="text-right">金額</span></div>`;
+                l.innerHTML = `<div class="grid grid-cols-[35%_35%_30%] border-b border-[#E0E0E0] pb-1 mb-2 font-bold text-[#5F6368] text-[10px]"><span>成員</span><span class="text-center">類別</span><span class="text-right">金額</span></div>`;
                 
+                // 上方列表內容
                 Object.keys(mems).sort().forEach(n => { 
                     let first=true; 
                     Object.keys(mems[n].cats).forEach(c => { 
-                        l.innerHTML += `<div class="grid grid-cols-[40%_20%_40%] py-0.5 text-[10px] border-b border-[#F0F0F0] items-center">
+                        l.innerHTML += `<div class="grid grid-cols-[35%_35%_30%] py-0.5 text-[10px] border-b border-[#F0F0F0] items-center">
                             ${first ? `<span class="font-bold truncate">${n}</span>` : '<span></span>'}
                             <span class="text-center ${(CATEGORY_COLORS[c]||CATEGORY_COLORS.default).text}">${CATEGORY_NAMES[c]}</span>
                             <span class="text-right text-[#888888]">$${mems[n].cats[c].toFixed(0)}</span>
                         </div>`; 
                         first=false; 
                     }); 
-                    
-                    l.innerHTML += `<div class="grid grid-cols-[40%_20%_40%] py-1 mb-2 bg-[#F9F9F9] text-[10px] font-bold"><span></span><span class="text-center">個人總計</span><span class="text-right">$${mems[n].total.toFixed(0)}</span></div>`; 
+                    l.innerHTML += `<div class="grid grid-cols-[35%_35%_30%] py-1 mb-2 bg-[#F9F9F9] text-[10px] font-bold"><span></span><span class="text-center">個人總計</span><span class="text-right">$${mems[n].total.toFixed(0)}</span></div>`; 
                 });
 
                 // --- 結帳建議 (Settlement) ---
@@ -1053,7 +1052,7 @@
                 if (debtors.length === 0 && creditors.length === 0) {
                     l.innerHTML += `<div class="text-[10px] text-gray-400 py-1 text-center mt-2">目前沒有需要結算的款項</div>`;
                 } else {
-                    // 修改：移除分隔線，直接顯示
+                    // 分隔線移除，直接顯示
                     let i=0, j=0;
                     while(i < debtors.length && j < creditors.length){
                         let debt = Math.abs(debtors[i].amount);
@@ -1062,16 +1061,17 @@
                         
                         if (amount > 0) {
                             // 修改重點：
-                            // 1. 中間欄位 (div.flex) 改為 justify-start (靠左對齊)
-                            // 2. 加上 pl-2 (左側內距)，讓它往右推一點，視覺上「給」字會在兩名之間，Ashley 會對齊上方類別
+                            // 1. Grid 比例改為 35% 35% 30%，完全對齊上方列表
+                            // 2. 中間欄位 (35%) 用 flex justify-center 讓 "給 Ashley" 置中
+                            // 3. 右側欄位 (30%) text-right 確保靠右
                             l.innerHTML += `
-                                <div class="grid grid-cols-[40%_20%_40%] items-center py-2 px-1 text-[10px] border-b border-gray-50">
+                                <div class="grid grid-cols-[35%_35%_30%] items-center py-2 px-0 text-[10px] border-b border-gray-50">
                                     <span class="font-bold text-[#CB8572] truncate text-left">${debtors[i].name}</span>
-                                    <div class="flex justify-start items-center pl-2">
-                                         <span class="text-gray-400 text-[10px] mr-1">給</span>
+                                    <div class="flex justify-center items-center gap-1">
+                                         <span class="text-gray-400 text-[10px]">給</span>
                                          <span class="font-bold text-[#7E92A1] truncate">${creditors[j].name}</span>
                                     </div>
-                                    <span class="font-bold text-[#5F6368] text-right pr-0">$${amount.toFixed(0)}</span>
+                                    <span class="font-bold text-[#5F6368] text-right">$${amount.toFixed(0)}</span>
                                 </div>
                             `;
                         }
@@ -1388,4 +1388,5 @@
     </script>
 </body>
 </html>
+
 
