@@ -13,10 +13,8 @@
     <style>
     /* --- 全域設定 --- */
     html {
-        /* 強制 Y 軸磁吸 */
         scroll-snap-type: y mandatory;
-        /* 關鍵修正：統一設定為 170px (原本的高度)，確保第一張卡片位置正確 */
-        scroll-padding-top: 170px;
+        scroll-padding-top: 190px;
         scroll-behavior: smooth;
     }
     body { font-family: 'Inter', sans-serif; background-color: #f7f7f7; margin: 0; padding: 0; color: #5F6368; overflow-x: hidden; }
@@ -35,9 +33,7 @@
         box-shadow: 0 0 10px rgba(0,0,0,0.05);
     }
     #schedule-list-container {
-        /* 關鍵修正：與 scroll-padding-top 一致 */
-        padding-top: 170px; 
-        /* 底部留白 85vh，確保最後一張卡片可以被推到最上面 */
+        padding-top: 190px; 
         padding-bottom: 85vh; 
         margin-top: 0; 
         position: relative; 
@@ -60,11 +56,9 @@
         height: 100px; 
         display: flex; 
         z-index: 0;
-        /* 磁吸設定 */
         scroll-snap-align: start;
         scroll-snap-stop: always;
-        /* 關鍵修正：卡片上緣留白 170px */
-        scroll-margin-top: 170px;
+        scroll-margin-top: 190px;
     }
 
     #schedule-list-container .trip-card:first-child {
@@ -185,8 +179,8 @@
         .desktop-del-btn { display: block !important; }
     }
     @media (max-width: 500px) {
-        html { scroll-padding-top: 170px; }
-        #schedule-list-container { padding-top: 170px; }
+        html { scroll-padding-top: 190px; }
+        #schedule-list-container { padding-top: 190px; }
         .trip-card:first-child::before { top: -35px; }
         .trip-card .content-text-block { margin-top: 8px; }
         .desktop-del-btn { display: none !important; } 
@@ -1030,12 +1024,12 @@
                 expenseChart = new Chart(ctx, { type:'pie', data:{labels:Object.keys(types).map(k=>CATEGORY_NAMES[k]||k), datasets:[{data:Object.values(types), backgroundColor:Object.keys(types).map(k=>(CATEGORY_COLORS[k]||CATEGORY_COLORS.default).hex), borderWidth:0}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}} });
                 
                 const l = document.getElementById('expense-member-list'); 
-                l.innerHTML = `<div class="grid grid-cols-[40%_20%_40%] border-b border-[#E0E0E0] pb-1 mb-2 font-bold text-[#5F6368] text-[10px]"><span>成員</span><span class="text-center">類別</span><span class="text-right">金額</span></div>`;
+                l.innerHTML = `<div class="grid grid-cols-[34%_33%_33%] border-b border-[#E0E0E0] pb-1 mb-2 font-bold text-[#5F6368] text-[10px]"><span>成員</span><span class="text-center">類別</span><span class="text-right">金額</span></div>`;
                 
                 Object.keys(mems).sort().forEach(n => { 
                     let first=true; 
                     Object.keys(mems[n].cats).forEach(c => { 
-                        l.innerHTML += `<div class="grid grid-cols-[40%_20%_40%] py-0.5 text-[10px] border-b border-[#F0F0F0] items-center">
+                        l.innerHTML += `<div class="grid grid-cols-[34%_33%_33%] py-0.5 text-[10px] border-b border-[#F0F0F0] items-center">
                             ${first ? `<span class="font-bold truncate">${n}</span>` : '<span></span>'}
                             <span class="text-center ${(CATEGORY_COLORS[c]||CATEGORY_COLORS.default).text}">${CATEGORY_NAMES[c]}</span>
                             <span class="text-right text-[#888888]">$${mems[n].cats[c].toFixed(0)}</span>
@@ -1043,7 +1037,7 @@
                         first=false; 
                     }); 
                     // 修改：移除 border-b
-                    l.innerHTML += `<div class="grid grid-cols-[40%_20%_40%] py-1 mb-2 bg-[#F9F9F9] text-[10px] font-bold"><span></span><span class="text-center">個人總計</span><span class="text-right">$${mems[n].total.toFixed(0)}</span></div>`; 
+                    l.innerHTML += `<div class="grid grid-cols-[34%_33%_33%] py-1 mb-2 bg-[#F9F9F9] text-[10px] font-bold"><span></span><span class="text-center">個人總計</span><span class="text-right">$${mems[n].total.toFixed(0)}</span></div>`; 
                 });
 
                 // --- 結帳建議 (Settlement) ---
@@ -1067,11 +1061,11 @@
                         let amount = Math.min(debt, credit);
                         
                         if (amount > 0) {
-                            // 修改：使用 grid 40-20-40, 移除 pr-0, 確保對齊, 給和Ashley在中間置中
+                            // 修改：使用 grid 34-33-33, 移除 pr-0, 確保對齊, 給和Ashley在中間置中
                             l.innerHTML += `
-                                <div class="grid grid-cols-[40%_20%_40%] items-center py-2 px-1 text-[10px] border-b border-gray-50">
-                                    <span class="font-bold text-[#CB8572] truncate text-left">${debtors[i].name}</span>
-                                    <div class="text-center flex justify-center items-center w-full">
+                                <div class="grid grid-cols-[34%_33%_33%] items-center py-2 px-0 text-[10px] border-b border-gray-50">
+                                    <span class="font-bold text-[#CB8572] truncate text-left pl-0">${debtors[i].name}</span>
+                                    <div class="text-center flex justify-center items-center">
                                          <span class="text-gray-400 text-[10px] mr-1">給</span>
                                          <span class="font-bold text-[#7E92A1] truncate">${creditors[j].name}</span>
                                     </div>
@@ -1146,7 +1140,7 @@
 
                                     <div class="min-w-0">
                                         <label class="block compact-label mb-0.5 text-center">類型</label>
-                                        <select id="form-type" class="compact-input block w-[87%] mx-auto rounded border shadow-sm py-0 pl-1 pr-0 text-[10px]" style="height: 24px !important; min-height: 24px !important;">
+                                        <select id="form-type" class="compact-input block w-[87%] mx-auto rounded border shadow-sm py-0 pl-1 pr-0 text-[10px]" style="height: 28px !important; min-height: 28px !important;">
                                             <option value="location">📍 景點</option>
                                             <option value="restaurant">🍽️ 餐廳</option>
                                             <option value="coffee">☕ 咖啡</option>
@@ -1236,7 +1230,7 @@
                                     <button type="button" id="new-trip-from-settings-btn" class="px-3 py-1.5 text-xs text-[#7E92A1] bg-[#EBF2FA] rounded hover:bg-[#DCE6F2]">新計畫</button>
                                     <div class="flex space-x-2 justify-end flex-grow">
                                         <button type="button" id="delete-trip-btn" class="px-3 py-1.5 text-white bg-[#CB8572] rounded text-xs hover:bg-[#B56B5A]">刪除</button>
-                                        <button type="button" id="settings-modal-save-btn" class="px-3 py-1.5 text-white bg-[#7E92A1] rounded text-xs hover:bg-[#64748B]儲存</button>
+                                        <button type="button" id="settings-modal-save-btn" class="px-3 py-1.5 text-white bg-[#7E92A1] rounded text-xs hover:bg-[#64748B]">儲存</button>
                                     </div>
                                 </div>
                             </form>
