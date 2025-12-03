@@ -1052,7 +1052,7 @@
                 if (debtors.length === 0 && creditors.length === 0) {
                     l.innerHTML += `<div class="text-[10px] text-gray-400 py-1 text-center mt-2">目前沒有需要結算的款項</div>`;
                 } else {
-                    l.innerHTML += `<div class="mt-4 border-t border-gray-100"></div>`; // 分隔線
+                    // 修改：移除分隔線，直接顯示
                     let i=0, j=0;
                     while(i < debtors.length && j < creditors.length){
                         let debt = Math.abs(debtors[i].amount);
@@ -1060,8 +1060,9 @@
                         let amount = Math.min(debt, credit);
                         
                         if (amount > 0) {
+                            // 移除 bg-red-50, 移除 rounded, 字體統一為 text-[10px]
                             l.innerHTML += `
-                                <div class="flex justify-between items-center py-2 px-1 text-[11px] border-b border-gray-50">
+                                <div class="flex justify-between items-center py-2 px-1 text-[10px] border-b border-gray-50">
                                     <span class="font-bold text-[#CB8572]">${debtors[i].name}</span>
                                     <span class="text-gray-400 text-[10px]">給</span>
                                     <span class="font-bold text-[#7E92A1]">${creditors[j].name}</span>
@@ -1125,18 +1126,18 @@
 
                                 <div class="grid grid-cols-3 gap-1.5 w-full"> 
                                     <div class="min-w-0">
-                                        <label class="block compact-label mb-0.5">日期</label>
-                                        <input type="date" id="form-date" class="compact-input block w-full rounded border shadow-sm text-center p-0 text-[10px]" style="height: 24px !important; min-height: 24px !important;">
+                                        <label class="block compact-label mb-0.5 text-center">日期</label>
+                                        <input type="date" id="form-date" class="compact-input block w-[80%] mx-auto rounded border shadow-sm text-center p-0 py-0 text-[10px]" style="height: 24px !important; min-height: 24px !important;">
                                     </div> 
 
                                     <div class="min-w-0">
-                                        <label class="block compact-label mb-0.5">時間</label>
-                                        <input type="time" id="form-time" class="compact-input block w-full rounded border shadow-sm text-center p-0 text-[10px]" style="height: 24px !important; min-height: 24px !important;">
+                                        <label class="block compact-label mb-0.5 text-center">時間</label>
+                                        <input type="time" id="form-time" class="compact-input block w-[80%] mx-auto rounded border shadow-sm text-center p-0 py-0 text-[10px]" style="height: 24px !important; min-height: 24px !important;">
                                     </div>
 
                                     <div class="min-w-0">
-                                        <label class="block compact-label mb-0.5">類型</label>
-                                        <select id="form-type" class="compact-input block w-full rounded border shadow-sm py-0 pl-1 pr-0 text-[10px]" style="height: 24px !important; min-height: 24px !important;">
+                                        <label class="block compact-label mb-0.5 text-center">類型</label>
+                                        <select id="form-type" class="compact-input block w-[80%] mx-auto rounded border shadow-sm py-0 pl-1 pr-0 text-[10px]" style="height: 24px !important; min-height: 24px !important;">
                                             <option value="location">📍 景點</option>
                                             <option value="restaurant">🍽️ 餐廳</option>
                                             <option value="coffee">☕ 咖啡</option>
@@ -1229,7 +1230,7 @@
                                     <button type="button" id="new-trip-from-settings-btn" class="px-3 py-1.5 text-xs text-[#7E92A1] bg-[#EBF2FA] rounded hover:bg-[#DCE6F2]">新計畫</button>
                                     <div class="flex space-x-2 justify-end flex-grow">
                                         <button type="button" id="delete-trip-btn" class="px-3 py-1.5 text-white bg-[#CB8572] rounded text-xs hover:bg-[#B56B5A]">刪除</button>
-                                        <button type="button" id="settings-modal-save-btn" class="px-3 py-1.5 text-white bg-[#7E92A1] rounded text-xs hover:bg-[#64748B] shadow-sm">儲存</button>
+                                        <button type="button" id="settings-modal-save-btn" class="px-3 py-1.5 text-white bg-[#7E92A1] rounded text-xs hover:bg-[#64748B]">儲存</button>
                                     </div>
                                 </div>
                             </form>
