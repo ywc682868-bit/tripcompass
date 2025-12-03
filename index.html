@@ -1066,8 +1066,8 @@
                             // 3. 這會將「給」與「Ashley」整體向左推，並利用 gap-1 維持兩者間距
                             l.innerHTML += `
                                 <div class="grid grid-cols-[40%_20%_40%\] items-center py-2 px-0 text-[10px] border-b border-gray-50">
-                                    <span class="font-bold text-[#CB8572] truncate text-left pl-1">${debtors[i].name}</span>
-                                    <div class="flex justify-start items-center gap-1 pl-8">
+                                    <span class="font-bold text-[#CB8572] truncate text-left gap-1 pl-2">${debtors[i].name}</span>
+                                    <div class="flex justify-start items-center gap-1 pl-2">
                                          <span class="text-gray-400 text-[10px] flex-shrink-0">給</span>
                                          <span class="font-bold text-[#7E92A1] truncate">${creditors[j].name}</span>
                                     </div>
@@ -1389,6 +1389,7 @@
     </script>
 </body>
 </html>
+
 
 
 
