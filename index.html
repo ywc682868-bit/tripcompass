@@ -15,10 +15,8 @@
     html {
         /* 強制 Y 軸磁吸 */
         scroll-snap-type: y mandatory;
-        /* 關鍵：設定上方保留空間，避免磁吸時被 Header (約220px) 遮擋 */
+        /* 關鍵：設定磁吸的偏移量，等於 Header 的高度 */
         scroll-padding-top: 220px;
-        /* 設定下方保留空間，避免磁吸時被 Footer 遮擋 */
-        scroll-padding-bottom: 100px;
         scroll-behavior: smooth;
     }
     body { font-family: 'Inter', sans-serif; background-color: #f7f7f7; margin: 0; padding: 0; color: #5F6368; overflow-x: hidden; }
@@ -37,10 +35,10 @@
         box-shadow: 0 0 10px rgba(0,0,0,0.05);
     }
     #schedule-list-container {
-        /* 關鍵：內容往下推 220px，確保第一張卡片顯示在 Header 下方 */
+        /* 上方留白給 Header (220px) */
         padding-top: 220px; 
-        /* 底部留白極大化，確保最後一張卡片能被「推」到上方磁吸點 */
-        padding-bottom: 70vh; 
+        /* 底部留白計算：讓最後一張卡片能剛好捲到最上面，且下方不留過多空白 */
+        padding-bottom: 80vh; 
         margin-top: 0; 
         position: relative; 
         z-index: 1; 
@@ -62,16 +60,15 @@
         height: 100px; 
         display: flex; 
         z-index: 0;
-        /* 設定磁吸對齊點為卡片頂部 */
+        /* 磁吸對齊點 */
         scroll-snap-align: start;
-        /* 關鍵：強力阻擋，讓滑動一定會停在卡片上 */
+        /* 強制停在卡片上 */
         scroll-snap-stop: always;
-        /* 關鍵：卡片本身的上方邊距，確保磁吸時上方有空間 */
+        /* 關鍵：讓卡片在磁吸時，主動保留上方的空間給 Header */
         scroll-margin-top: 220px;
     }
 
     #schedule-list-container .trip-card:first-child {
-        /* 第一張卡片額外加一點 margin，避免太貼 Header */
         margin-top: 10px; 
     }
 
@@ -117,8 +114,9 @@
         margin-right: auto;
         background-color: #ffffff;
         z-index: 50; 
-        /* 增加下方陰影讓層次分明 */
-        box-shadow: 0 4px 10px -1px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        /* 確保 Header 高度穩定 */
+        min-height: 220px; 
     }
     #header-content-wrapper {
         padding-top: calc(15px + env(safe-area-inset-top)); 
@@ -190,13 +188,8 @@
         .desktop-del-btn { display: block !important; }
     }
     @media (max-width: 500px) {
-        html { 
-            /* 手機版加強 scroll-padding */
-            scroll-padding-top: 220px; 
-        }
-        #schedule-list-container { 
-            padding-top: 220px; 
-        }
+        html { scroll-padding-top: 220px; }
+        #schedule-list-container { padding-top: 220px; }
         .trip-card:first-child::before { top: -35px; }
         .trip-card .content-text-block { margin-top: 8px; }
         .desktop-del-btn { display: none !important; } 
@@ -691,10 +684,12 @@
                 
                 // Options Container
                 const optsDiv = document.createElement('div');
+                // 修改處：將 flex-col 改為 flex-row，並加上 items-center，讓「墊付」與「現金」併排
                 optsDiv.className = 'flex flex-row items-center gap-1'; 
                 
                 // Payer Checkbox
                 const label = document.createElement('label');
+                // 修改處：字體調整為 text-xs
                 label.className = 'flex items-center text-xs text-[#7E92A1] cursor-pointer leading-none select-none whitespace-nowrap';
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
@@ -1077,13 +1072,13 @@
                         let amount = Math.min(debt, credit);
                         
                         if (amount > 0) {
-                            // 修改：使用 grid 60/40, 移除 bg-red-50, 移除 rounded, 字體統一為 text-[10px], 金額靠右
+                            // 修改：使用 grid 40-20-40, 與上方列表一致
                             l.innerHTML += `
-                                <div class="grid grid-cols-[60%_40%] items-center py-2 px-1 text-[10px] border-b border-gray-50">
-                                    <div class="flex items-center gap-1">
-                                        <span class="font-bold text-[#CB8572] truncate max-w-[45%]">${debtors[i].name}</span>
-                                        <span class="text-gray-400 text-[10px] flex-shrink-0">給</span>
-                                        <span class="font-bold text-[#7E92A1] truncate max-w-[45%]">${creditors[j].name}</span>
+                                <div class="grid grid-cols-[40%_20%_40%] items-center py-2 px-1 text-[10px] border-b border-gray-50">
+                                    <span class="font-bold text-[#CB8572] truncate">${debtors[i].name}</span>
+                                    <div class="text-center">
+                                         <span class="text-gray-400 text-[10px] mr-1">給</span>
+                                         <span class="font-bold text-[#7E92A1] truncate">${creditors[j].name}</span>
                                     </div>
                                     <span class="font-bold text-[#5F6368] text-right">$${amount.toFixed(0)}</span>
                                 </div>
@@ -1195,15 +1190,12 @@
                                 </div>
                                 
                                 <div class="bg-gray-50 p-2 rounded border border-gray-100 mt-1">
-                                    <div class="flex justify-between items-center mb-1">
+                                    <div class="flex items-center mb-1 gap-2">
                                         <label class="block compact-label">成員</label>
+                                        <button type="button" id="add-member-btn" class="text-[#7E92A1] text-xs font-bold hover:text-[#5F6368] px-1 leading-none">＋</button>
                                     </div>
                                     <div id="form-members-container" class="space-y-1 mb-2"></div>
                                     
-                                    <div class="flex justify-center mb-1">
-                                        <button type="button" id="add-member-btn" class="text-[#7E92A1] text-xs font-bold hover:text-[#5F6368] px-1 leading-none">＋</button>
-                                    </div>
-
                                     <div class="grid grid-cols-[1fr_20px_1fr] gap-2 items-center mt-2 border-t border-gray-200 pt-2">
                                         <div class="flex items-center gap-1 justify-start">
                                             <label id="form-currency-label" class="text-[10px] font-bold text-[#7E92A1] w-8 text-right">USD</label>
