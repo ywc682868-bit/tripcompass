@@ -65,7 +65,7 @@
         /* 強制停止 */
         scroll-snap-stop: always;
         /* 關鍵：讓卡片在磁吸時，主動保留上方的空間給 Header */
-        scroll-margin-top: 220px;
+        scroll-margin-top: 180px;
     }
 
     #schedule-list-container .trip-card:first-child {
@@ -187,7 +187,7 @@
         .desktop-del-btn { display: block !important; }
     }
     @media (max-width: 500px) {
-        html { scroll-padding-top: 220px; }
+        html { scroll-padding-top: 180px; }
         #schedule-list-container { padding-top: 180px; }
         .trip-card:first-child::before { top: -35px; }
         .trip-card .content-text-block { margin-top: 8px; }
@@ -683,10 +683,12 @@
                 
                 // Options Container
                 const optsDiv = document.createElement('div');
+                // 修改處：將 flex-col 改為 flex-row，並加上 items-center，讓「墊付」與「現金」併排
                 optsDiv.className = 'flex flex-row items-center gap-1'; 
                 
                 // Payer Checkbox
                 const label = document.createElement('label');
+                // 修改處：字體調整為 text-xs
                 label.className = 'flex items-center text-xs text-[#7E92A1] cursor-pointer leading-none select-none whitespace-nowrap';
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
@@ -1044,7 +1046,7 @@
                         </div>`; 
                         first=false; 
                     }); 
-                    
+                    // 修改：移除 border-b
                     l.innerHTML += `<div class="grid grid-cols-[40%_20%_40%] py-1 mb-2 bg-[#F9F9F9] text-[10px] font-bold"><span></span><span class="text-center">個人總計</span><span class="text-right">$${mems[n].total.toFixed(0)}</span></div>`; 
                 });
 
@@ -1061,8 +1063,7 @@
                 if (debtors.length === 0 && creditors.length === 0) {
                     l.innerHTML += `<div class="text-[10px] text-gray-400 py-1 text-center mt-2">目前沒有需要結算的款項</div>`;
                 } else {
-                    // 修改處：移除 px-1，改為 pl-1 pr-0，這會讓內容更貼近右邊邊緣
-                    l.innerHTML += `<div class="mt-4 border-t border-gray-100"></div>`; 
+                    // 修改：移除分隔線，直接顯示
                     let i=0, j=0;
                     while(i < debtors.length && j < creditors.length){
                         let debt = Math.abs(debtors[i].amount);
@@ -1070,15 +1071,15 @@
                         let amount = Math.min(debt, credit);
                         
                         if (amount > 0) {
-                            // 這裡的 class 改成了 pl-1 pr-0
+                            // 修改：使用 grid 40-20-40, 移除 pr-0, 確保對齊
                             l.innerHTML += `
-                                <div class="grid grid-cols-[40%_20%_40%] items-center py-2 pl-1 pr-0 text-[10px] border-b border-gray-50">
-                                    <span class="font-bold text-[#CB8572] truncate text-left">${debtors[i].name}</span>
+                                <div class="grid grid-cols-[40%_20%_40%] items-center py-2 px-0 border-b border-gray-50">
+                                    <span class="font-bold text-[#CB8572] truncate text-left pl-1">${debtors[i].name}</span>
                                     <div class="text-center flex justify-center items-center">
                                          <span class="text-gray-400 text-[10px] mr-1">給</span>
                                          <span class="font-bold text-[#7E92A1] truncate">${creditors[j].name}</span>
                                     </div>
-                                    <span class="font-bold text-[#5F6368] text-right">$${amount.toFixed(0)}</span>
+                                    <span class="font-bold text-[#5F6368] text-right pr-0">$${amount.toFixed(0)}</span>
                                 </div>
                             `;
                         }
@@ -1149,7 +1150,7 @@
 
                                     <div class="min-w-0">
                                         <label class="block compact-label mb-0.5 text-center">類型</label>
-                                        <select id="form-type" class="compact-input block w-[87%] mx-auto rounded border shadow-sm py-0 pl-1 pr-0 text-[10px]" style="height: 24px !important; min-height: 24px !important;">
+                                        <select id="form-type" class="compact-input block w-[87%] mx-auto rounded border shadow-sm py-0 pl-1 pr-0 text-[10px]" style="height: 28px !important; min-height: 24px !important;">
                                             <option value="location">📍 景點</option>
                                             <option value="restaurant">🍽️ 餐廳</option>
                                             <option value="coffee">☕ 咖啡</option>
@@ -1239,7 +1240,7 @@
                                     <button type="button" id="new-trip-from-settings-btn" class="px-3 py-1.5 text-xs text-[#7E92A1] bg-[#EBF2FA] rounded hover:bg-[#DCE6F2]">新計畫</button>
                                     <div class="flex space-x-2 justify-end flex-grow">
                                         <button type="button" id="delete-trip-btn" class="px-3 py-1.5 text-white bg-[#CB8572] rounded text-xs hover:bg-[#B56B5A]">刪除</button>
-                                        <button type="button" id="settings-modal-save-btn" class="px-3 py-1.5 text-white bg-[#7E92A1] rounded text-xs hover:bg-[#64748B]">儲存</button>
+                                        <button type="button" id="settings-modal-save-btn" class="px-3 py-1.5 text-white bg-[#7E92A1] rounded text-xs hover:bg-[#64748B]儲存</button>
                                     </div>
                                 </div>
                             </form>
@@ -1396,7 +1397,3 @@
     </script>
 </body>
 </html>
-
-
-
-
