@@ -14,7 +14,8 @@
     /* --- 全域設定 --- */
     html {
         scroll-snap-type: y mandatory;
-        scroll-padding-top: 190px;
+        /* 180px 配合 Header 高度 */
+        scroll-padding-top: 180px; 
         scroll-behavior: smooth;
     }
     body { font-family: 'Inter', sans-serif; background-color: #f7f7f7; margin: 0; padding: 0; color: #5F6368; overflow-x: hidden; }
@@ -33,7 +34,7 @@
         box-shadow: 0 0 10px rgba(0,0,0,0.05);
     }
     #schedule-list-container {
-        padding-top: 190px; 
+        padding-top: 180px; 
         padding-bottom: 85vh; 
         margin-top: 0; 
         position: relative; 
@@ -58,7 +59,7 @@
         z-index: 0;
         scroll-snap-align: start;
         scroll-snap-stop: always;
-        scroll-margin-top: 190px;
+        scroll-margin-top: 180px;
     }
 
     #schedule-list-container .trip-card:first-child {
@@ -179,8 +180,8 @@
         .desktop-del-btn { display: block !important; }
     }
     @media (max-width: 500px) {
-        html { scroll-padding-top: 190px; }
-        #schedule-list-container { padding-top: 190px; }
+        html { scroll-padding-top: 180px; }
+        #schedule-list-container { padding-top: 180px; }
         .trip-card:first-child::before { top: -35px; }
         .trip-card .content-text-block { margin-top: 8px; }
         .desktop-del-btn { display: none !important; } 
@@ -214,7 +215,7 @@
                 <div class="flex justify-between items-start">
                     
                     <div class="flex flex-col flex-grow min-w-0 mr-2">
-                        <div class="flex items-center w-full mb-0.5">
+                        <div class="flex items-center w-full mb-1">
                               <button id="settings-btn" class="p-1 mr-0.5 text-[#888888] hover:text-[#5F6368]" title="計畫設定">📅</button>
                               <select id="trip-select" class="w-full text-lg truncate font-extrabold"></select>
                               <div class="flex items-center flex-shrink-0 ml-2">
@@ -222,7 +223,7 @@
                               </div>
                         </div>
                         
-                        <div class="flex items-center space-x-1 text-[#888888] ml-1 mb-1.5">
+                        <div class="flex items-center space-x-1 text-[#888888] ml-1 mb-2">
                               <span class="font-bold text-xs">👫</span>
                               <span id="header-members-list" class="truncate text-xs font-bold text-gray-400">...</span>
                         </div>
@@ -675,10 +676,12 @@
                 
                 // Options Container
                 const optsDiv = document.createElement('div');
+                // 修改處：將 flex-col 改為 flex-row，並加上 items-center，讓「墊付」與「現金」併排
                 optsDiv.className = 'flex flex-row items-center gap-1'; 
                 
                 // Payer Checkbox
                 const label = document.createElement('label');
+                // 修改處：字體調整為 text-xs
                 label.className = 'flex items-center text-xs text-[#7E92A1] cursor-pointer leading-none select-none whitespace-nowrap';
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
@@ -984,12 +987,14 @@
                         total += tTWD; 
                         types[da.Type] = (types[da.Type]||0) + tTWD; 
                         
+                        // 計算代墊人 (Who Paid)
                         const payers = (da.members||[]).filter(m => typeof m !== 'string' && m.isPayer);
                         if(payers.length > 0) {
                             const payShare = tTWD / payers.length;
                             payers.forEach(p => { balances[p.name] = (balances[p.name] || 0) + payShare; });
                         }
 
+                        // 計算分帳人 (Who Consumed)
                         let spSum=0, unSpUsers=[]; 
                         (da.members||[]).forEach(m => { 
                             const amt = typeof m==='string'?null:m.amount; 
@@ -999,7 +1004,7 @@
                                 spSum += amt; 
                                 const share = amt * (da.Rate||1);
                                 addMemExp(mems, name, da.Type, share); 
-                                balances[name] = (balances[name] || 0) - share; 
+                                balances[name] = (balances[name] || 0) - share; // 扣除應付金額
                             } else {
                                 unSpUsers.push(name);
                             }
@@ -1009,7 +1014,7 @@
                             const split = ((da.Amount||0)-spSum)*(da.Rate||1)/unSpUsers.length; 
                             unSpUsers.forEach(u => {
                                 addMemExp(mems, u, da.Type, split);
-                                balances[u] = (balances[u] || 0) - split; 
+                                balances[u] = (balances[u] || 0) - split; // 扣除應付金額
                             }); 
                         } 
                     }
@@ -1021,22 +1026,21 @@
                 const ctx = document.getElementById('expense-chart').getContext('2d'); if(expenseChart) expenseChart.destroy();
                 expenseChart = new Chart(ctx, { type:'pie', data:{labels:Object.keys(types).map(k=>CATEGORY_NAMES[k]||k), datasets:[{data:Object.values(types), backgroundColor:Object.keys(types).map(k=>(CATEGORY_COLORS[k]||CATEGORY_COLORS.default).hex), borderWidth:0}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}} });
                 
-                // 上方列表標題
                 const l = document.getElementById('expense-member-list'); 
-                l.innerHTML = `<div class="grid grid-cols-[35%_35%_30%] border-b border-[#E0E0E0] pb-1 mb-2 font-bold text-[#5F6368] text-[10px]"><span>成員</span><span class="text-center">類別</span><span class="text-right">金額</span></div>`;
+                l.innerHTML = `<div class="grid grid-cols-[40%_20%_40%] border-b border-[#E0E0E0] pb-1 mb-2 font-bold text-[#5F6368] text-[10px]"><span>成員</span><span class="text-center">類別</span><span class="text-right">金額</span></div>`;
                 
-                // 上方列表內容
                 Object.keys(mems).sort().forEach(n => { 
                     let first=true; 
                     Object.keys(mems[n].cats).forEach(c => { 
-                        l.innerHTML += `<div class="grid grid-cols-[35%_35%_30%] py-0.5 text-[10px] border-b border-[#F0F0F0] items-center">
+                        l.innerHTML += `<div class="grid grid-cols-[40%_20%_40%] py-0.5 text-[10px] border-b border-[#F0F0F0] items-center">
                             ${first ? `<span class="font-bold truncate">${n}</span>` : '<span></span>'}
                             <span class="text-center ${(CATEGORY_COLORS[c]||CATEGORY_COLORS.default).text}">${CATEGORY_NAMES[c]}</span>
                             <span class="text-right text-[#888888]">$${mems[n].cats[c].toFixed(0)}</span>
                         </div>`; 
                         first=false; 
                     }); 
-                    l.innerHTML += `<div class="grid grid-cols-[35%_35%_30%] py-1 mb-2 bg-[#F9F9F9] text-[10px] font-bold"><span></span><span class="text-center">個人總計</span><span class="text-right">$${mems[n].total.toFixed(0)}</span></div>`; 
+                    // 修改：移除 border-b
+                    l.innerHTML += `<div class="grid grid-cols-[40%_20%_40%] py-1 mb-2 bg-[#F9F9F9] text-[10px] font-bold"><span></span><span class="text-center">個人總計</span><span class="text-right">$${mems[n].total.toFixed(0)}</span></div>`; 
                 });
 
                 // --- 結帳建議 (Settlement) ---
@@ -1052,7 +1056,7 @@
                 if (debtors.length === 0 && creditors.length === 0) {
                     l.innerHTML += `<div class="text-[10px] text-gray-400 py-1 text-center mt-2">目前沒有需要結算的款項</div>`;
                 } else {
-                    // 分隔線移除，直接顯示
+                    // 修改：移除分隔線，直接顯示
                     let i=0, j=0;
                     while(i < debtors.length && j < creditors.length){
                         let debt = Math.abs(debtors[i].amount);
@@ -1060,18 +1064,15 @@
                         let amount = Math.min(debt, credit);
                         
                         if (amount > 0) {
-                            // 修改重點：
-                            // 1. Grid 比例改為 35% 35% 30%，完全對齊上方列表
-                            // 2. 中間欄位 (35%) 用 flex justify-center 讓 "給 Ashley" 置中
-                            // 3. 右側欄位 (30%) text-right 確保靠右
+                            // 修改：使用 grid 40-20-40, 移除 pr-0, 確保對齊, 給和Ashley在中間置中
                             l.innerHTML += `
-                                <div class="grid grid-cols-[35%_35%_30%] items-center py-2 px-0 text-[10px] border-b border-gray-50">
+                                <div class="grid grid-cols-[40%_20%_40%] items-center py-2 px-1 text-[10px] border-b border-gray-50">
                                     <span class="font-bold text-[#CB8572] truncate text-left">${debtors[i].name}</span>
-                                    <div class="flex justify-center items-center gap-1">
+                                    <div class="text-center flex justify-center items-center gap-1">
                                          <span class="text-gray-400 text-[10px]">給</span>
                                          <span class="font-bold text-[#7E92A1] truncate">${creditors[j].name}</span>
                                     </div>
-                                    <span class="font-bold text-[#5F6368] text-right">$${amount.toFixed(0)}</span>
+                                    <span class="font-bold text-[#5F6368] text-right pr-0">$${amount.toFixed(0)}</span>
                                 </div>
                             `;
                         }
@@ -1086,6 +1087,7 @@
 
                 document.getElementById('split-expense-modal').style.display = 'flex';
             }
+
             async function deleteSchedule(id) {
                 if(!confirm('確定刪除?')) return;
                 // 注意：這裡的路徑之前也有錯誤，我已經修正
@@ -1388,6 +1390,3 @@
     </script>
 </body>
 </html>
-
-
-
