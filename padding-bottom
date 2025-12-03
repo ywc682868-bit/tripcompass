@@ -65,7 +65,7 @@
         /* 強制停止 */
         scroll-snap-stop: always;
         /* 關鍵：讓卡片在磁吸時，主動保留上方的空間給 Header */
-        scroll-margin-top: 240px;
+        scroll-margin-top: 220px;
     }
 
     #schedule-list-container .trip-card:first-child {
@@ -1395,5 +1395,6 @@
     </script>
 </body>
 </html>
+
 
 
