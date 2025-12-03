@@ -13,8 +13,12 @@
     <style>
     /* --- 全域設定 --- */
     html {
+        /* 強制磁吸 */
         scroll-snap-type: y mandatory;
-        scroll-padding-top: 170px; 
+        /* 上方磁吸邊界：避開 Header */
+        scroll-padding-top: 260px; 
+        /* 下方磁吸邊界：避開 Footer */
+        scroll-padding-bottom: 150px;
         scroll-behavior: smooth;
     }
     body { font-family: 'Inter', sans-serif; background-color: #f7f7f7; margin: 0; padding: 0; color: #5F6368; overflow-x: hidden; }
@@ -28,13 +32,15 @@
         min-height: 100vh;
         background-color: white;
         padding-top: 0px; 
-        padding-bottom: 140px;
+        padding-bottom: 0px;
         position: relative;
         box-shadow: 0 0 10px rgba(0,0,0,0.05);
     }
     #schedule-list-container {
-        padding-top: 180px; 
-        padding-bottom: 60vh; 
+        /* 上方留白給 Header */
+        padding-top: 260px; 
+        /* 下方給予極大留白 (50%視窗高)，確保最後一張卡片可以被「推」到最上面進行磁吸，不會卡在下面 */
+        padding-bottom: 50vh; 
         margin-top: 0; 
         position: relative; 
         z-index: 1; 
@@ -56,7 +62,8 @@
         height: 100px; 
         display: flex; 
         z-index: 0;
-        scroll-snap-align: start;
+        /* 關鍵：所有卡片都對齊視窗頂部 (扣除 Header) */
+        scroll-snap-align: start; 
         scroll-margin-top: 10px;
     }
 
@@ -178,8 +185,14 @@
         .desktop-del-btn { display: block !important; }
     }
     @media (max-width: 500px) {
-        html { scroll-padding-top: 250px; }
-        #schedule-list-container { padding-top: 250px; }
+        html { 
+            /* 加大 scroll-padding 以配合 Header 高度 */
+            scroll-padding-top: 260px; 
+        }
+        #schedule-list-container { 
+            /* 同步加大 padding-top，確保第一個卡片不被遮擋 */
+            padding-top: 260px; 
+        }
         .trip-card:first-child::before { top: -35px; }
         .trip-card .content-text-block { margin-top: 8px; }
         .desktop-del-btn { display: none !important; } 
@@ -674,10 +687,12 @@
                 
                 // Options Container
                 const optsDiv = document.createElement('div');
+                // 修改處：將 flex-col 改為 flex-row，並加上 items-center，讓「墊付」與「現金」併排
                 optsDiv.className = 'flex flex-row items-center gap-1'; 
                 
                 // Payer Checkbox
                 const label = document.createElement('label');
+                // 修改處：字體調整為 text-xs
                 label.className = 'flex items-center text-xs text-[#7E92A1] cursor-pointer leading-none select-none whitespace-nowrap';
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
@@ -1230,7 +1245,7 @@
                                     <button type="button" id="new-trip-from-settings-btn" class="px-3 py-1.5 text-xs text-[#7E92A1] bg-[#EBF2FA] rounded hover:bg-[#DCE6F2]">新計畫</button>
                                     <div class="flex space-x-2 justify-end flex-grow">
                                         <button type="button" id="delete-trip-btn" class="px-3 py-1.5 text-white bg-[#CB8572] rounded text-xs hover:bg-[#B56B5A]">刪除</button>
-                                        <button type="button" id="settings-modal-save-btn" class="px-3 py-1.5 text-white bg-[#7E92A1] rounded text-xs hover:bg-[#64748B]">儲存</button>
+                                        <button type="button" id="settings-modal-save-btn" class="px-3 py-1.5 text-white bg-[#7E92A1] rounded text-xs hover:bg-[#64748B]儲存</button>
                                     </div>
                                 </div>
                             </form>
