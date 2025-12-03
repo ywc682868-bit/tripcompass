@@ -34,7 +34,7 @@
     }
     #schedule-list-container {
         padding-top: 170px; 
-        padding-bottom: 60vh; /* 底部留白確保最後一張卡片能磁吸 */
+        padding-bottom: 60vh; 
         margin-top: 0; 
         position: relative; 
         z-index: 1; 
@@ -178,14 +178,8 @@
         .desktop-del-btn { display: block !important; }
     }
     @media (max-width: 500px) {
-        html { 
-            /* 調整：加大手機版的 scroll-padding，配合下方增加的 padding-top */
-            scroll-padding-top: 250px; 
-        }
-        #schedule-list-container { 
-            /* 修改：將 padding-top 加大到 250px，解決第一個卡片被遮擋的問題 */
-            padding-top: 250px; 
-        }
+        html { scroll-padding-top: 250px; }
+        #schedule-list-container { padding-top: 250px; }
         .trip-card:first-child::before { top: -35px; }
         .trip-card .content-text-block { margin-top: 8px; }
         .desktop-del-btn { display: none !important; } 
@@ -216,7 +210,7 @@
     <div id="app-container">
         <header>
             <div id="header-content-wrapper" class="px-3 pb-1" style="padding-top: calc(15px + env(safe-area-inset-top));">
-                <div class="flex justify-between items-center mb-1">
+                <div class="flex justify-between items-start mb-1">
                     <div class="flex flex-col justify-center flex-grow min-w-0 mr-2">
                         <div class="flex flex-col items-start">
                              <div class="flex items-center w-full">
@@ -229,7 +223,7 @@
                              </div>
                         </div>
                     </div>
-                    <div id="weather-info-container" class="flex flex-col items-center justify-center mr-2 text-[#888888] cursor-pointer gap-1">
+                    <div id="weather-info-container" class="flex flex-col items-center justify-center mr-2 text-[#888888] cursor-pointer gap-2">
                           <div id="header-weather-icon" class="text-3xl leading-none mb-0"></div>
                           <span id="header-weather-temp" class="text-base font-bold"></span>
                           <span id="header-location-name" class="text-xs font-bold mt-0.5"></span>
@@ -676,10 +670,12 @@
                 
                 // Options Container
                 const optsDiv = document.createElement('div');
+                // 修改處：將 flex-col 改為 flex-row，並加上 items-center，讓「墊付」與「現金」併排
                 optsDiv.className = 'flex flex-row items-center gap-1'; 
                 
                 // Payer Checkbox
                 const label = document.createElement('label');
+                // 修改處：字體調整為 text-xs
                 label.className = 'flex items-center text-xs text-[#7E92A1] cursor-pointer leading-none select-none whitespace-nowrap';
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
@@ -687,7 +683,8 @@
                 checkbox.className = 'payer-check mr-1 h-4 w-4';
                 checkbox.checked = isPayer;
                 label.appendChild(checkbox);
-                label.appendChild(document.createTextNode('墊付'));
+                // 修改： "已付"
+                label.appendChild(document.createTextNode('已付'));
                 
                 // Payment Method
                 const select = document.createElement('select');
