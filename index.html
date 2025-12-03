@@ -587,11 +587,6 @@
                 }
                 // --- 修改結束 ---
             }
-                const addBtn = document.createElement('button'); addBtn.className = 'px-3 py-1.5 text-xs font-bold rounded-lg bg-[#7E92A1] text-white ml-2 flex-shrink-0'; addBtn.textContent = '+';
-                addBtn.onclick = async () => { try { await updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}`), { numDays: (trip.numDays || 1) + 1 }, { merge: true }); } catch(e) { } };
-                container.appendChild(addBtn);
-                const d = getDateFromDayId(trip, currentDayId); if (d) document.getElementById('header-day-date-display').textContent = formatDateForHeader(d);
-            }
 
             async function calculateCurrency() {
                 const code = document.getElementById('bar-calc-currency').value; const amt = parseFloat(document.getElementById('bar-calc-amount').value) || 0;
@@ -1417,6 +1412,7 @@
     </script>
 </body>
 </html>
+
 
 
 
