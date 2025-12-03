@@ -15,8 +15,8 @@
     html {
         /* 強制 Y 軸磁吸 */
         scroll-snap-type: y mandatory;
-        /* 關鍵：設定磁吸的偏移量，等於 Header 的高度 */
-        scroll-padding-top: 220px;
+        /* 關鍵：定義磁吸的「頂部」偏移量，這必須等於 Header 的高度 */
+        scroll-padding-top: 230px;
         scroll-behavior: smooth;
     }
     body { font-family: 'Inter', sans-serif; background-color: #f7f7f7; margin: 0; padding: 0; color: #5F6368; overflow-x: hidden; }
@@ -35,10 +35,10 @@
         box-shadow: 0 0 10px rgba(0,0,0,0.05);
     }
     #schedule-list-container {
-        /* 上方留白給 Header (220px) */
-        padding-top: 220px; 
-        /* 底部留白計算：讓最後一張卡片能剛好捲到最上面，且下方不留過多空白 */
-        padding-bottom: 80vh; 
+        /* 上方留白給 Header */
+        padding-top: 230px; 
+        /* 關鍵修正：底部留白加大到 85vh，讓最後一張卡片有足夠空間捲動到視窗頂部(Header下方) */
+        padding-bottom: 85vh; 
         margin-top: 0; 
         position: relative; 
         z-index: 1; 
@@ -60,12 +60,12 @@
         height: 100px; 
         display: flex; 
         z-index: 0;
-        /* 磁吸對齊點 */
+        /* 設定磁吸對齊點 */
         scroll-snap-align: start;
-        /* 強制停在卡片上 */
+        /* 強制停止 */
         scroll-snap-stop: always;
-        /* 關鍵：讓卡片在磁吸時，主動保留上方的空間給 Header */
-        scroll-margin-top: 220px;
+        /* 確保磁吸時不被 Header 遮擋 */
+        scroll-margin-top: 230px;
     }
 
     #schedule-list-container .trip-card:first-child {
@@ -115,8 +115,7 @@
         background-color: #ffffff;
         z-index: 50; 
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-        /* 確保 Header 高度穩定 */
-        min-height: 220px; 
+        min-height: 220px;
     }
     #header-content-wrapper {
         padding-top: calc(15px + env(safe-area-inset-top)); 
@@ -188,8 +187,8 @@
         .desktop-del-btn { display: block !important; }
     }
     @media (max-width: 500px) {
-        html { scroll-padding-top: 220px; }
-        #schedule-list-container { padding-top: 220px; }
+        html { scroll-padding-top: 230px; }
+        #schedule-list-container { padding-top: 230px; }
         .trip-card:first-child::before { top: -35px; }
         .trip-card .content-text-block { margin-top: 8px; }
         .desktop-del-btn { display: none !important; } 
@@ -684,12 +683,10 @@
                 
                 // Options Container
                 const optsDiv = document.createElement('div');
-                // 修改處：將 flex-col 改為 flex-row，並加上 items-center，讓「墊付」與「現金」併排
                 optsDiv.className = 'flex flex-row items-center gap-1'; 
                 
                 // Payer Checkbox
                 const label = document.createElement('label');
-                // 修改處：字體調整為 text-xs
                 label.className = 'flex items-center text-xs text-[#7E92A1] cursor-pointer leading-none select-none whitespace-nowrap';
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
@@ -1075,12 +1072,12 @@
                             // 修改：使用 grid 40-20-40, 與上方列表一致
                             l.innerHTML += `
                                 <div class="grid grid-cols-[40%_20%_40%] items-center py-2 px-1 text-[10px] border-b border-gray-50">
-                                    <span class="font-bold text-[#CB8572] truncate">${debtors[i].name}</span>
+                                    <span class="font-bold text-[#CB8572] truncate text-left">${debtors[i].name}</span>
                                     <div class="text-center">
                                          <span class="text-gray-400 text-[10px] mr-1">給</span>
                                          <span class="font-bold text-[#7E92A1] truncate">${creditors[j].name}</span>
                                     </div>
-                                    <span class="font-bold text-[#5F6368] text-right">$${amount.toFixed(0)}</span>
+                                    <span class="font-bold text-[#5F6368] text-right pr-0">$${amount.toFixed(0)}</span>
                                 </div>
                             `;
                         }
