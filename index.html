@@ -13,9 +13,10 @@
     <style>
     /* --- 全域設定 --- */
     html {
+        /* 強制 Y 軸磁吸 */
         scroll-snap-type: y mandatory;
-        /* 修正：Header 變矮後，磁吸偏移量設為 175px */
-        scroll-padding-top: 175px;
+        /* 修正：設定磁吸偏移量為 190px，確保卡片停在 Header 正下方 */
+        scroll-padding-top: 190px;
         scroll-behavior: smooth;
     }
     body { font-family: 'Inter', sans-serif; background-color: #f7f7f7; margin: 0; padding: 0; color: #5F6368; overflow-x: hidden; }
@@ -34,8 +35,9 @@
         box-shadow: 0 0 10px rgba(0,0,0,0.05);
     }
     #schedule-list-container {
-        /* 修正：配合 Header 高度 */
-        padding-top: 175px; 
+        /* 修正：與 scroll-padding-top 一致，確保第一張卡片位置正確 */
+        padding-top: 190px; 
+        /* 底部留白，確保最後一張卡片能吸附到頂部 */
         padding-bottom: 85vh; 
         margin-top: 0; 
         position: relative; 
@@ -58,10 +60,11 @@
         height: 100px; 
         display: flex; 
         z-index: 0;
+        /* 磁吸設定 */
         scroll-snap-align: start;
         scroll-snap-stop: always;
-        /* 修正：配合 Header 高度 */
-        scroll-margin-top: 175px;
+        /* 修正：卡片上緣留白，避免被 Header 遮住 */
+        scroll-margin-top: 190px;
     }
 
     #schedule-list-container .trip-card:first-child {
@@ -114,7 +117,7 @@
     }
     #header-content-wrapper {
         padding-top: calc(15px + env(safe-area-inset-top)); 
-        padding-bottom: 4px; /* 縮小下方 padding */
+        padding-bottom: 4px; 
         padding-left: 12px; 
         padding-right: 12px;
     }
@@ -182,13 +185,8 @@
         .desktop-del-btn { display: block !important; }
     }
     @media (max-width: 500px) {
-        html { 
-            /* 配合較矮的 Header */
-            scroll-padding-top: 175px; 
-        }
-        #schedule-list-container { 
-            padding-top: 175px; 
-        }
+        html { scroll-padding-top: 190px; }
+        #schedule-list-container { padding-top: 190px; }
         .trip-card:first-child::before { top: -35px; }
         .trip-card .content-text-block { margin-top: 8px; }
         .desktop-del-btn { display: none !important; } 
@@ -242,7 +240,7 @@
                         </div>
                     </div>
 
-                    <div id="weather-info-container" class="flex flex-col items-end justify-start text-[#888888] cursor-pointer flex-shrink-0 gap-1 pt-1">
+                    <div id="weather-info-container" class="flex flex-col items-end justify-start text-[#888888] cursor-pointer flex-shrink-0 gap-2 pt-1">
                           <div id="header-weather-icon" class="text-4xl leading-none mb-0"></div>
                           <span id="header-weather-temp" class="text-sm font-bold"></span>
                           <span id="header-location-name" class="text-xs font-bold mt-0.5"></span>
