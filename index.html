@@ -13,10 +13,9 @@
     <style>
     /* --- 全域設定 --- */
     html {
-        /* 強制 Y 軸磁吸 */
         scroll-snap-type: y mandatory;
-        /* 關鍵：設定磁吸的「頂部」偏移量，這必須等於 Header 的視覺高度 */
-        scroll-padding-top: 180px;
+        /* 關鍵：設定磁吸偏移量，必須等於 Header 的高度 (約220px) */
+        scroll-padding-top: 220px;
         scroll-behavior: smooth;
     }
     body { font-family: 'Inter', sans-serif; background-color: #f7f7f7; margin: 0; padding: 0; color: #5F6368; overflow-x: hidden; }
@@ -35,10 +34,10 @@
         box-shadow: 0 0 10px rgba(0,0,0,0.05);
     }
     #schedule-list-container {
-        /* 上方留白給 Header (180px) */
-        padding-top: 180px; 
-        /* 底部留白，確保最後一張卡片能捲動到視窗頂部 */
-        padding-bottom: 80vh; 
+        /* 關鍵：內容往下推 220px，避免被 Header 遮擋 */
+        padding-top: 220px; 
+        /* 底部留白極大化，確保最後一張卡片能被捲動到頂部磁吸位置 */
+        padding-bottom: 85vh; 
         margin-top: 0; 
         position: relative; 
         z-index: 1; 
@@ -64,8 +63,8 @@
         scroll-snap-align: start;
         /* 強制停止 */
         scroll-snap-stop: always;
-        /* 關鍵：讓卡片在磁吸時，主動保留上方的空間給 Header */
-        scroll-margin-top: 180px;
+        /* 關鍵：卡片本身也要設定上方邊距，確保磁吸時不會貼頂 */
+        scroll-margin-top: 220px;
     }
 
     #schedule-list-container .trip-card:first-child {
@@ -115,11 +114,12 @@
         background-color: #ffffff;
         z-index: 50; 
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-        /* 移除 min-height，讓它自然撐開 */
+        /* 確保 Header 有足夠的高度 */
+        min-height: 220px;
     }
     #header-content-wrapper {
         padding-top: calc(15px + env(safe-area-inset-top)); 
-        padding-bottom: 4px; 
+        padding-bottom: 8px; 
         padding-left: 12px; 
         padding-right: 12px;
     }
@@ -187,8 +187,8 @@
         .desktop-del-btn { display: block !important; }
     }
     @media (max-width: 500px) {
-        html { scroll-padding-top: 180px; }
-        #schedule-list-container { padding-top: 180px; }
+        html { scroll-padding-top: 220px; }
+        #schedule-list-container { padding-top: 220px; }
         .trip-card:first-child::before { top: -35px; }
         .trip-card .content-text-block { margin-top: 8px; }
         .desktop-del-btn { display: none !important; } 
@@ -222,7 +222,7 @@
                 <div class="flex justify-between items-start">
                     
                     <div class="flex flex-col flex-grow min-w-0 mr-2">
-                        <div class="flex items-center w-full mb-0.5">
+                        <div class="flex items-center w-full mb-1">
                               <button id="settings-btn" class="p-1 mr-0.5 text-[#888888] hover:text-[#5F6368]" title="計畫設定">📅</button>
                               <select id="trip-select" class="w-full text-lg truncate font-extrabold"></select>
                               <div class="flex items-center flex-shrink-0 ml-2">
@@ -230,7 +230,7 @@
                               </div>
                         </div>
                         
-                        <div class="flex items-center space-x-1 text-[#888888] ml-1 mb-1.5">
+                        <div class="flex items-center space-x-1 text-[#888888] ml-1 mb-2">
                               <span class="font-bold text-xs">👫</span>
                               <span id="header-members-list" class="truncate text-xs font-bold text-gray-400">...</span>
                         </div>
@@ -683,10 +683,12 @@
                 
                 // Options Container
                 const optsDiv = document.createElement('div');
+                // 修改處：將 flex-col 改為 flex-row，並加上 items-center，讓「墊付」與「現金」併排
                 optsDiv.className = 'flex flex-row items-center gap-1'; 
                 
                 // Payer Checkbox
                 const label = document.createElement('label');
+                // 修改處：字體調整為 text-xs
                 label.className = 'flex items-center text-xs text-[#7E92A1] cursor-pointer leading-none select-none whitespace-nowrap';
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
