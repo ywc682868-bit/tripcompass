@@ -13,8 +13,12 @@
     <style>
     /* --- 全域設定 --- */
     html {
+        /* 強制 Y 軸磁吸 */
         scroll-snap-type: y mandatory;
-        scroll-padding-top: 170px; 
+        /* 關鍵：設定上方保留空間，避免磁吸時被 Header (約220px) 遮擋 */
+        scroll-padding-top: 220px;
+        /* 設定下方保留空間，避免磁吸時被 Footer 遮擋 */
+        scroll-padding-bottom: 100px;
         scroll-behavior: smooth;
     }
     body { font-family: 'Inter', sans-serif; background-color: #f7f7f7; margin: 0; padding: 0; color: #5F6368; overflow-x: hidden; }
@@ -33,8 +37,10 @@
         box-shadow: 0 0 10px rgba(0,0,0,0.05);
     }
     #schedule-list-container {
-        padding-top: 180px; 
-        padding-bottom: 60vh; 
+        /* 關鍵：內容往下推 220px，確保第一張卡片顯示在 Header 下方 */
+        padding-top: 220px; 
+        /* 底部留白極大化，確保最後一張卡片能被「推」到上方磁吸點 */
+        padding-bottom: 70vh; 
         margin-top: 0; 
         position: relative; 
         z-index: 1; 
@@ -56,11 +62,16 @@
         height: 100px; 
         display: flex; 
         z-index: 0;
+        /* 設定磁吸對齊點為卡片頂部 */
         scroll-snap-align: start;
-        scroll-margin-top: 10px;
+        /* 關鍵：強力阻擋，讓滑動一定會停在卡片上 */
+        scroll-snap-stop: always;
+        /* 關鍵：卡片本身的上方邊距，確保磁吸時上方有空間 */
+        scroll-margin-top: 220px;
     }
 
     #schedule-list-container .trip-card:first-child {
+        /* 第一張卡片額外加一點 margin，避免太貼 Header */
         margin-top: 10px; 
     }
 
@@ -106,7 +117,8 @@
         margin-right: auto;
         background-color: #ffffff;
         z-index: 50; 
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        /* 增加下方陰影讓層次分明 */
+        box-shadow: 0 4px 10px -1px rgba(0, 0, 0, 0.1);
     }
     #header-content-wrapper {
         padding-top: calc(15px + env(safe-area-inset-top)); 
@@ -178,8 +190,13 @@
         .desktop-del-btn { display: block !important; }
     }
     @media (max-width: 500px) {
-        html { scroll-padding-top: 250px; }
-        #schedule-list-container { padding-top: 250px; }
+        html { 
+            /* 手機版加強 scroll-padding */
+            scroll-padding-top: 220px; 
+        }
+        #schedule-list-container { 
+            padding-top: 220px; 
+        }
         .trip-card:first-child::before { top: -35px; }
         .trip-card .content-text-block { margin-top: 8px; }
         .desktop-del-btn { display: none !important; } 
@@ -1060,7 +1077,7 @@
                         let amount = Math.min(debt, credit);
                         
                         if (amount > 0) {
-                            // 移除 bg-red-50, 移除 rounded, 字體統一為 text-[10px], 並靠右對齊
+                            // 修改：使用 grid 60/40, 移除 bg-red-50, 移除 rounded, 字體統一為 text-[10px], 金額靠右
                             l.innerHTML += `
                                 <div class="grid grid-cols-[60%_40%] items-center py-2 px-1 text-[10px] border-b border-gray-50">
                                     <div class="flex items-center gap-1">
@@ -1178,12 +1195,15 @@
                                 </div>
                                 
                                 <div class="bg-gray-50 p-2 rounded border border-gray-100 mt-1">
-                                    <div class="flex items-center mb-1 gap-2">
+                                    <div class="flex justify-between items-center mb-1">
                                         <label class="block compact-label">成員</label>
-                                        <button type="button" id="add-member-btn" class="text-[#7E92A1] text-xs font-bold hover:text-[#5F6368] px-1 leading-none">＋</button>
                                     </div>
                                     <div id="form-members-container" class="space-y-1 mb-2"></div>
                                     
+                                    <div class="flex justify-center mb-1">
+                                        <button type="button" id="add-member-btn" class="text-[#7E92A1] text-xs font-bold hover:text-[#5F6368] px-1 leading-none">＋</button>
+                                    </div>
+
                                     <div class="grid grid-cols-[1fr_20px_1fr] gap-2 items-center mt-2 border-t border-gray-200 pt-2">
                                         <div class="flex items-center gap-1 justify-start">
                                             <label id="form-currency-label" class="text-[10px] font-bold text-[#7E92A1] w-8 text-right">USD</label>
