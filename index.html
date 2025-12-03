@@ -335,29 +335,57 @@
 
             // --- 新增：統一更新 Header 日期與 D-Day ---
             // --- 新增：統一更新 Header 日期與 D-Day ---
+            // --- 新增：統一更新 Header 日期與 D-Day ---
+            // --- 新增：統一更新 Header 日期、D-Day (出發倒數) 與 愛心天數 ---
             function updateHeaderDateWithDDay(d) {
                 if (!d) return;
+                // 1. 左邊日期：顯示「行程當天」
                 const dateStr = formatDateForHeader(d);
                 
-                // D-Day 計算：2025.08.01 為起始日
+                // 取得「今天」的日期 (歸零時分秒)
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                // --- 2. 出發倒數 (Trip Countdown) ---
+                let tripCountdownHtml = '';
+                const trip = tripData[currentTripId];
+                if (trip && trip.startDate) {
+                    const tripStart = new Date(trip.startDate);
+                    tripStart.setHours(0, 0, 0, 0);
+                    
+                    // 計算差距天數 (今天 - 出發日)
+                    const diffTimeTrip = today.getTime() - tripStart.getTime();
+                    const diffDaysTrip = Math.floor(diffTimeTrip / (1000 * 60 * 60 * 24));
+                    
+                    // 格式化顯示字串
+                    let dString = '';
+                    if (diffDaysTrip === 0) {
+                        dString = 'D-0'; // 出發當天 (Day 1)
+                    } else if (diffDaysTrip > 0) {
+                        // 修改這裡：第二天 (diff=1) 顯示 D+2，所以要 +1
+                        dString = `D+${diffDaysTrip + 1}`; 
+                    } else {
+                        dString = `D${diffDaysTrip}`; // 出發前 (例如 D-5)
+                    }
+                    
+                    // 使用藍灰色 (#7E92A1) + 飛機圖示
+                    tripCountdownHtml = `<span class="ml-2 text-[#7E92A1] text-xs font-bold tracking-wide">🛫 ${dString}</span>`;
+                }
+
+                // --- 3. 愛心天數 (Love Days) ---
                 const anniversary = new Date('2025-08-01T00:00:00');
-                const current = new Date(d);
-                current.setHours(0, 0, 0, 0); // 歸零時分秒，只比較日期
+                const diffTimeLove = today.getTime() - anniversary.getTime();
+                const diffDaysLove = Math.floor(diffTimeLove / (1000 * 60 * 60 * 24)) + 1;
                 
-                // 計算差距 (行程日期 - 紀念日)
-                const diffTime = current.getTime() - anniversary.getTime();
-                // 確保計算結果為正數 (如果是未來的行程)
-                const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
-                
-                let dDayHtml = '';
-                if (!isNaN(diffDays)) {
-                    // 修改顏色為莫蘭迪粉 (#D4A5A5)
-                    // 顯示格式：❤️ 145天
-                    dDayHtml = `<span class="ml-2 text-[#D4A5A5] text-xs font-extrabold tracking-wide">❤️ - ${diffDays}天</span>`;
+                let loveHtml = '';
+                if (!isNaN(diffDaysLove)) {
+                    // 使用莫蘭迪粉 (#D4A5A5) + 愛心圖示
+                    loveHtml = `<span class="ml-2 text-[#D4A5A5] text-xs font-extrabold tracking-wide">❤️ ${diffDaysLove}天</span>`;
                 }
                 
+                // 組合顯示：日期 + 出發倒數 + 愛心天數
                 const el = document.getElementById('header-day-date-display');
-                if(el) el.innerHTML = `${dateStr}${dDayHtml}`;
+                if(el) el.innerHTML = `${dateStr}${tripCountdownHtml}${loveHtml}`;
             }
 
             // --- 核心更新 ---
@@ -1407,6 +1435,7 @@
     </script>
 </body>
 </html>
+
 
 
 
