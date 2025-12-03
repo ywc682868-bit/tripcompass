@@ -562,6 +562,34 @@
                 const addBtn = document.createElement('button'); addBtn.className = 'px-3 py-1.5 text-xs font-bold rounded-lg bg-[#7E92A1] text-white ml-2 flex-shrink-0'; addBtn.textContent = '+';
                 addBtn.onclick = async () => { try { await updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}`), { numDays: (trip.numDays || 1) + 1 }, { merge: true }); } catch(e) { } };
                 container.appendChild(addBtn);
+                
+                // --- 修改開始: D-Day 計算與顯示 ---
+                const d = getDateFromDayId(trip, currentDayId); 
+                if (d) {
+                    // 設定交往紀念日 (注意月份從 0 開始，這裡直接用字串解析會更直觀)
+                    const anniversary = new Date('2025-08-01T00:00:00');
+                    // 將行程日期也設為午夜，避免時分秒造成的誤差
+                    const current = new Date(d);
+                    current.setHours(0, 0, 0, 0);
+                    
+                    // 計算天數差 (毫秒差異 / 一天的毫秒數)
+                    const diffTime = current.getTime() - anniversary.getTime();
+                    // Math.ceil 或 Math.floor 這裡用 floor + 1 (包含第一天)
+                    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+                    
+                    // 組合顯示文字，例如: 2025.10.10 Fri (D-71)
+                    let dDayText = '';
+                    if (!isNaN(diffDays)) {
+                        dDayText = ` (D-${diffDays})`;
+                    }
+                    
+                    document.getElementById('header-day-date-display').textContent = formatDateForHeader(d) + dDayText;
+                }
+                // --- 修改結束 ---
+            }
+                const addBtn = document.createElement('button'); addBtn.className = 'px-3 py-1.5 text-xs font-bold rounded-lg bg-[#7E92A1] text-white ml-2 flex-shrink-0'; addBtn.textContent = '+';
+                addBtn.onclick = async () => { try { await updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}`), { numDays: (trip.numDays || 1) + 1 }, { merge: true }); } catch(e) { } };
+                container.appendChild(addBtn);
                 const d = getDateFromDayId(trip, currentDayId); if (d) document.getElementById('header-day-date-display').textContent = formatDateForHeader(d);
             }
 
@@ -1389,6 +1417,7 @@
     </script>
 </body>
 </html>
+
 
 
 
