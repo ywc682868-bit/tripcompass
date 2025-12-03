@@ -1062,13 +1062,15 @@
                         let amount = Math.min(debt, credit);
                         
                         if (amount > 0) {
-                            // 修改重點：grid-cols-[35%_10%_35%_20%]
+                            // 修改重點：使用 flex justify-between 和 justify-start gap-1
                             l.innerHTML += `
-                                <div class="grid grid-cols-[35%_10%_35%_20%] items-center py-2 px-0 text-[10px] border-b border-gray-50">
-                                    <span class="font-bold text-[#CB8572] truncate text-left pl-1">${debtors[i].name}</span>
-                                    <span class="text-gray-400 text-center">給</span>
-                                    <span class="font-bold text-[#7E92A1] truncate text-center">${creditors[j].name}</span>
-                                    <span class="font-bold text-[#5F6368] text-right pr-0">$${amount.toFixed(0)}</span>
+                                <div class="flex items-center justify-between py-2 px-1 text-[10px] border-b border-gray-50">
+                                    <div class="flex items-center justify-start gap-1 flex-grow truncate">
+                                        <span class="font-bold text-[#CB8572] truncate">${debtors[i].name}</span>
+                                        <span class="text-gray-400 flex-shrink-0">給</span>
+                                        <span class="font-bold text-[#7E92A1] truncate">${creditors[j].name}</span>
+                                    </div>
+                                    <span class="font-bold text-[#5F6368] text-right flex-none ml-2">$${amount.toFixed(0)}</span>
                                 </div>
                             `;
                         }
