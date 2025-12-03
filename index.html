@@ -1053,6 +1053,7 @@
                 if (debtors.length === 0 && creditors.length === 0) {
                     l.innerHTML += `<div class="text-[10px] text-gray-400 py-1 text-center mt-2">目前沒有需要結算的款項</div>`;
                 } else {
+                    // 修改：移除分隔線，直接顯示
                     let i=0, j=0;
                     while(i < debtors.length && j < creditors.length){
                         let debt = Math.abs(debtors[i].amount);
@@ -1060,17 +1061,15 @@
                         let amount = Math.min(debt, credit);
                         
                         if (amount > 0) {
-                            // 修改重點：
-                            // 1. 保持 grid 40-20-40
-                            // 2. 中間欄 (給 + Ashley) 改為 justify-start + pl-2
-                            // 3. 這會將「給」與「Ashley」整體向左推，並利用 gap-1 維持兩者間距
+                            // 修改：使用 grid 35% 10% 35% 20%
+                            // 調整重點：
+                            // 1. 「給」 (第二欄 10%): text-left (原本置中)，並加上 -ml-3 (向左負邊距)，讓它緊貼左邊古天樂
+                            // 2. Ashley (第三欄 35%): 加上 pl-6 (左內距加大)，強迫文字向右推，拉大與「給」的距離
                             l.innerHTML += `
-                                <div class="grid grid-cols-[40%_20%_40%\] items-center py-2 px-0 text-[10px] border-b border-gray-50">
-                                    <span class="font-bold text-[#CB8572] truncate text-left gap-1 pl-2">${debtors[i].name}</span>
-                                    <div class="flex justify-start items-center gap-1 pl-2">
-                                         <span class="text-gray-400 text-[10px]-left -ml-3 flex-shrink-0">給</span>
-                                         <span class="font-bold text-[#7E92A1] truncate">${creditors[j].name}</span>
-                                    </div>
+                                <div class="grid grid-cols-[35%_10%_35%_20%] items-center py-2 px-0 text-[10px] border-b border-gray-50">
+                                    <span class="font-bold text-[#CB8572] truncate text-left pl-1">${debtors[i].name}</span>
+                                    <span class="text-gray-400 text-left -ml-3">給</span>
+                                    <span class="font-bold text-[#7E92A1] truncate pl-6">${creditors[j].name}</span>
                                     <span class="font-bold text-[#5F6368] text-right pr-0">$${amount.toFixed(0)}</span>
                                 </div>
                             `;
@@ -1132,17 +1131,17 @@
                                 <div class="grid grid-cols-3 gap-1.5 w-full"> 
                                     <div class="min-w-0">
                                         <label class="block compact-label mb-0.5 text-center">日期</label>
-                                        <input type="date" id="form-date" class="compact-input block w-[87%] mx-auto rounded border shadow-sm text-center p-0 py-0 text-[10px]" style="height: 24px !important; min-height: 24px !important;">
+                                        <input type="date" id="form-date" class="compact-input block w-[87%] mx-auto rounded border shadow-sm text-center p-0 py-0 text-[10px]" style="height: 28px !important; min-height: 28px !important;">
                                     </div> 
 
                                     <div class="min-w-0">
                                         <label class="block compact-label mb-0.5 text-center">時間</label>
-                                        <input type="time" id="form-time" class="compact-input block w-[87%] mx-auto rounded border shadow-sm text-center p-0 py-0 text-[10px]" style="height: 24px !important; min-height: 24px !important;">
+                                        <input type="time" id="form-time" class="compact-input block w-[87%] mx-auto rounded border shadow-sm text-center p-0 py-0 text-[10px]" style="height: 28px !important; min-height: 28px !important;">
                                     </div>
 
                                     <div class="min-w-0">
                                         <label class="block compact-label mb-0.5 text-center">類型</label>
-                                        <select id="form-type" class="compact-input block w-[87%] mx-auto rounded border shadow-sm py-0 pl-1 pr-0 text-[10px]" style="height: 28px !important; min-height: 24px !important;">
+                                        <select id="form-type" class="compact-input block w-[87%] mx-auto rounded border shadow-sm py-0 pl-1 pr-0 text-[10px]" style="height: 28px !important; min-height: 28px !important;">
                                             <option value="location">📍 景點</option>
                                             <option value="restaurant">🍽️ 餐廳</option>
                                             <option value="coffee">☕ 咖啡</option>
@@ -1389,8 +1388,3 @@
     </script>
 </body>
 </html>
-
-
-
-
-
