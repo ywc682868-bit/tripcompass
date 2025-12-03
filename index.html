@@ -33,7 +33,7 @@
         box-shadow: 0 0 10px rgba(0,0,0,0.05);
     }
     #schedule-list-container {
-        padding-top: 200px; /* 修改：稍微增加 padding 以適應新的 Header 高度 */
+        padding-top: 180px; /* 配合新的 Header 高度微調 */
         padding-bottom: 60vh; 
         margin-top: 0; 
         position: relative; 
@@ -116,7 +116,7 @@
     }
     #trip-select { background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%237E92A1' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: right center; background-repeat: no-repeat; background-size: 1.25em 1.25em; -webkit-appearance: none; appearance: none; background-color: transparent; font-weight: 800; color: #4A4B4D; border: none; padding-right: 1.5rem; cursor: pointer; }
     #trip-select:focus { outline: none; }
-    #header-day-date-container { padding-bottom: 0px; margin-top: 8px; margin-bottom: 1px; line-height: 1.2; }
+    #header-day-date-container { padding-bottom: 0px; margin-top: 2px; margin-bottom: 1px; line-height: 1.2; }
 
     /* --- Footer (底部工具列) --- */
     #combined-bottom-bar { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: 95%; max-width: 480px; background-color: white; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15); z-index: 50; display: flex; flex-direction: column; padding: 0.4rem 0.75rem 0.2rem 0.75rem; border-radius: 24px; border: 1px solid #f0f0f0; }
@@ -210,37 +210,36 @@
     <div id="app-container">
         <header>
             <div id="header-content-wrapper" class="px-3 pb-1" style="padding-top: calc(15px + env(safe-area-inset-top));">
-                <div class="flex justify-between items-start mb-2">
-                    <div class="flex flex-col justify-center flex-grow min-w-0 mr-2">
-                        <div class="flex flex-col items-start">
-                             <div class="flex items-center w-full">
-                                  <button id="settings-btn" class="p-1 mr-0.5 text-[#888888] hover:text-[#5F6368]" title="計畫設定">📅</button>
-                                  <select id="trip-select" class="w-full text-lg truncate font-extrabold"></select>
-                             </div>
-                             <div class="flex items-center space-x-1 text-[#888888] ml-1 mt-0.5">
-                                  <span class="font-bold text-xs">👫</span>
-                                  <span id="header-members-list" class="truncate text-xs font-bold text-gray-400">...</span>
-                             </div>
+                <div class="flex justify-between items-start">
+                    
+                    <div class="flex flex-col flex-grow min-w-0 mr-2">
+                        <div class="flex items-center w-full mb-1">
+                              <button id="settings-btn" class="p-1 mr-0.5 text-[#888888] hover:text-[#5F6368]" title="計畫設定">📅</button>
+                              <select id="trip-select" class="w-full text-lg truncate font-extrabold"></select>
+                              <div class="flex items-center flex-shrink-0 ml-2">
+                                <button id="new-trip-btn" class="px-2 py-1 bg-[#7E92A1] text-white text-xs font-semibold rounded hover:bg-[#64748B] transition-colors hidden">+ 新增</button>
+                              </div>
+                        </div>
+                        
+                        <div class="flex items-center space-x-1 text-[#888888] ml-1 mb-2">
+                              <span class="font-bold text-xs">👫</span>
+                              <span id="header-members-list" class="truncate text-xs font-bold text-gray-400">...</span>
+                        </div>
+
+                        <div id="day-tabs-container" class="flex overflow-x-auto space-x-2 pb-1 no-scrollbar mb-0.5"></div>
+                        
+                        <div id="header-day-date-container">
+                            <h2 id="header-day-date-display" class="text-sm font-bold text-[#4A4B4D]"></h2>
                         </div>
                     </div>
-                    <div class="flex items-center flex-shrink-0">
-                        <button id="new-trip-btn" class="px-2 py-1 bg-[#7E92A1] text-white text-xs font-semibold rounded hover:bg-[#64748B] transition-colors hidden">+ 新增</button>
-                    </div>
-                </div>
-                
-                <div class="flex justify-between items-end">
-                    <div id="day-tabs-container" class="flex overflow-x-auto space-x-2 pb-1 no-scrollbar flex-grow mr-4"></div>
-                    
-                    <div id="weather-info-container" class="flex flex-col items-end justify-center text-[#888888] cursor-pointer flex-shrink-0 gap-0.5 pb-1">
-                          <div id="header-weather-icon" class="text-3xl leading-none mb-0"></div>
-                          <span id="header-weather-temp" class="text-base font-bold"></span>
+
+                    <div id="weather-info-container" class="flex flex-col items-end justify-start text-[#888888] cursor-pointer flex-shrink-0 gap-2 pt-1">
+                          <div id="header-weather-icon" class="text-4xl leading-none mb-0"></div>
+                          <span id="header-weather-temp" class="text-lg font-bold"></span>
                           <span id="header-location-name" class="text-xs font-bold mt-0.5"></span>
                           <span id="header-clothing-advice" class="text-xs font-bold text-[#CB8572] mt-0.5 whitespace-nowrap"></span>
                     </div>
-                </div>
 
-                <div id="header-day-date-container">
-                    <h2 id="header-day-date-display" class="text-sm font-bold text-[#4A4B4D]"></h2>
                 </div>
             </div>
         </header>
@@ -675,12 +674,10 @@
                 
                 // Options Container
                 const optsDiv = document.createElement('div');
-                // 修改處：將 flex-col 改為 flex-row，並加上 items-center，讓「墊付」與「現金」併排
                 optsDiv.className = 'flex flex-row items-center gap-1'; 
                 
                 // Payer Checkbox
                 const label = document.createElement('label');
-                // 修改處：字體調整為 text-xs
                 label.className = 'flex items-center text-xs text-[#7E92A1] cursor-pointer leading-none select-none whitespace-nowrap';
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
