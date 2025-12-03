@@ -13,10 +13,9 @@
     <style>
     /* --- 全域設定 --- */
     html {
-        /* 強制 Y 軸磁吸 */
         scroll-snap-type: y mandatory;
-        /* 關鍵：定義磁吸的「頂部」偏移量，這必須等於 Header 的高度 */
-        scroll-padding-top: 230px;
+        /* 修正：Header 變矮後，磁吸偏移量設為 175px */
+        scroll-padding-top: 175px;
         scroll-behavior: smooth;
     }
     body { font-family: 'Inter', sans-serif; background-color: #f7f7f7; margin: 0; padding: 0; color: #5F6368; overflow-x: hidden; }
@@ -35,9 +34,8 @@
         box-shadow: 0 0 10px rgba(0,0,0,0.05);
     }
     #schedule-list-container {
-        /* 上方留白給 Header */
-        padding-top: 230px; 
-        /* 關鍵修正：底部留白加大到 85vh，讓最後一張卡片有足夠空間捲動到視窗頂部(Header下方) */
+        /* 修正：配合 Header 高度 */
+        padding-top: 175px; 
         padding-bottom: 85vh; 
         margin-top: 0; 
         position: relative; 
@@ -60,12 +58,10 @@
         height: 100px; 
         display: flex; 
         z-index: 0;
-        /* 設定磁吸對齊點 */
         scroll-snap-align: start;
-        /* 強制停止 */
         scroll-snap-stop: always;
-        /* 確保磁吸時不被 Header 遮擋 */
-        scroll-margin-top: 230px;
+        /* 修正：配合 Header 高度 */
+        scroll-margin-top: 175px;
     }
 
     #schedule-list-container .trip-card:first-child {
@@ -115,11 +111,10 @@
         background-color: #ffffff;
         z-index: 50; 
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-        min-height: 220px;
     }
     #header-content-wrapper {
         padding-top: calc(15px + env(safe-area-inset-top)); 
-        padding-bottom: 8px; 
+        padding-bottom: 4px; /* 縮小下方 padding */
         padding-left: 12px; 
         padding-right: 12px;
     }
@@ -187,8 +182,13 @@
         .desktop-del-btn { display: block !important; }
     }
     @media (max-width: 500px) {
-        html { scroll-padding-top: 230px; }
-        #schedule-list-container { padding-top: 230px; }
+        html { 
+            /* 配合較矮的 Header */
+            scroll-padding-top: 175px; 
+        }
+        #schedule-list-container { 
+            padding-top: 175px; 
+        }
         .trip-card:first-child::before { top: -35px; }
         .trip-card .content-text-block { margin-top: 8px; }
         .desktop-del-btn { display: none !important; } 
@@ -222,7 +222,7 @@
                 <div class="flex justify-between items-start">
                     
                     <div class="flex flex-col flex-grow min-w-0 mr-2">
-                        <div class="flex items-center w-full mb-1">
+                        <div class="flex items-center w-full mb-0.5">
                               <button id="settings-btn" class="p-1 mr-0.5 text-[#888888] hover:text-[#5F6368]" title="計畫設定">📅</button>
                               <select id="trip-select" class="w-full text-lg truncate font-extrabold"></select>
                               <div class="flex items-center flex-shrink-0 ml-2">
@@ -230,7 +230,7 @@
                               </div>
                         </div>
                         
-                        <div class="flex items-center space-x-1 text-[#888888] ml-1 mb-2">
+                        <div class="flex items-center space-x-1 text-[#888888] ml-1 mb-1.5">
                               <span class="font-bold text-xs">👫</span>
                               <span id="header-members-list" class="truncate text-xs font-bold text-gray-400">...</span>
                         </div>
@@ -242,7 +242,7 @@
                         </div>
                     </div>
 
-                    <div id="weather-info-container" class="flex flex-col items-end justify-start text-[#888888] cursor-pointer flex-shrink-0 gap-2 pt-1">
+                    <div id="weather-info-container" class="flex flex-col items-end justify-start text-[#888888] cursor-pointer flex-shrink-0 gap-1 pt-1">
                           <div id="header-weather-icon" class="text-4xl leading-none mb-0"></div>
                           <span id="header-weather-temp" class="text-sm font-bold"></span>
                           <span id="header-location-name" class="text-xs font-bold mt-0.5"></span>
@@ -1069,11 +1069,11 @@
                         let amount = Math.min(debt, credit);
                         
                         if (amount > 0) {
-                            // 修改：使用 grid 40-20-40, 與上方列表一致
+                            // 修改：使用 grid 40-20-40, 移除 pr-0, 確保對齊
                             l.innerHTML += `
                                 <div class="grid grid-cols-[40%_20%_40%] items-center py-2 px-1 text-[10px] border-b border-gray-50">
                                     <span class="font-bold text-[#CB8572] truncate text-left">${debtors[i].name}</span>
-                                    <div class="text-center">
+                                    <div class="text-center flex justify-center items-center">
                                          <span class="text-gray-400 text-[10px] mr-1">給</span>
                                          <span class="font-bold text-[#7E92A1] truncate">${creditors[j].name}</span>
                                     </div>
