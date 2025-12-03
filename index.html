@@ -1061,15 +1061,13 @@
                         let amount = Math.min(debt, credit);
                         
                         if (amount > 0) {
-                            // 修改：使用 grid 35% 10% 35% 20%
-                            // 調整重點：
-                            // 1. 「給」 (第二欄 10%): text-left (原本置中)，並加上 -ml-3 (向左負邊距)，讓它緊貼左邊古天樂
-                            // 2. Ashley (第三欄 35%): 加上 pl-6 (左內距加大)，強迫文字向右推，拉大與「給」的距離
+                            // 修改：讓「給」置中，兩側名字分別向中間靠攏 (text-right | text-center | text-left)
+                            // 這樣無論名字長短，「給」永遠會在兩者的正中間，保持等距離
                             l.innerHTML += `
                                 <div class="grid grid-cols-[35%_10%_35%_20%] items-center py-2 px-0 text-[10px] border-b border-gray-50">
-                                    <span class="font-bold text-[#CB8572] truncate text-left pl-1">${debtors[i].name}</span>
-                                    <span class="text-gray-400 text-left -ml-3">給</span>
-                                    <span class="font-bold text-[#7E92A1] truncate pl-6">${creditors[j].name}</span>
+                                    <span class="font-bold text-[#CB8572] truncate text-right pr-1">${debtors[i].name}</span>
+                                    <span class="text-gray-400 text-center">給</span>
+                                    <span class="font-bold text-[#7E92A1] truncate text-left pl-1">${creditors[j].name}</span>
                                     <span class="font-bold text-[#5F6368] text-right pr-0">$${amount.toFixed(0)}</span>
                                 </div>
                             `;
@@ -1388,3 +1386,4 @@
     </script>
 </body>
 </html>
+
