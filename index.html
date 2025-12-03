@@ -14,7 +14,7 @@
     /* --- 全域設定 --- */
     html {
         scroll-snap-type: y mandatory;
-        scroll-padding-top: 170px;
+        scroll-padding-top: 180px;
         scroll-behavior: smooth;
     }
     body { font-family: 'Inter', sans-serif; background-color: #f7f7f7; margin: 0; padding: 0; color: #5F6368; overflow-x: hidden; }
@@ -33,7 +33,7 @@
         box-shadow: 0 0 10px rgba(0,0,0,0.05);
     }
     #schedule-list-container {
-        padding-top: 170px; 
+        padding-top: 180px; 
         padding-bottom: 85vh; 
         margin-top: 0; 
         position: relative; 
@@ -58,7 +58,7 @@
         z-index: 0;
         scroll-snap-align: start;
         scroll-snap-stop: always;
-        scroll-margin-top: 170px;
+        scroll-margin-top: 180px;
     }
 
     #schedule-list-container .trip-card:first-child {
@@ -179,8 +179,8 @@
         .desktop-del-btn { display: block !important; }
     }
     @media (max-width: 500px) {
-        html { scroll-padding-top: 170px; }
-        #schedule-list-container { padding-top: 170px; }
+        html { scroll-padding-top: 180px; }
+        #schedule-list-container { padding-top: 180px; }
         .trip-card:first-child::before { top: -35px; }
         .trip-card .content-text-block { margin-top: 8px; }
         .desktop-del-btn { display: none !important; } 
@@ -211,32 +211,36 @@
     <div id="app-container">
         <header>
             <div id="header-content-wrapper" class="px-3 pb-1" style="padding-top: calc(15px + env(safe-area-inset-top));">
-                <div class="flex justify-between items-center mb-1">
-                    <div class="flex flex-col justify-center flex-grow min-w-0 mr-2">
-                        <div class="flex flex-col items-start">
-                             <div class="flex items-center w-full">
-                                  <button id="settings-btn" class="p-1 mr-0.5 text-[#888888] hover:text-[#5F6368]" title="計畫設定">📅</button>
-                                  <select id="trip-select" class="w-full text-lg truncate font-extrabold"></select>
-                             </div>
-                             <div class="flex items-center space-x-1 text-[#888888] ml-1 mt-0.5">
-                                  <span class="font-bold text-xs">👫</span>
-                                  <span id="header-members-list" class="truncate text-xs font-bold text-gray-400">...</span>
-                             </div>
+                <div class="flex justify-between items-start">
+                    
+                    <div class="flex flex-col flex-grow min-w-0 mr-2">
+                        <div class="flex items-center w-full mb-0.5">
+                              <button id="settings-btn" class="p-1 mr-0.5 text-[#888888] hover:text-[#5F6368]" title="計畫設定">📅</button>
+                              <select id="trip-select" class="w-full text-lg truncate font-extrabold"></select>
+                              <div class="flex items-center flex-shrink-0 ml-2">
+                                <button id="new-trip-btn" class="px-2 py-1 bg-[#7E92A1] text-white text-xs font-semibold rounded hover:bg-[#64748B] transition-colors hidden">+ 新增</button>
+                              </div>
+                        </div>
+                        
+                        <div class="flex items-center space-x-1 text-[#888888] ml-1 mb-1.5">
+                              <span class="font-bold text-xs">👫</span>
+                              <span id="header-members-list" class="truncate text-xs font-bold text-gray-400">...</span>
+                        </div>
+
+                        <div id="day-tabs-container" class="flex overflow-x-auto space-x-2 pb-1 no-scrollbar mb-0.5"></div>
+                        
+                        <div id="header-day-date-container">
+                            <h2 id="header-day-date-display" class="text-sm font-bold text-[#4A4B4D]"></h2>
                         </div>
                     </div>
-                    <div id="weather-info-container" class="flex flex-col items-end justify-center mr-2 text-[#888888] cursor-pointer gap-1">
-                          <div id="header-weather-icon" class="text-3xl leading-none mb-0"></div>
+
+                    <div id="weather-info-container" class="flex flex-col items-end justify-start text-[#888888] cursor-pointer flex-shrink-0 gap-2 pt-1">
+                          <div id="header-weather-icon" class="text-4xl leading-none mb-0"></div>
                           <span id="header-weather-temp" class="text-sm font-bold"></span>
                           <span id="header-location-name" class="text-xs font-bold mt-0.5"></span>
                           <span id="header-clothing-advice" class="text-xs font-bold text-[#CB8572] mt-0.5 whitespace-nowrap"></span>
                     </div>
-                    <div class="flex items-center flex-shrink-0">
-                        <button id="new-trip-btn" class="px-2 py-1 bg-[#7E92A1] text-white text-xs font-semibold rounded hover:bg-[#64748B] transition-colors hidden">+ 新增</button>
-                    </div>
-                </div>
-                <div id="day-tabs-container" class="flex overflow-x-auto space-x-2 pb-1 no-scrollbar"></div>
-                <div id="header-day-date-container">
-                    <h2 id="header-day-date-display" class="text-sm font-bold text-[#4A4B4D]"></h2>
+
                 </div>
             </div>
         </header>
@@ -671,12 +675,10 @@
                 
                 // Options Container
                 const optsDiv = document.createElement('div');
-                // 修改處：將 flex-col 改為 flex-row，並加上 items-center，讓「墊付」與「現金」併排
                 optsDiv.className = 'flex flex-row items-center gap-1'; 
                 
                 // Payer Checkbox
                 const label = document.createElement('label');
-                // 修改處：字體調整為 text-xs
                 label.className = 'flex items-center text-xs text-[#7E92A1] cursor-pointer leading-none select-none whitespace-nowrap';
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
@@ -1051,7 +1053,6 @@
                 if (debtors.length === 0 && creditors.length === 0) {
                     l.innerHTML += `<div class="text-[10px] text-gray-400 py-1 text-center mt-2">目前沒有需要結算的款項</div>`;
                 } else {
-                    // 修改：改為四欄位佈局，精確控制位置
                     let i=0, j=0;
                     while(i < debtors.length && j < creditors.length){
                         let debt = Math.abs(debtors[i].amount);
@@ -1059,16 +1060,17 @@
                         let amount = Math.min(debt, credit);
                         
                         if (amount > 0) {
-                            // 使用 grid-cols-[35%_10%_35%_20%]
-                            // Col 1 (35%): 付款人 (靠左)
-                            // Col 2 (10%): "給" (置中)
-                            // Col 3 (35%): 收款人 (靠左)
-                            // Col 4 (20%): 金額 (靠右)
+                            // 修改重點：
+                            // 1. 保持 grid 40-20-40
+                            // 2. 中間欄 (給 + Ashley) 改為 justify-start + pl-2
+                            // 3. 這會將「給」與「Ashley」整體向左推，並利用 gap-1 維持兩者間距
                             l.innerHTML += `
-                                <div class="grid grid-cols-[35%_10%_35%_20%] items-center py-2 px-0 text-[10px] border-b border-gray-50">
+                                <div class="grid grid-cols-[40%_20%_40%] items-center py-2 px-0 text-[10px] border-b border-gray-50">
                                     <span class="font-bold text-[#CB8572] truncate text-left pl-1">${debtors[i].name}</span>
-                                    <span class="text-gray-400 text-center">給</span>
-                                    <span class="font-bold text-[#7E92A1] truncate text-left">${creditors[j].name}</span>
+                                    <div class="flex justify-start items-center gap-1 pl-2">
+                                         <span class="text-gray-400 text-[10px] flex-shrink-0">給</span>
+                                         <span class="font-bold text-[#7E92A1] truncate">${creditors[j].name}</span>
+                                    </div>
                                     <span class="font-bold text-[#5F6368] text-right pr-0">$${amount.toFixed(0)}</span>
                                 </div>
                             `;
@@ -1140,7 +1142,7 @@
 
                                     <div class="min-w-0">
                                         <label class="block compact-label mb-0.5 text-center">類型</label>
-                                        <select id="form-type" class="compact-input block w-[87%] mx-auto rounded border shadow-sm py-0 pl-1 pr-0 text-[10px]" style="height: 28px !important; min-height: 28px !important;">
+                                        <select id="form-type" class="compact-input block w-[87%] mx-auto rounded border shadow-sm py-0 pl-1 pr-0 text-[10px]" style="height: 28px !important; min-height: 24px !important;">
                                             <option value="location">📍 景點</option>
                                             <option value="restaurant">🍽️ 餐廳</option>
                                             <option value="coffee">☕ 咖啡</option>
