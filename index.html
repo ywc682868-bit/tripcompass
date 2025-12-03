@@ -15,8 +15,8 @@
     html {
         /* 強制 Y 軸磁吸 */
         scroll-snap-type: y mandatory;
-        /* 修正：設定磁吸偏移量為 190px，確保卡片停在 Header 正下方 */
-        scroll-padding-top: 190px;
+        /* 關鍵：設定磁吸的「頂部」偏移量，這必須等於 Header 的視覺高度 */
+        scroll-padding-top: 180px;
         scroll-behavior: smooth;
     }
     body { font-family: 'Inter', sans-serif; background-color: #f7f7f7; margin: 0; padding: 0; color: #5F6368; overflow-x: hidden; }
@@ -35,10 +35,10 @@
         box-shadow: 0 0 10px rgba(0,0,0,0.05);
     }
     #schedule-list-container {
-        /* 修正：與 scroll-padding-top 一致，確保第一張卡片位置正確 */
-        padding-top: 190px; 
-        /* 底部留白，確保最後一張卡片能吸附到頂部 */
-        padding-bottom: 85vh; 
+        /* 上方留白給 Header (180px) */
+        padding-top: 180px; 
+        /* 底部留白，確保最後一張卡片能捲動到視窗頂部 */
+        padding-bottom: 80vh; 
         margin-top: 0; 
         position: relative; 
         z-index: 1; 
@@ -60,11 +60,12 @@
         height: 100px; 
         display: flex; 
         z-index: 0;
-        /* 磁吸設定 */
+        /* 設定磁吸對齊點 */
         scroll-snap-align: start;
+        /* 強制停止 */
         scroll-snap-stop: always;
-        /* 修正：卡片上緣留白，避免被 Header 遮住 */
-        scroll-margin-top: 190px;
+        /* 關鍵：讓卡片在磁吸時，主動保留上方的空間給 Header */
+        scroll-margin-top: 180px;
     }
 
     #schedule-list-container .trip-card:first-child {
@@ -114,6 +115,7 @@
         background-color: #ffffff;
         z-index: 50; 
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        /* 移除 min-height，讓它自然撐開 */
     }
     #header-content-wrapper {
         padding-top: calc(15px + env(safe-area-inset-top)); 
@@ -185,8 +187,8 @@
         .desktop-del-btn { display: block !important; }
     }
     @media (max-width: 500px) {
-        html { scroll-padding-top: 190px; }
-        #schedule-list-container { padding-top: 190px; }
+        html { scroll-padding-top: 180px; }
+        #schedule-list-container { padding-top: 180px; }
         .trip-card:first-child::before { top: -35px; }
         .trip-card .content-text-block { margin-top: 8px; }
         .desktop-del-btn { display: none !important; } 
