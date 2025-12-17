@@ -820,6 +820,7 @@
                 } catch(e) {}
             }
             
+            // --- [修改] 載入清單 (支援新增、改名) ---
             function loadLists() {
                 try {
                     if(!currentTripId) return; 
@@ -834,164 +835,256 @@
                             const cont = document.getElementById('list-content'); 
                             if (!tabs || !cont) return;
                             tabs.innerHTML = ''; cont.innerHTML = ''; 
-                            const lists = []; snap.forEach(d => lists.push({id: d.id, ...d.data()})); 
+                            
+                            const lists = []; 
+                            snap.forEach(d => lists.push({id: d.id, ...d.data()})); 
                             if(typeof tripData !== 'undefined' && tripData[currentTripId]) tripData[currentTripId].lists = lists;
-                            if(!lists.length) { cont.innerHTML = '<div class="text-center text-xs p-4 text-gray-400">目前沒有清單</div>'; return; }
+                            
+                            // 若無清單，建立預設
+                            if(!lists.length) { 
+                                checkAndCreateDefaultLists(currentTripId);
+                                return; 
+                            }
                             
                             let activeListExists = currentListTabId && lists.some(l => l.id === currentListTabId);
-                            if (!activeListExists) currentListTabId = lists[0].id;
+                            if (!activeListExists && lists.length > 0) currentListTabId = lists[0].id;
                             
+                            // 1. 渲染現有清單 Tabs
                             lists.forEach(l => { 
                                 const t = document.createElement('div'); 
                                 const isActive = l.id === currentListTabId;
-                                t.className = `cursor-pointer px-3 py-1 text-sm flex-shrink-0 transition-colors ${isActive ? 'border-b-2 border-[#7E92A1] text-[#7E92A1] font-bold' : 'text-[#A9A9A9]'}`;
+                                t.className = `cursor-pointer px-3 py-2 text-sm flex-shrink-0 transition-colors whitespace-nowrap select-none ${isActive ? 'border-b-2 border-[#7E92A1] text-[#7E92A1] font-bold' : 'text-[#A9A9A9] hover:text-[#5F6368]'}`;
                                 t.textContent = l.name; 
-                                t.onclick = () => { currentListTabId = l.id; loadLists(); }; 
+                                
+                                // 點擊邏輯：切換 或 修改名稱
+                                t.onclick = async () => { 
+                                    if (isActive) {
+                                        // 如果已經選中，再次點擊則修改名稱
+                                        const newName = prompt("修改清單名稱：", l.name);
+                                        if (newName && newName.trim() !== "" && newName !== l.name) {
+                                            try {
+                                                await updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Lists/${l.id}`), { name: newName.trim() });
+                                            } catch(e) { alert("修改失敗"); }
+                                        }
+                                    } else {
+                                        currentListTabId = l.id; 
+                                        loadLists(); 
+                                    }
+                                }; 
                                 tabs.appendChild(t); 
                             });
+
+                            // 2. [新增功能] 渲染 "+" 按鈕
+                            const addTab = document.createElement('div');
+                            addTab.className = 'cursor-pointer px-3 py-2 text-sm flex-shrink-0 text-[#7E92A1] font-bold hover:bg-gray-50 flex items-center justify-center';
+                            addTab.innerHTML = '＋';
+                            addTab.title = "新增清單";
+                            addTab.onclick = async () => {
+                                const newName = prompt("請輸入新清單名稱 (例如: 伴手禮, 隨身行李):");
+                                if (newName && newName.trim()) {
+                                    const typeMap = confirm("這是「購物/代購」清單嗎？\n(確定=購物清單，取消=物品檢核表)") ? 'shopping' : 'check';
+                                    try {
+                                        const uid = auth.currentUser ? auth.currentUser.uid : null;
+                                        const newDoc = await addDoc(collection(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Lists`), {
+                                            name: newName.trim(),
+                                            type: typeMap,
+                                            order: Date.now(),
+                                            items: [],
+                                            uid: uid
+                                        });
+                                        currentListTabId = newDoc.id; // 自動切換到新清單
+                                    } catch(e) { alert("新增失敗"); }
+                                }
+                            };
+                            tabs.appendChild(addTab);
                             
+                            // 3. 渲染內容
                             const targetList = lists.find(l => l.id === currentListTabId);
                             if (targetList) renderListItems(targetList, cont);
+
                         } catch (innerErr) { console.error(innerErr); }
                     }, (error) => {
                         const cont = document.getElementById('list-content'); 
-                        if(cont) cont.innerHTML = '<div class="text-center text-xs p-4 text-red-400">無法讀取清單 (請更新 Firebase 規則)</div>';
+                        if(cont) cont.innerHTML = '<div class="text-center text-xs p-4 text-red-400">無法讀取清單</div>';
                     });
                 } catch (err) { console.error(err); }
             }
 
+            // --- [修改] 渲染清單項目 (支援星星排序、刪除清單) ---
             function renderListItems(listData, container) {
                 if (!listData) return;
                 
                 const modalBody = container.parentElement; 
                 if (modalBody) modalBody.style.position = 'relative';
 
+                // 移除舊 FAB
                 const oldFab = modalBody.querySelector('.list-fab-dynamic');
                 if(oldFab) oldFab.remove();
 
+                // 建立 FAB
                 const fab = document.createElement('div');
                 fab.className = 'list-fab-dynamic'; 
                 fab.textContent = '＋';
-                fab.style.cssText = `
-                    position: absolute;
-                    bottom: 20px;
-                    right: 20px;
-                    width: 40px;
-                    height: 40px;
-                    background-color: #7E92A1;
-                    border-radius: 50%;
-                    color: white;
-                    font-size: 24px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    box-shadow: 0 4px 10px rgba(0,0,0,0.25);
-                    cursor: pointer;
-                    z-index: 50;
-                    user-select: none;
-                    transition: transform 0.1s;
-                `;
+                fab.style.cssText = `position: absolute; bottom: 20px; right: 20px; width: 44px; height: 44px; background-color: #7E92A1; border-radius: 50%; color: white; font-size: 24px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.25); cursor: pointer; z-index: 50; user-select: none; transition: transform 0.1s;`;
                 fab.onmousedown = () => fab.style.transform = "scale(0.95)";
                 fab.onmouseup = () => fab.style.transform = "scale(1)";
-
                 fab.onclick = async () => { 
                     try {
-                        const newItem = listData.type === 'check' ? { id: Date.now(), text: '', checkedLeft: false, checkedRight: false } : { id: Date.now(), text: '', desc: '', location: '', imageUrl: '' }; 
+                        const newItem = listData.type === 'check' ? 
+                            { id: Date.now(), text: '', checkedLeft: false, checkedRight: false, isImportant: false } : 
+                            { id: Date.now(), text: '', desc: '', location: '', imageUrl: '', isImportant: false }; 
                         const currentItems = Array.isArray(listData.items) ? listData.items : [];
                         await updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Lists/${listData.id}`), { items: [...currentItems, newItem] }); 
                     } catch (e) { }
                 };
-                
                 if (modalBody) modalBody.appendChild(fab);
                 
-                const inner = document.createElement('div'); 
-                if(listData.type === 'check') inner.className = 'grid grid-cols-2 gap-2 pb-12';
-                else inner.className = 'space-y-1 pb-12';
+                // 清單管理列 (刪除清單)
+                const metaHeader = document.createElement('div');
+                metaHeader.className = 'flex justify-between items-center px-2 py-1.5 bg-gray-50 mb-2 border-b border-gray-100 sticky top-0 z-20';
+                metaHeader.innerHTML = `
+                    <span class="text-[10px] font-bold text-[#A9A9A9] uppercase tracking-wider">${listData.type === 'check' ? '☑ 檢核表' : '🛍️ 購物'}</span>
+                    <button class="text-[10px] text-[#CB8572] border border-[#CB8572] bg-white px-2 py-0.5 rounded hover:bg-red-50 transition-colors">刪除清單</button>
+                `;
+                metaHeader.querySelector('button').onclick = async () => {
+                    if(confirm(`確定刪除「${listData.name}」清單？`)) {
+                        try {
+                            await deleteDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Lists/${listData.id}`));
+                            currentListTabId = null; 
+                        } catch(e) {}
+                    }
+                };
+                container.appendChild(metaHeader);
 
-                const items = Array.isArray(listData.items) ? listData.items : [];
-                items.forEach((item, idx) => {
+                const inner = document.createElement('div'); 
+                if(listData.type === 'check') inner.className = 'grid grid-cols-1 gap-2 pb-16 px-1'; // 改為單欄比較好顯示星星
+                else inner.className = 'space-y-2 pb-16 px-1';
+
+                const rawItems = Array.isArray(listData.items) ? listData.items : [];
+                
+                // [關鍵] 排序邏輯：加上原始索引 (_origIdx) 以便更新時能找到正確位置
+                // 排序規則：isImportant (true) 在前 -> 其次依照建立時間(這裡暫用索引)
+                const itemsWithIdx = rawItems.map((item, index) => ({ ...item, _origIdx: index }));
+                
+                itemsWithIdx.sort((a, b) => {
+                    if (!!b.isImportant === !!a.isImportant) return 0; // 重要性相同，維持原序
+                    return b.isImportant ? 1 : -1; // 重要的排前面
+                });
+
+                if (rawItems.length === 0) {
+                    inner.innerHTML = '<div class="text-center text-gray-300 text-sm mt-8">點擊右下角 ＋ 新增項目</div>';
+                }
+
+                itemsWithIdx.forEach((item) => {
                     try {
                         if (!item) return;
-                        
+                        const realIdx = item._origIdx; // 使用原始索引來進行 Update/Delete
+
                         const wrap = document.createElement('div'); 
                         wrap.className = 'swipe-item-container'; 
-                        wrap.setAttribute('data-index', idx);
                         
                         const bg = document.createElement('div'); 
                         bg.className = 'swipe-item-delete-bg'; 
                         bg.innerHTML = `<button class="px-2 py-1 h-full text-xs font-bold bg-[#CB8572] text-white" data-action="delete">刪除</button>`;
                         
                         const c = document.createElement('div'); 
-                        c.className = 'swipe-item-content p-1.5 border border-gray-100 bg-white relative';
+                        c.className = 'swipe-item-content bg-white relative';
                         
+                        // 星星 HTML
+                        const starHtml = `
+                            <button class="star-btn flex-shrink-0 w-6 h-full flex items-center justify-center text-lg leading-none transition-transform active:scale-90 ${item.isImportant ? 'text-yellow-400' : 'text-gray-200'}" title="標記重要">
+                                ${item.isImportant ? '★' : '☆'}
+                            </button>
+                        `;
+
                         if(listData.type==='check') {
-                             c.style.cssText = "display:flex; align-items:center; gap:4px; padding:6px; border:1px solid #f0f0f0; border-radius:8px; background:white;";
+                             // --- 物品檢核表 ---
+                             c.style.cssText = "display:flex; align-items:center; gap:2px; padding:6px 2px; border:1px solid #f0f0f0; border-radius:8px; background:white; box-shadow: 0 1px 2px rgba(0,0,0,0.03);";
                              c.innerHTML = `
-                                <div style="display:flex; gap:4px; flex-shrink:0;">
-                                    <input type="checkbox" class="check-left" style="width:15px; height:15px; cursor:pointer;">
-                                    <input type="checkbox" class="check-right" style="width:15px; height:15px; cursor:pointer;">
+                                ${starHtml}
+                                <div style="display:flex; gap:6px; flex-shrink:0; margin-left:2px;">
+                                    <input type="checkbox" class="check-left" style="width:16px; height:16px; cursor:pointer; accent-color:#7E92A1;">
+                                    <input type="checkbox" class="check-right" style="width:16px; height:16px; cursor:pointer; accent-color:#9C8B74;">
                                 </div>
-                                <input type="text" class="check-text compact-input" style="flex-grow:1; min-width:0; border:none; padding:0 2px; text-align:left; font-size:12px; font-weight:bold; color:#5F6368;" placeholder="物品">
-                                <button class="del-btn text-[#CB8572] hover:text-red-600 font-bold px-1" style="font-size:16px; line-height:1;">×</button>
+                                <input type="text" class="check-text compact-input" style="flex-grow:1; min-width:0; border:none; border-bottom:1px dashed transparent; padding:0 4px; text-align:left; font-size:14px; font-weight:500; color:#5F6368; background:transparent;" placeholder="物品名稱">
+                                <button class="del-btn text-gray-300 hover:text-[#CB8572] font-bold px-2" style="font-size:18px;">×</button>
                              `;
+                             
+                             // 綁定事件
+                             const starBtn = c.querySelector('.star-btn');
                              const boxL = c.querySelector('.check-left');
                              const txt = c.querySelector('.check-text');
                              const boxR = c.querySelector('.check-right');
                              const delBtn = c.querySelector('.del-btn');
-                             if(boxL) { boxL.checked = !!item.checkedLeft; boxL.onchange = (e) => updateListItem(listData, idx, {checkedLeft: e.target.checked}); }
-                             if(txt) { txt.value = item.text || ''; txt.onchange = (e) => updateListItem(listData, idx, {text: e.target.value}); }
-                             if(boxR) { boxR.checked = !!item.checkedRight; boxR.onchange = (e) => updateListItem(listData, idx, {checkedRight: e.target.checked}); }
-                             if(delBtn) { delBtn.onclick = () => deleteListItem(listData, idx); } 
-                             inner.appendChild(c);
+                             
+                             if(starBtn) starBtn.onclick = () => updateListItem(listData, realIdx, {isImportant: !item.isImportant});
+                             if(boxL) { boxL.checked = !!item.checkedLeft; boxL.onchange = (e) => updateListItem(listData, realIdx, {checkedLeft: e.target.checked}); }
+                             if(txt) { 
+                                 txt.value = item.text || ''; 
+                                 txt.onchange = (e) => updateListItem(listData, realIdx, {text: e.target.value}); 
+                                 txt.onfocus = () => txt.style.borderBottom = "1px dashed #ccc";
+                                 txt.onblur = () => txt.style.borderBottom = "1px dashed transparent";
+                             }
+                             if(boxR) { boxR.checked = !!item.checkedRight; boxR.onchange = (e) => updateListItem(listData, realIdx, {checkedRight: e.target.checked}); }
+                             if(delBtn) { delBtn.onclick = () => deleteListItem(listData, realIdx); } 
 
                         } else {
+                             // --- 購物清單 ---
+                             c.className += ' p-1.5 border border-gray-100 rounded-lg shadow-sm';
                              c.style.display = 'grid'; 
-                             c.style.gridTemplateColumns = '50px 1fr 80px 20px'; 
+                             // 修改 Grid：增加星星欄位
+                             c.style.gridTemplateColumns = '24px 50px 1fr 80px 20px'; 
                              c.style.gap = '4px'; 
                              c.style.alignItems = 'center'; 
-                             
                              c.style.paddingRight = '0px';  
                              
+                             // 插入星星按鈕到容器最前面
+                             const starContainer = document.createElement('div');
+                             starContainer.innerHTML = starHtml;
+                             const starBtn = starContainer.querySelector('.star-btn');
+                             starBtn.onclick = () => updateListItem(listData, realIdx, {isImportant: !item.isImportant});
+
                              const imgContainer = document.createElement('div'); imgContainer.className = 'shopping-img-box';
-                             imgContainer.style.cssText = 'width:50px; height:50px; overflow:hidden; border-radius:4px; background:#f0f0f0; display:flex; justify-content:center; align-items:center; cursor:pointer; border:1px dashed #ccc;';
+                             imgContainer.style.cssText = 'width:50px; height:50px; overflow:hidden; border-radius:6px; background:#f9f9f9; display:flex; justify-content:center; align-items:center; cursor:pointer; border:1px solid #eee;';
                              if (item.imageUrl) { const img = document.createElement('img'); img.src = item.imageUrl; img.style.cssText = 'width:100%; height:100%; object-fit:cover;'; imgContainer.appendChild(img); } 
-                             else { const span = document.createElement('span'); span.textContent = '圖'; span.style.cssText = 'font-size:10px; color:#ccc;'; imgContainer.appendChild(span); }
+                             else { const span = document.createElement('span'); span.textContent = '📷'; span.style.cssText = 'font-size:14px; color:#ddd;'; imgContainer.appendChild(span); }
                              const fileInput = document.createElement('input'); fileInput.type = 'file'; fileInput.accept = 'image/*'; fileInput.style.display = 'none';
                              imgContainer.onclick = () => { if (item.imageUrl) { document.getElementById('zoom-img').src = item.imageUrl; document.getElementById('image-zoom-modal').style.display = 'flex'; } else { fileInput.click(); } };
-                             fileInput.onchange = (e) => { if(!e.target.files[0]) return; const fr = new FileReader(); fr.onload = (ev) => { const img = new Image(); img.onload = () => { const cvs = document.createElement('canvas'); const scale = 300 / img.width; cvs.width = 300; cvs.height = img.height * scale; cvs.getContext('2d').drawImage(img, 0, 0, cvs.width, cvs.height); updateListItem(listData, idx, {imageUrl: cvs.toDataURL("image/jpeg", 0.7)}); }; img.src = ev.target.result; }; fr.readAsDataURL(e.target.files[0]); };
+                             fileInput.onchange = (e) => { if(!e.target.files[0]) return; const fr = new FileReader(); fr.onload = (ev) => { const img = new Image(); img.onload = () => { const cvs = document.createElement('canvas'); const scale = 400 / img.width; cvs.width = 400; cvs.height = img.height * scale; cvs.getContext('2d').drawImage(img, 0, 0, cvs.width, cvs.height); updateListItem(listData, realIdx, {imageUrl: cvs.toDataURL("image/jpeg", 0.7)}); }; img.src = ev.target.result; }; fr.readAsDataURL(e.target.files[0]); };
 
                              const midCol = document.createElement('div'); 
-                             midCol.style.cssText = 'display:flex; flex-direction:column; justify-content:space-between; height:50px; padding-top:1px; padding-bottom:1px;';
+                             midCol.style.cssText = 'display:flex; flex-direction:column; justify-content:center; height:50px; gap:2px;';
                              const nameInput = document.createElement('input'); nameInput.type = 'text'; nameInput.className = 'compact-input'; nameInput.placeholder = '品名'; nameInput.value = item.text || ''; 
-                             nameInput.style.cssText = 'width:100%; font-weight:bold; border:none; padding:0; height:22px; font-size:13px;';
-                             nameInput.onchange = (e) => updateListItem(listData, idx, {text: e.target.value});
-                             const descInput = document.createElement('textarea'); descInput.className = 'compact-input'; descInput.placeholder = '說明'; descInput.value = item.desc || ''; 
-                             descInput.style.cssText = 'width:100%; border:none; padding:0; resize:none; font-size:11px; height:26px; line-height:1.3; overflow:hidden; color:#888;';
-                             descInput.onchange = (e) => updateListItem(listData, idx, {desc: e.target.value});
+                             nameInput.style.cssText = 'width:100%; font-weight:bold; border:none; padding:0; height:20px; font-size:13px; background:transparent;';
+                             nameInput.onchange = (e) => updateListItem(listData, realIdx, {text: e.target.value});
+                             const descInput = document.createElement('textarea'); descInput.className = 'compact-input'; descInput.placeholder = '規格/備註'; descInput.value = item.desc || ''; 
+                             descInput.style.cssText = 'width:100%; border:none; padding:0; resize:none; font-size:11px; height:24px; line-height:1.2; overflow:hidden; color:#888; background:transparent;';
+                             descInput.onchange = (e) => updateListItem(listData, realIdx, {desc: e.target.value});
                              midCol.appendChild(nameInput); midCol.appendChild(descInput);
                              
                              const locInput = document.createElement('textarea'); 
                              locInput.className = 'compact-input'; 
-                             locInput.placeholder = '地點'; 
+                             locInput.placeholder = '地點/價格'; 
                              locInput.value = item.location || ''; 
-                             locInput.style.cssText = 'width:100%; height:50px; border:1px solid #eee; background:#f9f9f9; padding:4px; resize:none; border-radius:4px; font-size:10px; line-height:1.2;';
-                             locInput.onchange = (e) => updateListItem(listData, idx, {location: e.target.value});
+                             locInput.style.cssText = 'width:100%; height:50px; border:1px solid #f0f0f0; background:#fcfcfc; padding:4px; resize:none; border-radius:4px; font-size:10px; line-height:1.3; color:#555;';
+                             locInput.onchange = (e) => updateListItem(listData, realIdx, {location: e.target.value});
                              
                              const delBtnDesktop = document.createElement('div');
                              delBtnDesktop.className = 'desktop-del-btn';
                              delBtnDesktop.innerHTML = '×';
-                             delBtnDesktop.style.cssText = "width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#CB8572; font-weight:bold; cursor:pointer; font-size:18px; padding-top: 12px; padding-left: 5px;";
-                             delBtnDesktop.onclick = (e) => { e.stopPropagation(); deleteListItem(listData, idx); };
+                             delBtnDesktop.style.cssText = "width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#e5e7eb; font-weight:bold; cursor:pointer; font-size:20px; hover:color:#CB8572;";
+                             delBtnDesktop.onclick = (e) => { e.stopPropagation(); deleteListItem(listData, realIdx); };
 
+                             c.appendChild(starBtn); // 加入星星
                              c.appendChild(imgContainer); 
                              c.appendChild(midCol); 
                              c.appendChild(locInput); 
                              c.appendChild(delBtnDesktop);
                              c.appendChild(fileInput);
-
-                             wrap.appendChild(bg); wrap.appendChild(c); inner.appendChild(wrap);
-                             try { if (typeof enableSwipeToDelete === 'function') enableSwipeToDelete(c, bg, 'list'); } catch(e){}
                         }
+                        
+                        wrap.appendChild(bg); wrap.appendChild(c); inner.appendChild(wrap);
+                        try { if (typeof enableSwipeToDelete === 'function') enableSwipeToDelete(c, bg, 'list'); } catch(e){}
                     } catch (err) { console.error(err); }
                 });
                 container.appendChild(inner);
@@ -1502,6 +1595,7 @@
     </script>
 </body>
 </html>
+
 
 
 
