@@ -836,64 +836,89 @@
                             tabs.innerHTML = ''; cont.innerHTML = ''; 
                             const lists = []; snap.forEach(d => lists.push({id: d.id, ...d.data()})); 
                             if(typeof tripData !== 'undefined' && tripData[currentTripId]) tripData[currentTripId].lists = lists;
-                            if(!lists.length) { cont.innerHTML = '<div class="text-center text-xs p-4 text-gray-400">目前沒有清單</div>'; return; }
+                            
+                            // 預設選取第一個
+                            if(!lists.length) { 
+                                // 如果完全沒有清單，自動建立預設的
+                                checkAndCreateDefaultLists(currentTripId);
+                                return; 
+                            }
                             
                             let activeListExists = currentListTabId && lists.some(l => l.id === currentListTabId);
-                            if (!activeListExists) currentListTabId = lists[0].id;
+                            if (!activeListExists && lists.length > 0) currentListTabId = lists[0].id;
                             
+                            // 1. 渲染所有現有清單的 Tabs
                             lists.forEach(l => { 
                                 const t = document.createElement('div'); 
                                 const isActive = l.id === currentListTabId;
-                                t.className = `cursor-pointer px-3 py-1 text-sm flex-shrink-0 transition-colors ${isActive ? 'border-b-2 border-[#7E92A1] text-[#7E92A1] font-bold' : 'text-[#A9A9A9]'}`;
+                                t.className = `cursor-pointer px-3 py-2 text-sm flex-shrink-0 transition-colors whitespace-nowrap ${isActive ? 'border-b-2 border-[#7E92A1] text-[#7E92A1] font-bold' : 'text-[#A9A9A9] hover:text-[#5F6368]'}`;
                                 t.textContent = l.name; 
                                 t.onclick = () => { currentListTabId = l.id; loadLists(); }; 
                                 tabs.appendChild(t); 
                             });
+
+                            // 2. [新增] 渲染 "+" 按鈕，讓使用者新增成員清單
+                            const addTab = document.createElement('div');
+                            addTab.className = 'cursor-pointer px-3 py-2 text-sm flex-shrink-0 text-[#7E92A1] font-bold hover:bg-gray-50 flex items-center';
+                            addTab.innerHTML = '＋ 新增';
+                            addTab.onclick = async () => {
+                                const newName = prompt("請輸入新清單名稱 (例如: 爸爸物品, 伴手禮):");
+                                if (newName && newName.trim()) {
+                                    // 詢問類型，預設為物品清單
+                                    const typeMap = confirm("這是「購物清單」嗎？\n(按「確定」建立購物清單，按「取消」建立一般物品清單)") ? 'shopping' : 'check';
+                                    try {
+                                        const uid = auth.currentUser ? auth.currentUser.uid : null;
+                                        await addDoc(collection(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Lists`), {
+                                            name: newName.trim(),
+                                            type: typeMap,
+                                            order: Date.now(), // 用時間排序確保在最後
+                                            items: [],
+                                            uid: uid
+                                        });
+                                        // 新增後會自動觸發 snapshot 更新
+                                    } catch(e) { alert("新增失敗"); }
+                                }
+                            };
+                            tabs.appendChild(addTab);
                             
+                            // 3. 渲染內容
                             const targetList = lists.find(l => l.id === currentListTabId);
                             if (targetList) renderListItems(targetList, cont);
+                            else cont.innerHTML = '<div class="text-center text-xs p-4 text-gray-400">請選擇或新增清單</div>';
+
                         } catch (innerErr) { console.error(innerErr); }
                     }, (error) => {
                         const cont = document.getElementById('list-content'); 
-                        if(cont) cont.innerHTML = '<div class="text-center text-xs p-4 text-red-400">無法讀取清單 (請更新 Firebase 規則)</div>';
+                        if(cont) cont.innerHTML = '<div class="text-center text-xs p-4 text-red-400">無法讀取清單</div>';
                     });
                 } catch (err) { console.error(err); }
             }
 
+            // --- [修改] 渲染清單項目 (新增：刪除整張清單的功能) ---
             function renderListItems(listData, container) {
                 if (!listData) return;
                 
                 const modalBody = container.parentElement; 
                 if (modalBody) modalBody.style.position = 'relative';
 
+                // 移除舊的 FAB
                 const oldFab = modalBody.querySelector('.list-fab-dynamic');
                 if(oldFab) oldFab.remove();
 
+                // 建立右下角新增按鈕 (FAB)
                 const fab = document.createElement('div');
                 fab.className = 'list-fab-dynamic'; 
                 fab.textContent = '＋';
                 fab.style.cssText = `
-                    position: absolute;
-                    bottom: 20px;
-                    right: 20px;
-                    width: 40px;
-                    height: 40px;
-                    background-color: #7E92A1;
-                    border-radius: 50%;
-                    color: white;
-                    font-size: 24px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    box-shadow: 0 4px 10px rgba(0,0,0,0.25);
-                    cursor: pointer;
-                    z-index: 50;
-                    user-select: none;
-                    transition: transform 0.1s;
+                    position: absolute; bottom: 20px; right: 20px;
+                    width: 44px; height: 44px; background-color: #7E92A1;
+                    border-radius: 50%; color: white; font-size: 24px;
+                    display: flex; align-items: center; justify-content: center;
+                    box-shadow: 0 4px 10px rgba(0,0,0,0.25); cursor: pointer;
+                    z-index: 50; user-select: none; transition: transform 0.1s;
                 `;
                 fab.onmousedown = () => fab.style.transform = "scale(0.95)";
                 fab.onmouseup = () => fab.style.transform = "scale(1)";
-
                 fab.onclick = async () => { 
                     try {
                         const newItem = listData.type === 'check' ? { id: Date.now(), text: '', checkedLeft: false, checkedRight: false } : { id: Date.now(), text: '', desc: '', location: '', imageUrl: '' }; 
@@ -901,18 +926,43 @@
                         await updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Lists/${listData.id}`), { items: [...currentItems, newItem] }); 
                     } catch (e) { }
                 };
-                
                 if (modalBody) modalBody.appendChild(fab);
                 
+                // [新增] 清單管理列 (顯示清單類型 + 刪除按鈕)
+                const metaHeader = document.createElement('div');
+                metaHeader.className = 'flex justify-between items-center px-2 py-1.5 bg-gray-50 mb-2 border-b border-gray-100 sticky top-0 z-20';
+                metaHeader.innerHTML = `
+                    <span class="text-[10px] font-bold text-[#A9A9A9] uppercase tracking-wider">${listData.type === 'check' ? '☑ 物品檢核' : '🛍️ 購物清單'}</span>
+                    <button class="text-[10px] text-[#CB8572] border border-[#CB8572] bg-white px-2 py-0.5 rounded hover:bg-red-50 transition-colors">刪除此清單</button>
+                `;
+                metaHeader.querySelector('button').onclick = async () => {
+                    if(confirm(`確定要刪除整個「${listData.name}」清單嗎？此動作無法復原。`)) {
+                        try {
+                            await deleteDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Lists/${listData.id}`));
+                            currentListTabId = null; // 重置選擇
+                        } catch(e) { alert("刪除失敗"); }
+                    }
+                };
+                container.appendChild(metaHeader);
+
+                // 內容容器
                 const inner = document.createElement('div'); 
-                if(listData.type === 'check') inner.className = 'grid grid-cols-2 gap-2 pb-12';
-                else inner.className = 'space-y-1 pb-12';
+                if(listData.type === 'check') inner.className = 'grid grid-cols-2 gap-2 pb-16 px-1';
+                else inner.className = 'space-y-2 pb-16 px-1';
 
                 const items = Array.isArray(listData.items) ? listData.items : [];
+                
+                // 顯示空狀態
+                if (items.length === 0) {
+                    const emptyState = document.createElement('div');
+                    emptyState.className = "col-span-2 text-center text-gray-300 text-sm mt-8";
+                    emptyState.innerHTML = "點擊右下角 ＋ 新增項目";
+                    inner.appendChild(emptyState);
+                }
+
                 items.forEach((item, idx) => {
                     try {
                         if (!item) return;
-                        
                         const wrap = document.createElement('div'); 
                         wrap.className = 'swipe-item-container'; 
                         wrap.setAttribute('data-index', idx);
@@ -922,64 +972,74 @@
                         bg.innerHTML = `<button class="px-2 py-1 h-full text-xs font-bold bg-[#CB8572] text-white" data-action="delete">刪除</button>`;
                         
                         const c = document.createElement('div'); 
-                        c.className = 'swipe-item-content p-1.5 border border-gray-100 bg-white relative';
+                        c.className = 'swipe-item-content bg-white relative';
                         
                         if(listData.type==='check') {
-                             c.style.cssText = "display:flex; align-items:center; gap:4px; padding:6px; border:1px solid #f0f0f0; border-radius:8px; background:white;";
+                             // --- 物品清單顯示 (維持原樣，稍微優化間距) ---
+                             c.style.cssText = "display:flex; align-items:center; gap:4px; padding:8px 6px; border:1px solid #f0f0f0; border-radius:8px; background:white; box-shadow: 0 1px 2px rgba(0,0,0,0.03);";
                              c.innerHTML = `
-                                <div style="display:flex; gap:4px; flex-shrink:0;">
-                                    <input type="checkbox" class="check-left" style="width:15px; height:15px; cursor:pointer;">
-                                    <input type="checkbox" class="check-right" style="width:15px; height:15px; cursor:pointer;">
+                                <div style="display:flex; gap:6px; flex-shrink:0;">
+                                    <input type="checkbox" class="check-left" style="width:16px; height:16px; cursor:pointer; accent-color:#7E92A1;" title="放入行李">
+                                    <input type="checkbox" class="check-right" style="width:16px; height:16px; cursor:pointer; accent-color:#9C8B74;" title="已檢查">
                                 </div>
-                                <input type="text" class="check-text compact-input" style="flex-grow:1; min-width:0; border:none; padding:0 2px; text-align:left; font-size:12px; font-weight:bold; color:#5F6368;" placeholder="物品">
-                                <button class="del-btn text-[#CB8572] hover:text-red-600 font-bold px-1" style="font-size:16px; line-height:1;">×</button>
+                                <input type="text" class="check-text compact-input" style="flex-grow:1; min-width:0; border:none; border-bottom:1px dashed transparent; padding:0 2px; text-align:left; font-size:13px; font-weight:500; color:#5F6368; background:transparent;" placeholder="物品名稱">
+                                <button class="del-btn text-gray-300 hover:text-[#CB8572] font-bold px-1" style="font-size:18px; line-height:1;">×</button>
                              `;
+                             
                              const boxL = c.querySelector('.check-left');
                              const txt = c.querySelector('.check-text');
                              const boxR = c.querySelector('.check-right');
                              const delBtn = c.querySelector('.del-btn');
+                             
                              if(boxL) { boxL.checked = !!item.checkedLeft; boxL.onchange = (e) => updateListItem(listData, idx, {checkedLeft: e.target.checked}); }
-                             if(txt) { txt.value = item.text || ''; txt.onchange = (e) => updateListItem(listData, idx, {text: e.target.value}); }
+                             if(txt) { 
+                                 txt.value = item.text || ''; 
+                                 txt.onchange = (e) => updateListItem(listData, idx, {text: e.target.value}); 
+                                 txt.onfocus = () => txt.style.borderBottom = "1px dashed #ccc";
+                                 txt.onblur = () => txt.style.borderBottom = "1px dashed transparent";
+                             }
                              if(boxR) { boxR.checked = !!item.checkedRight; boxR.onchange = (e) => updateListItem(listData, idx, {checkedRight: e.target.checked}); }
                              if(delBtn) { delBtn.onclick = () => deleteListItem(listData, idx); } 
                              inner.appendChild(c);
 
                         } else {
+                             // --- 購物清單顯示 ---
+                             c.className += ' p-1.5 border border-gray-100 rounded-lg shadow-sm';
                              c.style.display = 'grid'; 
                              c.style.gridTemplateColumns = '50px 1fr 80px 20px'; 
-                             c.style.gap = '4px'; 
+                             c.style.gap = '6px'; 
                              c.style.alignItems = 'center'; 
                              c.style.paddingRight = '0px';  
                              
                              const imgContainer = document.createElement('div'); imgContainer.className = 'shopping-img-box';
-                             imgContainer.style.cssText = 'width:50px; height:50px; overflow:hidden; border-radius:4px; background:#f0f0f0; display:flex; justify-content:center; align-items:center; cursor:pointer; border:1px dashed #ccc;';
+                             imgContainer.style.cssText = 'width:50px; height:50px; overflow:hidden; border-radius:6px; background:#f9f9f9; display:flex; justify-content:center; align-items:center; cursor:pointer; border:1px solid #eee;';
                              if (item.imageUrl) { const img = document.createElement('img'); img.src = item.imageUrl; img.style.cssText = 'width:100%; height:100%; object-fit:cover;'; imgContainer.appendChild(img); } 
-                             else { const span = document.createElement('span'); span.textContent = '圖'; span.style.cssText = 'font-size:10px; color:#ccc;'; imgContainer.appendChild(span); }
+                             else { const span = document.createElement('span'); span.textContent = '📷'; span.style.cssText = 'font-size:14px; color:#ddd;'; imgContainer.appendChild(span); }
                              const fileInput = document.createElement('input'); fileInput.type = 'file'; fileInput.accept = 'image/*'; fileInput.style.display = 'none';
                              imgContainer.onclick = () => { if (item.imageUrl) { document.getElementById('zoom-img').src = item.imageUrl; document.getElementById('image-zoom-modal').style.display = 'flex'; } else { fileInput.click(); } };
-                             fileInput.onchange = (e) => { if(!e.target.files[0]) return; const fr = new FileReader(); fr.onload = (ev) => { const img = new Image(); img.onload = () => { const cvs = document.createElement('canvas'); const scale = 300 / img.width; cvs.width = 300; cvs.height = img.height * scale; cvs.getContext('2d').drawImage(img, 0, 0, cvs.width, cvs.height); updateListItem(listData, idx, {imageUrl: cvs.toDataURL("image/jpeg", 0.7)}); }; img.src = ev.target.result; }; fr.readAsDataURL(e.target.files[0]); };
+                             fileInput.onchange = (e) => { if(!e.target.files[0]) return; const fr = new FileReader(); fr.onload = (ev) => { const img = new Image(); img.onload = () => { const cvs = document.createElement('canvas'); const scale = 400 / img.width; cvs.width = 400; cvs.height = img.height * scale; cvs.getContext('2d').drawImage(img, 0, 0, cvs.width, cvs.height); updateListItem(listData, idx, {imageUrl: cvs.toDataURL("image/jpeg", 0.7)}); }; img.src = ev.target.result; }; fr.readAsDataURL(e.target.files[0]); };
 
                              const midCol = document.createElement('div'); 
-                             midCol.style.cssText = 'display:flex; flex-direction:column; justify-content:space-between; height:50px; padding-top:1px; padding-bottom:1px;';
+                             midCol.style.cssText = 'display:flex; flex-direction:column; justify-content:center; height:50px; gap:2px;';
                              const nameInput = document.createElement('input'); nameInput.type = 'text'; nameInput.className = 'compact-input'; nameInput.placeholder = '品名'; nameInput.value = item.text || ''; 
-                             nameInput.style.cssText = 'width:100%; font-weight:bold; border:none; padding:0; height:22px; font-size:13px;';
+                             nameInput.style.cssText = 'width:100%; font-weight:bold; border:none; padding:0; height:20px; font-size:13px; background:transparent;';
                              nameInput.onchange = (e) => updateListItem(listData, idx, {text: e.target.value});
-                             const descInput = document.createElement('textarea'); descInput.className = 'compact-input'; descInput.placeholder = '說明'; descInput.value = item.desc || ''; 
-                             descInput.style.cssText = 'width:100%; border:none; padding:0; resize:none; font-size:11px; height:26px; line-height:1.3; overflow:hidden; color:#888;';
+                             const descInput = document.createElement('textarea'); descInput.className = 'compact-input'; descInput.placeholder = '規格/備註'; descInput.value = item.desc || ''; 
+                             descInput.style.cssText = 'width:100%; border:none; padding:0; resize:none; font-size:11px; height:24px; line-height:1.2; overflow:hidden; color:#888; background:transparent;';
                              descInput.onchange = (e) => updateListItem(listData, idx, {desc: e.target.value});
                              midCol.appendChild(nameInput); midCol.appendChild(descInput);
                              
                              const locInput = document.createElement('textarea'); 
                              locInput.className = 'compact-input'; 
-                             locInput.placeholder = '地點'; 
+                             locInput.placeholder = '地點/價格'; 
                              locInput.value = item.location || ''; 
-                             locInput.style.cssText = 'width:100%; height:50px; border:1px solid #eee; background:#f9f9f9; padding:4px; resize:none; border-radius:4px; font-size:10px; line-height:1.2;';
+                             locInput.style.cssText = 'width:100%; height:50px; border:1px solid #f0f0f0; background:#fcfcfc; padding:4px; resize:none; border-radius:4px; font-size:10px; line-height:1.3; color:#555;';
                              locInput.onchange = (e) => updateListItem(listData, idx, {location: e.target.value});
                              
                              const delBtnDesktop = document.createElement('div');
                              delBtnDesktop.className = 'desktop-del-btn';
                              delBtnDesktop.innerHTML = '×';
-                             delBtnDesktop.style.cssText = "width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#CB8572; font-weight:bold; cursor:pointer; font-size:18px; padding-top: 12px; padding-left: 5px;";
+                             delBtnDesktop.style.cssText = "width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#e5e7eb; font-weight:bold; cursor:pointer; font-size:20px; hover:color:#CB8572;";
                              delBtnDesktop.onclick = (e) => { e.stopPropagation(); deleteListItem(listData, idx); };
 
                              c.appendChild(imgContainer); 
@@ -1501,6 +1561,7 @@
     </script>
 </body>
 </html>
+
 
 
 
