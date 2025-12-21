@@ -717,6 +717,29 @@
                 amtInput.placeholder = '金額';
                 amtInput.className = 'compact-input w-16 rounded-md text-[10px] flex-shrink-0';
                 
+                // --- [新增功能] 監聽輸入事件：自動加總成員金額 ---
+                amtInput.oninput = () => {
+                    let total = 0;
+                    // 1. 抓取所有成員的金額欄位並加總
+                    document.querySelectorAll('input[name="schedule-member-amount"]').forEach(inp => {
+                        const val = parseFloat(inp.value);
+                        if (!isNaN(val)) total += val;
+                    });
+
+                    // 2. 更新下方「當地貨幣」總金額 (#form-amount)
+                    const totalInput = document.getElementById('form-amount');
+                    if (totalInput) {
+                        totalInput.value = total; // 填入加總後的數字
+                    }
+
+                    // 3. 自動連動計算台幣金額 (#form-amount-twd)
+                    const twdInput = document.getElementById('form-amount-twd');
+                    if (twdInput && typeof currentTripRate !== 'undefined') {
+                        twdInput.value = (total * currentTripRate).toFixed(0);
+                    }
+                };
+                // ---------------------------------------------
+
                 const optsDiv = document.createElement('div');
                 optsDiv.className = 'flex flex-row items-center gap-1'; 
                 
@@ -743,7 +766,23 @@
                 delBtn.type = 'button';
                 delBtn.className = 'text-[#CB8572] font-bold p-1 rm-btn ml-auto text-lg leading-none w-6 flex justify-center items-center';
                 delBtn.textContent = '×';
-                delBtn.onclick = () => d.remove();
+                
+                // 修改刪除按鈕邏輯：刪除成員後也要重新計算總金額
+                delBtn.onclick = () => { 
+                    d.remove();
+                    // 觸發重新計算
+                    let total = 0;
+                    document.querySelectorAll('input[name="schedule-member-amount"]').forEach(inp => {
+                        const val = parseFloat(inp.value);
+                        if (!isNaN(val)) total += val;
+                    });
+                    const totalInput = document.getElementById('form-amount');
+                    if (totalInput) totalInput.value = total;
+                    const twdInput = document.getElementById('form-amount-twd');
+                    if (twdInput && typeof currentTripRate !== 'undefined') {
+                        twdInput.value = (total * currentTripRate).toFixed(0);
+                    }
+                };
                 
                 d.appendChild(nameInput);
                 d.appendChild(amtInput);
@@ -1635,6 +1674,7 @@
     </script>
 </body>
 </html>
+
 
 
 
