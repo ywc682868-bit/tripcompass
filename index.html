@@ -325,7 +325,7 @@
                     let cityName = customName;
                     if (!cityName) {
                         try {
-                            const geoRes = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=zh`);
+                            const geoRes = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=zh-TW`);
                             const geoData = await geoRes.json();
                             cityName = geoData.city || geoData.locality || "目前位置";
                         } catch(e) { cityName = "目前位置"; }
@@ -652,3 +652,4 @@
     </script>
 </body>
 </html>
+
