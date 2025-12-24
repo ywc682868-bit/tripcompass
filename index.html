@@ -379,16 +379,38 @@
             }
 
             // --- 核心更新 ---
+            // --- 核心更新 (已新增自動定位功能) ---
             async function updateHeaderInfo() {
                 const trip = tripData[currentTripId]; if (!trip) return;
                 const config = COUNTRY_CONFIG[trip.country || 'TW'] || COUNTRY_CONFIG['TW'];
-                document.getElementById('header-location-name').textContent = config.localName;
+                
+                // 預設使用計畫國家的資訊
+                let lat = config.lat;
+                let lon = config.lon;
+                let displayLocationName = config.localName;
+
+                // 嘗試獲取瀏覽器定位
+                try {
+                    const position = await new Promise((resolve, reject) => {
+                        navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 });
+                    });
+                    lat = position.coords.latitude;
+                    lon = position.coords.longitude;
+                    displayLocationName = "📍 目前位置"; // 獲取定位後顯示標籤
+                } catch (e) {
+                    console.log("無法獲取定位，使用計畫預設城市座標");
+                    // 失敗時維持預設的 config.lat / lon / localName
+                }
+
+                document.getElementById('header-location-name').textContent = displayLocationName;
                 currentTripRate = await fetchExchangeRate(config.currency);
                 const barSelect = document.getElementById('bar-calc-currency'); 
                 if(barSelect) { barSelect.value = config.currency; calculateCurrency(); }
                 document.getElementById('header-members-list').innerHTML = (trip.members && trip.members.length) ? trip.members.map((m, i) => `<span class="${MEMBER_COLORS[i % MEMBER_COLORS.length]} mr-1">${m}</span>`).join('') : '尚未設定';
+                
                 try { 
-                    const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${config.lat}&longitude=${config.lon}&current=temperature_2m,weather_code&timezone=auto`); 
+                    // 使用 lat 與 lon (可能是定位後的座標，也可能是預設座標)
+                    const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&timezone=auto`); 
                     const data = await res.json(); 
                     const code = data.current.weather_code;
                     let icon = '☀️'; 
@@ -1674,3 +1696,4 @@
     </script>
 </body>
 </html>
+
