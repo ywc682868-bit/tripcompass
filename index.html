@@ -379,6 +379,7 @@
             }
 
 // --- 核心更新 (含自動定位與逆向地名查詢) ---
+            // --- 核心更新 (含自動定位與逆向地名查詢) ---
             async function updateHeaderInfo() {
                 const trip = tripData[currentTripId]; if (!trip) return;
                 const config = COUNTRY_CONFIG[trip.country || 'TW'] || COUNTRY_CONFIG['TW'];
@@ -407,27 +408,34 @@
                         });
                         const geoData = await geoRes.json();
                         
-                        // 優先順序：城市/島嶼 > 郊區/行政區 > 縣市
+                        // 優先順序：島嶼 > 區 > 鎮 > 市
                         const addr = geoData.address;
                         displayLocationName = addr.island || addr.city_district || addr.suburb || addr.town || addr.city || addr.county || "目前位置";
                     } catch (geoErr) {
-                        console.log("地名查詢失敗，僅顯示座標標籤");
                         displayLocationName = "📍 目前位置";
                     }
 
                 } catch (e) {
-                    console.log("無法獲取定位權限或逾時，切換回計畫預設地點");
+                    console.log("無法獲取定位，使用預設座標");
                 }
 
-                // 更新 UI 文字
-                document.getElementById('header-location-name').textContent = displayLocationName;
+                // 更新 UI 地名
+                const locNameEl = document.getElementById('header-location-name');
+                if(locNameEl) locNameEl.textContent = displayLocationName;
                 
-                // 以下維持原有邏輯：匯率與天氣資訊抓取
+                // 匯率更新
                 currentTripRate = await fetchExchangeRate(config.currency);
                 const barSelect = document.getElementById('bar-calc-currency'); 
                 if(barSelect) { barSelect.value = config.currency; calculateCurrency(); }
-                document.getElementById('header-members-list').innerHTML = (trip.members && trip.members.length) ? trip.members.map((m, i) => `<span class="${MEMBER_COLORS[i % MEMBER_COLORS.length]} mr-1">${m}</span>`).join('') : '尚未設定';
                 
+                // 成員更新
+                const memberEl = document.getElementById('header-members-list');
+                if(memberEl) {
+                    memberEl.innerHTML = (trip.members && trip.members.length) ? 
+                        trip.members.map((m, i) => `<span class="${MEMBER_COLORS[i % MEMBER_COLORS.length]} mr-1">${m}</span>`).join('') : '尚未設定';
+                }
+                
+                // 3. 抓取天氣資訊
                 try { 
                     const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&timezone=auto`); 
                     const data = await res.json(); 
@@ -1748,5 +1756,6 @@
     </script>
 </body>
 </html>
+
 
 
