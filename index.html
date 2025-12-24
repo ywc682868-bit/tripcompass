@@ -1228,54 +1228,158 @@
                 await updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Lists/${l.id}`), {items:ni});
             }
 
-            async function loadExpenseSummary() {
+async function loadExpenseSummary() {
                 if(!currentTripId) return; 
                 const snap = await getDocs(collection(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`));
-                let total=0, types={}, mems={}, balances={};
+                let total = 0, types = {}, mems = {}, balances = {};
                 
                 snap.forEach(d => {
                     const da = d.data(); 
-                    const tTWD = (da.Amount||0)*(da.Rate||1);
+                    const rate = da.Rate || 1;
+                    const tTWD = (da.Amount || 0) * rate;
                     
                     if(tTWD > 0) { 
                         total += tTWD; 
-                        types[da.Type] = (types[da.Type]||0) + tTWD; 
+                        types[da.Type] = (types[da.Type] || 0) + tTWD; 
                         
-                        // 計算代墊人
-                        const payers = (da.members||[]).filter(m => typeof m !== 'string' && m.isPayer);
-                        if(payers.length > 0) {
-                            const payShare = tTWD / payers.length;
-                            payers.forEach(p => { balances[p.name] = (balances[p.name] || 0) + payShare; });
-                        }
+                        let scheduleMembers = da.members || [];
+                        let totalFixedSettled = 0; // 沒勾先付（已結清）的總額
+                        let totalPaidByPayers = 0; // 有勾先付（代墊）的總額
+                        let payers = [];
+                        
+                        // 第一輪：分類成員狀態
+                        scheduleMembers.forEach(m => {
+                            const name = typeof m === 'string' ? m : m.name;
+                            const amt = (typeof m === 'string' || m.amount === null) ? null : m.amount;
+                            const amtTWD = amt !== null ? amt * rate : 0;
+                            const isPayer = typeof m === 'string' ? false : (m.isPayer || false);
 
-                        // 計算分帳人
-                        let spSum=0, unSpUsers=[]; 
-                        (da.members||[]).forEach(m => { 
-                            const amt = typeof m==='string'?null:m.amount; 
-                            const name = typeof m==='string'?m:m.name; 
-                            if(amt!==null && !isNaN(amt)) { 
-                                spSum += amt; 
-                                const share = amt * (da.Rate||1);
-                                addMemExp(mems, name, da.Type, share); 
-                                balances[name] = (balances[name] || 0) - share; 
-                            } else {
-                                unSpUsers.push(name);
+                            // 初始化個人統計
+                            if(!mems[name]) mems[name] = {total: 0, cats: {}};
+
+                            if (isPayer) {
+                                // 情況 A：有勾先付 -> 這是代墊款，要進 balance (應收)
+                                totalPaidByPayers += amtTWD;
+                                payers.push({name, amount: amtTWD});
+                            } else if (amt !== null) {
+                                // 情況 B：沒勾先付但有金額 -> 這是「已結清」，不進 balance 計算
+                                totalFixedSettled += amtTWD;
+                                // 依然計入個人的總花費統計，但 net balance 為 0 (不欠人也不被欠)
+                                mems[name].total += amtTWD;
+                                mems[name].cats[da.Type] = (mems[name].cats[da.Type] || 0) + amtTWD;
                             }
-                        }); 
+                        });
+
+                        // 第二輪：計算代墊人的應收帳款 (Credits)
+                        payers.forEach(p => {
+                            balances[p.name] = (balances[p.name] || 0) + p.amount;
+                            // 代墊人自己可能也有一份花費，會在第三輪處理
+                        });
+
+                        // 第三輪：分配剩餘需要分帳的金額 (Debts)
+                        // 需要分帳的總額 = 總額 - 已自行結清的金額
+                        const amountToSplit = tTWD - totalFixedSettled;
                         
-                        if(unSpUsers.length) { 
-                            const split = ((da.Amount||0)-spSum)*(da.Rate||1)/unSpUsers.length; 
-                            unSpUsers.forEach(u => {
-                                addMemExp(mems, u, da.Type, split);
-                                balances[u] = (balances[u] || 0) - split; 
-                            }); 
-                        } 
+                        if (amountToSplit > 0) {
+                            // 找出哪些人要參與分這筆「剩餘金額」
+                            // 規則：沒有輸入固定金額 (amt === null) 的人，或者是有勾先付的人
+                            let participants = scheduleMembers.filter(m => {
+                                const amt = (typeof m === 'string' || m.amount === null) ? null : m.amount;
+                                const isPayer = typeof m === 'string' ? false : (m.isPayer || false);
+                                return amt === null || isPayer; 
+                            });
+
+                            if (participants.length > 0) {
+                                const share = amountToSplit / participants.length;
+                                participants.forEach(m => {
+                                    const name = typeof m === 'string' ? m : m.name;
+                                    // 這些人欠代墊人錢 (應付)
+                                    balances[name] = (balances[name] || 0) - share;
+                                    
+                                    // 計入個人總花費統計
+                                    if(!mems[name]) mems[name] = {total: 0, cats: {}};
+                                    mems[name].total += share;
+                                    mems[name].cats[da.Type] = (mems[name].cats[da.Type] || 0) + share;
+                                });
+                            }
+                        }
                     }
                 });
 
-                function addMemExp(s, n, t, a) { if(!s[n]) s[n]={total:0, cats:{}}; s[n].total+=a; s[n].cats[t]=(s[n].cats[t]||0)+a; }
-                
+                // 更新 UI 顯示 (總金額與圖表)
                 document.getElementById('expense-total-amount').textContent = total.toFixed(0);
+                const ctx = document.getElementById('expense-chart').getContext('2d'); 
+                if(expenseChart) expenseChart.destroy();
+                const sortedKeys = Object.keys(types).sort((a,b) => types[b] - types[a]);
+                expenseChart = new Chart(ctx, { 
+                    type: 'doughnut', 
+                    data: {
+                        labels: sortedKeys.map(k => CATEGORY_NAMES[k]||k), 
+                        datasets: [{
+                            data: sortedKeys.map(k => types[k]), 
+                            backgroundColor: sortedKeys.map(k => (CATEGORY_COLORS[k]||CATEGORY_COLORS.default).hex), 
+                            borderWidth: 0
+                        }]
+                    }, 
+                    options: { responsive: true, maintainAspectRatio: false, cutout: '45%', plugins: { legend: { display: false } } }
+                });
+
+                // 渲染左右圖例 (略，維持原狀)
+                // ... (此處省略渲染圖例代碼，請保留你原始碼中的那段) ...
+
+                // 渲染成員個人花費清單
+                const l = document.getElementById('expense-member-list'); 
+                l.innerHTML = `<div class="grid grid-cols-[40%_20%_40%] border-b border-[#E0E0E0] pb-1 mb-2 font-bold text-[#5F6368] text-[10px]"><span>成員</span><span class="text-center">類別</span><span class="text-right">金額</span></div>`;
+                
+                Object.keys(mems).sort().forEach(n => { 
+                    let first = true; 
+                    Object.keys(mems[n].cats).forEach(c => { 
+                        l.innerHTML += `<div class="grid grid-cols-[40%_20%_40%] py-0.5 text-[10px] border-b border-[#F0F0F0] items-center">
+                            ${first ? `<span class="font-bold truncate">${n}</span>` : '<span></span>'}
+                            <span class="text-center ${(CATEGORY_COLORS[c]||CATEGORY_COLORS.default).text}">${CATEGORY_NAMES[c]}</span>
+                            <span class="text-right text-[#888888]">$${mems[n].cats[c].toFixed(0)}</span>
+                        </div>`; 
+                        first = false; 
+                    }); 
+                    l.innerHTML += `<div class="grid grid-cols-[40%_20%_40%] py-1 mb-2 bg-[#F9F9F9] text-[10px] font-bold"><span></span><span class="text-center">個人總計</span><span class="text-right">$${mems[n].total.toFixed(0)}</span></div>`; 
+                });
+
+                // 結帳建議演算法 (結算誰該給誰錢)
+                let debtors = [], creditors = [];
+                for (let name in balances) {
+                    if (balances[name] < -0.5) debtors.push({name, amount: balances[name]});
+                    else if (balances[name] > 0.5) creditors.push({name, amount: balances[name]});
+                }
+                debtors.sort((a,b) => a.amount - b.amount);
+                creditors.sort((a,b) => b.amount - a.amount);
+
+                if (debtors.length === 0 && creditors.length === 0) {
+                    l.innerHTML += `<div class="text-[10px] text-gray-400 py-1 text-center mt-2">目前沒有需要結算的款項</div>`;
+                } else {
+                    let i = 0, j = 0;
+                    while(i < debtors.length && j < creditors.length){
+                        let debt = Math.abs(debtors[i].amount);
+                        let credit = creditors[j].amount;
+                        let amount = Math.min(debt, credit);
+                        
+                        if (amount > 0.5) {
+                            l.innerHTML += `
+                                <div class="grid grid-cols-[15%_30%_35%_20%] items-center py-2 px-0 text-[10px] border-b border-gray-50">
+                                    <span class="font-bold text-[#CB8572] truncate text-left pl-1">${debtors[i].name}</span>
+                                    <span class="text-gray-400 text-center">給</span>
+                                    <span class="font-bold text-[#7E92A1] truncate text-left pl-1">${creditors[j].name}</span>
+                                    <span class="font-bold text-[#5F6368] text-right pr-0">$${amount.toFixed(0)}</span>
+                                </div>
+                            `;
+                        }
+                        debtors[i].amount += amount;
+                        creditors[j].amount -= amount;
+                        if(Math.abs(debtors[i].amount) < 0.5) i++;
+                        if(creditors[j].amount < 0.5) j++;
+                    }
+                }
+                document.getElementById('split-expense-modal').style.display = 'flex';
+            }
                 
                 // --- 繪製圓餅圖與兩側列表 ---
                 const ctx = document.getElementById('expense-chart').getContext('2d'); 
@@ -1721,4 +1825,5 @@
     </script>
 </body>
 </html>
+
 
