@@ -378,17 +378,64 @@
                 if(el) el.innerHTML = `${dateStr}${tripCountdownHtml}${loveHtml}`;
             }
 
-            // --- 核心更新 ---
+// --- 修改後：支援自動定位並顯示中文地名的天氣函式 ---
             async function updateHeaderInfo() {
                 const trip = tripData[currentTripId]; if (!trip) return;
                 const config = COUNTRY_CONFIG[trip.country || 'TW'] || COUNTRY_CONFIG['TW'];
-                document.getElementById('header-location-name').textContent = config.localName;
+                
+                let lat = config.lat;
+                let lon = config.lon;
+                let displayName = config.localName;
+
+                // 1. 嘗試獲取 GPS 定位
+                if (navigator.geolocation) {
+                    try {
+                        const position = await new Promise((resolve, reject) => {
+                            navigator.geolocation.getCurrentPosition(resolve, reject, {
+                                enableHighAccuracy: true,
+                                timeout: 5000
+                            });
+                        });
+                        lat = position.coords.latitude;
+                        lon = position.coords.longitude;
+
+                        // 2. 使用 OpenStreetMap API 將經緯度轉換為中文地名
+                        try {
+                            const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&accept-language=zh-TW`);
+                            const geoData = await geoRes.json();
+                            
+                            if (geoData && geoData.address) {
+                                // 優先順序：城市(city) > 鄉鎮(town) > 區域(suburb) > 縣市(state)
+                                displayName = geoData.address.city || 
+                                              geoData.address.town || 
+                                              geoData.address.village || 
+                                              geoData.address.suburb || 
+                                              geoData.address.municipality || 
+                                              geoData.address.state || 
+                                              config.localName;
+                            }
+                        } catch (geoErr) {
+                            console.log("地名轉換失敗", geoErr);
+                        }
+                    } catch (e) {
+                        console.log("無法獲取定位，使用預設地點");
+                    }
+                }
+
+                // 更新畫面顯示的地名
+                document.getElementById('header-location-name').textContent = displayName;
+                
+                // 更新匯率（維持原邏輯）
                 currentTripRate = await fetchExchangeRate(config.currency);
                 const barSelect = document.getElementById('bar-calc-currency'); 
                 if(barSelect) { barSelect.value = config.currency; calculateCurrency(); }
+                
+                // 更新成員（維持原邏輯）
                 document.getElementById('header-members-list').innerHTML = (trip.members && trip.members.length) ? trip.members.map((m, i) => `<span class="${MEMBER_COLORS[i % MEMBER_COLORS.length]} mr-1">${m}</span>`).join('') : '尚未設定';
+                
                 try { 
-                    const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${config.lat}&longitude=${config.lon}&current=temperature_2m,weather_code&timezone=auto`); 
+                    // 根據定位抓取天氣
+                    const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&timezone=auto`); 
                     const data = await res.json(); 
                     const code = data.current.weather_code;
                     let icon = '☀️'; 
@@ -416,7 +463,7 @@
                     const adviceEl = document.getElementById('header-clothing-advice');
                     if(adviceEl) adviceEl.textContent = clothing;
 
-                } catch (e) {}
+                } catch (e) { }
             }
 
             function changeTrip(tripId) { 
@@ -1674,3 +1721,4 @@
     </script>
 </body>
 </html>
+
