@@ -379,92 +379,92 @@
             }
 
 // --- 修改後：支援自動定位並顯示中文地名的天氣函式 ---
-            async function updateHeaderInfo() {
-                const trip = tripData[currentTripId]; if (!trip) return;
-                const config = COUNTRY_CONFIG[trip.country || 'TW'] || COUNTRY_CONFIG['TW'];
-                
-                let lat = config.lat;
-                let lon = config.lon;
-                let displayName = config.localName;
+            async function updateHeaderInfo() {
+                const trip = tripData[currentTripId]; if (!trip) return;
+                const config = COUNTRY_CONFIG[trip.country || 'TW'] || COUNTRY_CONFIG['TW'];
+                
+                let lat = config.lat;
+                let lon = config.lon;
+                let displayName = config.localName;
 
-                // 1. 嘗試獲取 GPS 定位
-                if (navigator.geolocation) {
-                    try {
-                        const position = await new Promise((resolve, reject) => {
-                            navigator.geolocation.getCurrentPosition(resolve, reject, {
-                                enableHighAccuracy: true,
-                                timeout: 5000
-                            });
-                        });
-                        lat = position.coords.latitude;
-                        lon = position.coords.longitude;
+                // 1. 嘗試獲取 GPS 定位
+                if (navigator.geolocation) {
+                    try {
+                        const position = await new Promise((resolve, reject) => {
+                            navigator.geolocation.getCurrentPosition(resolve, reject, {
+                                enableHighAccuracy: true,
+                                timeout: 5000
+                            });
+                        });
+                        lat = position.coords.latitude;
+                        lon = position.coords.longitude;
 
-                        // 2. 使用 OpenStreetMap API 將經緯度轉換為中文地名
-                        try {
-                            const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&accept-language=zh-TW`);
-                            const geoData = await geoRes.json();
-                            
-                            if (geoData && geoData.address) {
-                                // 優先順序：城市(city) > 鄉鎮(town) > 區域(suburb) > 縣市(state)
-                                displayName = geoData.address.city || 
-                                              geoData.address.town || 
-                                              geoData.address.village || 
-                                              geoData.address.suburb || 
-                                              geoData.address.municipality || 
-                                              geoData.address.state || 
-                                              config.localName;
-                            }
-                        } catch (geoErr) {
-                            console.log("地名轉換失敗", geoErr);
-                        }
-                    } catch (e) {
-                        console.log("無法獲取定位，使用預設地點");
-                    }
-                }
+                        // 2. 使用 OpenStreetMap API 將經緯度轉換為中文地名
+                        try {
+                            const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&accept-language=zh-TW`);
+                            const geoData = await geoRes.json();
+                            
+                            if (geoData && geoData.address) {
+                                // 優先順序：城市(city) > 鄉鎮(town) > 區域(suburb) > 縣市(state)
+                                displayName = geoData.address.city || 
+                                              geoData.address.town || 
+                                              geoData.address.village || 
+                                              geoData.address.suburb || 
+                                              geoData.address.municipality || 
+                                              geoData.address.state || 
+                                              config.localName;
+                            }
+                        } catch (geoErr) {
+                            console.log("地名轉換失敗", geoErr);
+                        }
+                    } catch (e) {
+                        console.log("無法獲取定位，使用預設地點");
+                    }
+                }
 
-                // 更新畫面顯示的地名
-                document.getElementById('header-location-name').textContent = displayName;
-                
-                // 更新匯率（維持原邏輯）
-                currentTripRate = await fetchExchangeRate(config.currency);
-                const barSelect = document.getElementById('bar-calc-currency'); 
-                if(barSelect) { barSelect.value = config.currency; calculateCurrency(); }
-                
-                // 更新成員（維持原邏輯）
-                document.getElementById('header-members-list').innerHTML = (trip.members && trip.members.length) ? trip.members.map((m, i) => `<span class="${MEMBER_COLORS[i % MEMBER_COLORS.length]} mr-1">${m}</span>`).join('') : '尚未設定';
-                
-                try { 
-                    // 根據定位抓取天氣
-                    const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&timezone=auto`); 
-                    const data = await res.json(); 
-                    const code = data.current.weather_code;
-                    let icon = '☀️'; 
-                    if (code > 3) icon = '☁️'; 
-                    if (code > 50) icon = '🌧️'; 
-                    
-                    document.getElementById('header-weather-icon').textContent = icon; 
-                    document.getElementById('header-weather-temp').textContent = `${data.current.temperature_2m}°C`; 
-                    
-                    const temp = data.current.temperature_2m;
-                    let clothing = '';
-                    if(temp >= 25) clothing = '🎽 短袖';
-                    else if(temp >= 20) clothing = '👕 薄外套';
-                    else if(temp >= 15) clothing = '🧥 外套';
-                    else if(temp >= 10) clothing = '🧥 大衣';
-                    else clothing = '🧣 羽絨';
+                // 更新畫面顯示的地名
+                document.getElementById('header-location-name').textContent = displayName;
+                
+                // 更新匯率（維持原邏輯）
+                currentTripRate = await fetchExchangeRate(config.currency);
+                const barSelect = document.getElementById('bar-calc-currency'); 
+                if(barSelect) { barSelect.value = config.currency; calculateCurrency(); }
+                
+                // 更新成員（維持原邏輯）
+                document.getElementById('header-members-list').innerHTML = (trip.members && trip.members.length) ? trip.members.map((m, i) => `<span class="${MEMBER_COLORS[i % MEMBER_COLORS.length]} mr-1">${m}</span>`).join('') : '尚未設定';
+                
+                try { 
+                    // 根據定位抓取天氣
+                    const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&timezone=auto`); 
+                    const data = await res.json(); 
+                    const code = data.current.weather_code;
+                    let icon = '☀️'; 
+                    if (code > 3) icon = '☁️'; 
+                    if (code > 50) icon = '🌧️'; 
+                    
+                    document.getElementById('header-weather-icon').textContent = icon; 
+                    document.getElementById('header-weather-temp').textContent = `${data.current.temperature_2m}°C`; 
+                    
+                    const temp = data.current.temperature_2m;
+                    let clothing = '';
+                    if(temp >= 25) clothing = '🎽 短袖';
+                    else if(temp >= 20) clothing = '👕 薄外套';
+                    else if(temp >= 15) clothing = '🧥 外套';
+                    else if(temp >= 10) clothing = '🧥 大衣';
+                    else clothing = '🧣 羽絨';
 
-                    if ([51, 53, 55, 61, 63, 65, 80, 81, 82, 95, 96, 99].includes(code)) {
-                        clothing += ' ☔帶雨具';
-                    }
-                    else if ([71, 73, 75, 77, 85, 86].includes(code)) {
-                        clothing += ' ❄️注意防滑';
-                    }
-                    
-                    const adviceEl = document.getElementById('header-clothing-advice');
-                    if(adviceEl) adviceEl.textContent = clothing;
+                    if ([51, 53, 55, 61, 63, 65, 80, 81, 82, 95, 96, 99].includes(code)) {
+                        clothing += ' ☔帶雨具';
+                    }
+                    else if ([71, 73, 75, 77, 85, 86].includes(code)) {
+                        clothing += ' ❄️注意防滑';
+                    }
+                    
+                    const adviceEl = document.getElementById('header-clothing-advice');
+                    if(adviceEl) adviceEl.textContent = clothing;
 
-                } catch (e) { }
-            }
+                } catch (e) { }
+            }
 
             function changeTrip(tripId) { 
                 currentTripId = tripId; 
@@ -1228,149 +1228,171 @@
                 await updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Lists/${l.id}`), {items:ni});
             }
 
-async function loadExpenseSummary() {
-                if(!currentTripId) return; 
-                const snap = await getDocs(collection(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`));
-                let total = 0, types = {}, mems = {}, balances = {};
-                
-                snap.forEach(d => {
-                    const da = d.data(); 
-                    const tTWD = (da.Amount || 0) * (da.Rate || 1);
-                    
-                    if(tTWD > 0) { 
-                        total += tTWD; 
-                        types[da.Type] = (types[da.Type] || 0) + tTWD; 
-                        
-                        const scheduleMembers = da.members || [];
+            async function loadExpenseSummary() {
+                if(!currentTripId) return; 
+                const snap = await getDocs(collection(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`));
+                let total=0, types={}, mems={}, balances={};
+                
+                snap.forEach(d => {
+                    const da = d.data(); 
+                    const tTWD = (da.Amount||0)*(da.Rate||1);
+                    
+                    if(tTWD > 0) { 
+                        total += tTWD; 
+                        types[da.Type] = (types[da.Type]||0) + tTWD; 
+                        
+                        // 計算代墊人
+                        const payers = (da.members||[]).filter(m => typeof m !== 'string' && m.isPayer);
+                        if(payers.length > 0) {
+                            const payShare = tTWD / payers.length;
+                            payers.forEach(p => { balances[p.name] = (balances[p.name] || 0) + payShare; });
+                        }
 
-                        // 1. 計算「誰付錢」(Credit)
-                        const payers = scheduleMembers.filter(m => typeof m !== 'string' && m.isPayer);
-                        if(payers.length > 0) {
-                            // 若多個成員勾選先付，平分這筆代墊總額
-                            const payShare = tTWD / payers.length;
-                            payers.forEach(p => { 
-                                balances[p.name] = (balances[p.name] || 0) + payShare; 
-                            });
-                        }
+                        // 計算分帳人
+                        let spSum=0, unSpUsers=[]; 
+                        (da.members||[]).forEach(m => { 
+                            const amt = typeof m==='string'?null:m.amount; 
+                            const name = typeof m==='string'?m:m.name; 
+                            if(amt!==null && !isNaN(amt)) { 
+                                spSum += amt; 
+                                const share = amt * (da.Rate||1);
+                                addMemExp(mems, name, da.Type, share); 
+                                balances[name] = (balances[name] || 0) - share; 
+                            } else {
+                                unSpUsers.push(name);
+                            }
+                        }); 
+                        
+                        if(unSpUsers.length) { 
+                            const split = ((da.Amount||0)-spSum)*(da.Rate||1)/unSpUsers.length; 
+                            unSpUsers.forEach(u => {
+                                addMemExp(mems, u, da.Type, split);
+                                balances[u] = (balances[u] || 0) - split; 
+                            }); 
+                        } 
+                    }
+                });
 
-                        // 2. 計算「誰消費」(Debt)
-                        let specifiedTWD = 0, unspecifiedUsers = [];
-                        
-                        // 先找出有填寫特定金額的人
-                        scheduleMembers.forEach(m => {
-                            const name = typeof m === 'string' ? m : m.name;
-                            const amt = typeof m === 'string' ? null : m.amount;
-                            if(amt !== null && !isNaN(amt)) {
-                                const individualCostTWD = amt * (da.Rate || 1);
-                                specifiedTWD += individualCostTWD;
-                                // 扣除債務
-                                balances[name] = (balances[name] || 0) - individualCostTWD;
-                                addMemExp(mems, name, da.Type, individualCostTWD);
-                            } else {
-                                unspecifiedUsers.push(name);
-                            }
-                        });
+                function addMemExp(s, n, t, a) { if(!s[n]) s[n]={total:0, cats:{}}; s[n].total+=a; s[n].cats[t]=(s[n].cats[t]||0)+a; }
+                
+                document.getElementById('expense-total-amount').textContent = total.toFixed(0);
+                
+                // --- 繪製圓餅圖與兩側列表 ---
+                const ctx = document.getElementById('expense-chart').getContext('2d'); 
+                if(expenseChart) expenseChart.destroy();
+                
+                const sortedKeys = Object.keys(types).sort((a,b) => types[b] - types[a]);
+                
+                expenseChart = new Chart(ctx, { 
+                    type: 'doughnut', 
+                    data: {
+                        labels: sortedKeys.map(k => CATEGORY_NAMES[k]||k), 
+                        datasets: [{
+                            data: sortedKeys.map(k => types[k]), 
+                            backgroundColor: sortedKeys.map(k => (CATEGORY_COLORS[k]||CATEGORY_COLORS.default).hex), 
+                            borderWidth: 0,
+                            hoverOffset: 4
+                        }]
+                    }, 
+                    options: {
+                        responsive: true, 
+                        maintainAspectRatio: false, 
+                        cutout: '45%', 
+                        plugins: { legend: { display: false }, tooltip: { enabled: false } }, 
+                        layout: { padding: 2 }
+                    } 
+                });
 
-                        // 剩下的金額由未指定金額的人平分
-                        if(unspecifiedUsers.length > 0) {
-                            const remainingTWD = tTWD - (specifiedTWD / (da.Rate || 1) * (da.Rate || 1)); // 避免浮點誤差，以TWD計算
-                            const averageTWD = Math.max(0, tTWD - specifiedTWD) / unspecifiedUsers.length;
-                            unspecifiedUsers.forEach(u => {
-                                balances[u] = (balances[u] || 0) - averageTWD;
-                                addMemExp(mems, u, da.Type, averageTWD);
-                            });
-                        }
-                    }
-                });
+                // 生成左右兩側列表
+                const leftContainer = document.getElementById('expense-legend-left');
+                const rightContainer = document.getElementById('expense-legend-right');
+                leftContainer.innerHTML = '';
+                rightContainer.innerHTML = '';
 
-                function addMemExp(s, n, t, a) { if(!s[n]) s[n]={total:0, cats:{}}; s[n].total+=a; s[n].cats[t]=(s[n].cats[t]||0)+a; }
-                
-                document.getElementById('expense-total-amount').textContent = total.toFixed(0);
-                
-                // --- 繪製圓餅圖 (保持原樣) ---
-                const ctx = document.getElementById('expense-chart').getContext('2d'); 
-                if(expenseChart) expenseChart.destroy();
-                const sortedKeys = Object.keys(types).sort((a,b) => types[b] - types[a]);
-                expenseChart = new Chart(ctx, { 
-                    type: 'doughnut', 
-                    data: {
-                        labels: sortedKeys.map(k => CATEGORY_NAMES[k]||k), 
-                        datasets: [{
-                            data: sortedKeys.map(k => types[k]), 
-                            backgroundColor: sortedKeys.map(k => (CATEGORY_COLORS[k]||CATEGORY_COLORS.default).hex), 
-                            borderWidth: 0
-                        }]
-                    }, 
-                    options: { responsive: true, maintainAspectRatio: false, cutout: '45%', plugins: { legend: { display: false } } } 
-                });
+                const midIndex = 3; 
+                
+                sortedKeys.forEach((key, index) => {
+                    const color = (CATEGORY_COLORS[key] || CATEGORY_COLORS.default).hex;
+                    const name = CATEGORY_NAMES[key] || key;
+                    const amount = types[key].toFixed(0);
+                    const percent = Math.round((types[key] / total) * 100);
 
-                // 更新圖例 (保持原樣)
-                const leftContainer = document.getElementById('expense-legend-left');
-                const rightContainer = document.getElementById('expense-legend-right');
-                leftContainer.innerHTML = ''; rightContainer.innerHTML = '';
-                sortedKeys.forEach((key, index) => {
-                    const color = (CATEGORY_COLORS[key] || CATEGORY_COLORS.default).hex;
-                    const name = CATEGORY_NAMES[key] || key;
-                    const amount = types[key].toFixed(0);
-                    const percent = Math.round((types[key] / total) * 100);
-                    const itemHtml = `<div class="flex flex-col ${index >= 3 ? 'items-end' : 'items-start'} min-w-0 w-full"><div class="flex items-center gap-1 ${index >= 3 ? 'flex-row-reverse' : 'flex-row'}"><div class="w-2 h-2 rounded-full" style="background-color: ${color};"></div><span class="text-[9px] font-bold text-[#5F6368]">${name}</span></div><span class="text-[9px] text-[#A9A9A9]">$${amount} (${percent}%)</span></div>`;
-                    if (index >= 3) rightContainer.innerHTML += itemHtml; else leftContainer.innerHTML += itemHtml;
-                });
+                    const isRight = index >= midIndex;
+                    
+                    const itemHtml = `
+                        <div class="flex flex-col ${isRight ? 'items-end text-right' : 'items-start text-left'} min-w-0 w-full">
+                            <div class="flex items-center gap-1 ${isRight ? 'flex-row-reverse' : 'flex-row'} w-full">
+                                <div class="w-2 h-2 rounded-full flex-shrink-0" style="background-color: ${color};"></div>
+                                <span class="text-[9px] font-bold text-[#5F6368] truncate">${name}</span>
+                            </div>
+                            <span class="text-[9px] text-[#A9A9A9] font-medium leading-none mt-0.5 ${isRight ? 'pr-3' : 'pl-3'}">$${amount} <span class="text-[8px] opacity-70">(${percent}%)</span></span>
+                        </div>
+                    `;
 
-                // --- 成員列表與分帳建議 ---
-                const l = document.getElementById('expense-member-list'); 
-                l.innerHTML = `<div class="grid grid-cols-[40%_20%_40%] border-b border-[#E0E0E0] pb-1 mb-2 font-bold text-[#5F6368] text-[10px]"><span>成員</span><span class="text-center">類別</span><span class="text-right">個人消費</span></div>`;
-                
-                Object.keys(mems).sort().forEach(n => { 
-                    let first=true; 
-                    Object.keys(mems[n].cats).forEach(c => { 
-                        l.innerHTML += `<div class="grid grid-cols-[40%_20%_40%] py-0.5 text-[10px] border-b border-[#F0F0F0]">
-                            ${first ? `<span class="font-bold">${n}</span>` : '<span></span>'}
-                            <span class="text-center ${(CATEGORY_COLORS[c]||CATEGORY_COLORS.default).text}">${CATEGORY_NAMES[c]}</span>
-                            <span class="text-right">$${mems[n].cats[c].toFixed(0)}</span>
-                        </div>`; 
-                        first=false; 
-                    }); 
-                    l.innerHTML += `<div class="grid grid-cols-[40%_20%_40%] py-1 mb-2 bg-[#F9F9F9] text-[10px] font-bold"><span></span><span class="text-center">小計</span><span class="text-right">$${mems[n].total.toFixed(0)}</span></div>`; 
-                });
+                    if (isRight) {
+                        rightContainer.innerHTML += itemHtml;
+                    } else {
+                        leftContainer.innerHTML += itemHtml;
+                    }
+                });
 
-                // --- 核心改動：結算建議 ---
-                l.innerHTML += `<div class="text-[10px] font-bold text-[#7E92A1] mt-4 mb-2 border-b border-[#7E92A1] pb-1">結算建議</div>`;
-                
-                let debtors = [], creditors = [];
-                for (let name in balances) {
-                    if (balances[name] < -0.5) debtors.push({name, amount: Math.abs(balances[name])});
-                    else if (balances[name] > 0.5) creditors.push({name, amount: balances[name]});
-                }
-                
-                // 債務多的人先還給債權多的人
-                debtors.sort((a,b) => b.amount - a.amount);
-                creditors.sort((a,b) => b.amount - a.amount);
+                // --- 成員列表 ---
+                const l = document.getElementById('expense-member-list'); 
+                l.innerHTML = `<div class="grid grid-cols-[40%_20%_40%] border-b border-[#E0E0E0] pb-1 mb-2 font-bold text-[#5F6368] text-[10px]"><span>成員</span><span class="text-center">類別</span><span class="text-right">金額</span></div>`;
+                
+                Object.keys(mems).sort().forEach(n => { 
+                    let first=true; 
+                    Object.keys(mems[n].cats).forEach(c => { 
+                        l.innerHTML += `<div class="grid grid-cols-[40%_20%_40%] py-0.5 text-[10px] border-b border-[#F0F0F0] items-center">
+                            ${first ? `<span class="font-bold truncate">${n}</span>` : '<span></span>'}
+                            <span class="text-center ${(CATEGORY_COLORS[c]||CATEGORY_COLORS.default).text}">${CATEGORY_NAMES[c]}</span>
+                            <span class="text-right text-[#888888]">$${mems[n].cats[c].toFixed(0)}</span>
+                        </div>`; 
+                        first=false; 
+                    }); 
+                    l.innerHTML += `<div class="grid grid-cols-[40%_20%_40%] py-1 mb-2 bg-[#F9F9F9] text-[10px] font-bold"><span></span><span class="text-center">個人總計</span><span class="text-right">$${mems[n].total.toFixed(0)}</span></div>`; 
+                });
 
-                if (debtors.length === 0) {
-                    l.innerHTML += `<div class="text-[10px] text-gray-400 py-1 text-center">所有款項已清算。</div>`;
-                } else {
-                    let i = 0, j = 0;
-                    while(i < debtors.length && j < creditors.length){
-                        let payAmount = Math.min(debtors[i].amount, creditors[j].amount);
-                        if (payAmount > 0.1) {
-                            l.innerHTML += `
-                                <div class="flex justify-between items-center py-2 px-1 text-[10px] border-b border-gray-50">
-                                    <span class="font-bold text-[#CB8572]">${debtors[i].name}</span>
-                                    <span class="text-gray-400">➡️ 支付 $${payAmount.toFixed(0)} ➡️</span>
-                                    <span class="font-bold text-[#7E92A1]">${creditors[j].name}</span>
-                                </div>`;
-                        }
-                        debtors[i].amount -= payAmount;
-                        creditors[j].amount -= payAmount;
-                        if(debtors[i].amount < 0.5) i++;
-                        if(creditors[j].amount < 0.5) j++;
-                    }
-                }
+                // --- 結帳建議 (Settlement) ---
+                let debtors = [], creditors = [];
+                for (let name in balances) {
+                    if (balances[name] < -1) debtors.push({name, amount: balances[name]});
+                    else if (balances[name] > 1) creditors.push({name, amount: balances[name]});
+                }
+                debtors.sort((a,b) => a.amount - b.amount);
+                creditors.sort((a,b) => b.amount - a.amount);
 
-                document.getElementById('split-expense-modal').style.display = 'flex';
-            ｝
-    
+                if (debtors.length === 0 && creditors.length === 0) {
+                    l.innerHTML += `<div class="text-[10px] text-gray-400 py-1 text-center mt-2">目前沒有需要結算的款項</div>`;
+                } else {
+                    let i=0, j=0;
+                    while(i < debtors.length && j < creditors.length){
+                        let debt = Math.abs(debtors[i].amount);
+                        let credit = creditors[j].amount;
+                        let amount = Math.min(debt, credit);
+                        
+                        if (amount > 0) {
+                            l.innerHTML += `
+                                <div class="grid grid-cols-[15%_30%_35%_20%] items-center py-2 px-0 text-[10px] border-b border-gray-50">
+                                    <span class="font-bold text-[#CB8572] truncate text-left pl-1">${debtors[i].name}</span>
+                                    <span class="text-gray-400 text-center">給</span>
+                                    <span class="font-bold text-[#7E92A1] truncate text-left pl-1">${creditors[j].name}</span>
+                                    <span class="font-bold text-[#5F6368] text-right pr-0">$${amount.toFixed(0)}</span>
+                                </div>
+                            `;
+                        }
+                        
+                        debtors[i].amount += amount;
+                        creditors[j].amount -= amount;
+                        
+                        if(Math.abs(debtors[i].amount) < 1) i++;
+                        if(creditors[j].amount < 1) j++;
+                    }
+                }
+
+                document.getElementById('split-expense-modal').style.display = 'flex';
+            }
+
             async function deleteSchedule(id) {
                 if(!confirm('確定刪除?')) return;
                 await deleteDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`, id));
