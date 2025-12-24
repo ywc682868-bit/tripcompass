@@ -378,82 +378,46 @@
                 if(el) el.innerHTML = `${dateStr}${tripCountdownHtml}${loveHtml}`;
             }
 
-// --- 核心更新 (含自動定位與逆向地名查詢) ---
-            async function updateHeaderInfo() {
-                const trip = tripData[currentTripId]; if (!trip) return;
-                const config = COUNTRY_CONFIG[trip.country || 'TW'] || COUNTRY_CONFIG['TW'];
-                
-                // 預設值（來自計畫設定）
-                let lat = config.lat;
-                let lon = config.lon;
-                let displayLocationName = config.localName;
+            // --- 核心更新 ---
+            async function updateHeaderInfo() {
+                const trip = tripData[currentTripId]; if (!trip) return;
+                const config = COUNTRY_CONFIG[trip.country || 'TW'] || COUNTRY_CONFIG['TW'];
+                document.getElementById('header-location-name').textContent = config.localName;
+                currentTripRate = await fetchExchangeRate(config.currency);
+                const barSelect = document.getElementById('bar-calc-currency'); 
+                if(barSelect) { barSelect.value = config.currency; calculateCurrency(); }
+                document.getElementById('header-members-list').innerHTML = (trip.members && trip.members.length) ? trip.members.map((m, i) => `<span class="${MEMBER_COLORS[i % MEMBER_COLORS.length]} mr-1">${m}</span>`).join('') : '尚未設定';
+                try { 
+                    const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${config.lat}&longitude=${config.lon}&current=temperature_2m,weather_code&timezone=auto`); 
+                    const data = await res.json(); 
+                    const code = data.current.weather_code;
+                    let icon = '☀️'; 
+                    if (code > 3) icon = '☁️'; 
+                    if (code > 50) icon = '🌧️'; 
+                    
+                    document.getElementById('header-weather-icon').textContent = icon; 
+                    document.getElementById('header-weather-temp').textContent = `${data.current.temperature_2m}°C`; 
+                    
+                    const temp = data.current.temperature_2m;
+                    let clothing = '';
+                    if(temp >= 25) clothing = '🎽 短袖';
+                    else if(temp >= 20) clothing = '👕 薄外套';
+                    else if(temp >= 15) clothing = '🧥 外套';
+                    else if(temp >= 10) clothing = '🧥 大衣';
+                    else clothing = '🧣 羽絨';
 
-                // 1. 嘗試獲取瀏覽器 GPS 定位
-                try {
-                    const position = await new Promise((resolve, reject) => {
-                        navigator.geolocation.getCurrentPosition(resolve, reject, { 
-                            timeout: 5000,
-                            enableHighAccuracy: true 
-                        });
-                    });
-                    
-                    lat = position.coords.latitude;
-                    lon = position.coords.longitude;
+                    if ([51, 53, 55, 61, 63, 65, 80, 81, 82, 95, 96, 99].includes(code)) {
+                        clothing += ' ☔帶雨具';
+                    }
+                    else if ([71, 73, 75, 77, 85, 86].includes(code)) {
+                        clothing += ' ❄️注意防滑';
+                    }
+                    
+                    const adviceEl = document.getElementById('header-clothing-advice');
+                    if(adviceEl) adviceEl.textContent = clothing;
 
-                    // 2. 透過 OpenStreetMap Nominatim API 進行逆向地名查詢
-                    try {
-                        const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&accept-language=zh-TW`, {
-                            headers: { 'User-Agent': 'TripCompassApp/1.0' }
-                        });
-                        const geoData = await geoRes.json();
-                        
-                        // 優先順序：城市/島嶼 > 郊區/行政區 > 縣市
-                        const addr = geoData.address;
-                        displayLocationName = addr.island || addr.city_district || addr.suburb || addr.town || addr.city || addr.county || "目前位置";
-                    } catch (geoErr) {
-                        console.log("地名查詢失敗，僅顯示座標標籤");
-                        displayLocationName = "📍 目前位置";
-                    }
-
-                } catch (e) {
-                    console.log("無法獲取定位權限或逾時，切換回計畫預設地點");
-                }
-
-                // 更新 UI 文字
-                document.getElementById('header-location-name').textContent = displayLocationName;
-                
-                // 以下維持原有邏輯：匯率與天氣資訊抓取
-                currentTripRate = await fetchExchangeRate(config.currency);
-                const barSelect = document.getElementById('bar-calc-currency'); 
-                if(barSelect) { barSelect.value = config.currency; calculateCurrency(); }
-                document.getElementById('header-members-list').innerHTML = (trip.members && trip.members.length) ? trip.members.map((m, i) => `<span class="${MEMBER_COLORS[i % MEMBER_COLORS.length]} mr-1">${m}</span>`).join('') : '尚未設定';
-                
-                try { 
-                    const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&timezone=auto`); 
-                    const data = await res.json(); 
-                    const code = data.current.weather_code;
-                    let icon = '☀️'; 
-                    if (code > 3) icon = '☁️'; 
-                    if (code > 50) icon = '🌧️'; 
-                    
-                    document.getElementById('header-weather-icon').textContent = icon; 
-                    document.getElementById('header-weather-temp').textContent = `${data.current.temperature_2m}°C`; 
-                    
-                    const temp = data.current.temperature_2m;
-                    let clothing = '';
-                    if(temp >= 25) clothing = '🎽 短袖';
-                    else if(temp >= 20) clothing = '👕 薄外套';
-                    else if(temp >= 15) clothing = '🧥 外套';
-                    else if(temp >= 10) clothing = '🧥 大衣';
-                    else clothing = '🧣 羽絨';
-
-                    if ([51, 53, 55, 61, 63, 65, 80, 81, 82, 95, 96, 99].includes(code)) clothing += ' ☔帶雨具';
-                    else if ([71, 73, 75, 77, 85, 86].includes(code)) clothing += ' ❄️注意防滑';
-                    
-                    const adviceEl = document.getElementById('header-clothing-advice');
-                    if(adviceEl) adviceEl.textContent = clothing;
-                } catch (e) {}
-            }
+                } catch (e) {}
+            }
 
             function changeTrip(tripId) { 
                 currentTripId = tripId; 
