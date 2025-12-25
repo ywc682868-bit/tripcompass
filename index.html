@@ -407,7 +407,24 @@
 
             function changeTrip(tripId) { 
                 currentTripId = tripId; 
-                currentDayId = 'Day 1'; 
+                const trip = tripData[tripId];
+                if (trip && trip.startDate) {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const start = new Date(trip.startDate);
+                    start.setHours(0, 0, 0, 0);
+                    const diffTime = today.getTime() - start.getTime();
+                    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                    const calculatedDay = diffDays + 1; // 假設 D-0 是 Day 1, D+1 是 Day 2
+
+                    if (calculatedDay >= 1 && calculatedDay <= (trip.numDays || 1)) {
+                        currentDayId = `Day ${calculatedDay}`;
+                    } else {
+                        currentDayId = 'Day 1';
+                    }
+                } else {
+                    currentDayId = 'Day 1';
+                }
                 currentListTabId = null; 
                 updateHeaderInfo(); 
                 renderDayTabs(); 
