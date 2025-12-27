@@ -4,10 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-touch-icon" href="icon.png">
     <title>Trip Compass</title>
     <link rel="icon" type="image/png" href="icon.png">
-    <link rel="apple-touch-icon" href="icon.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -989,7 +988,7 @@
                                 <div class="flex gap-2 items-center"><div class="flex-grow"><label class="block compact-label">地點</label><input type="text" id="form-location" class="compact-input block w-full rounded border px-2 text-xs" style="height: 32px;" placeholder="地點名稱"></div><div class="flex gap-2 h-10 items-center"><div class="flex flex-col items-center"><span class="compact-label text-[10px] text-[#CB8572]">必去</span><input type="checkbox" id="form-must-go" class="w-3.5 h-3.5 accent-[#CB8572]"></div><div class="flex flex-col items-center"><span class="compact-label text-[10px] text-[#7E92A1]">鬧鐘</span><input type="checkbox" id="form-set-alarm" class="w-3.5 h-3.5 accent-[#7E92A1]"></div></div></div>
                                 <div><label class="block compact-label">地址</label><input type="text" id="form-address" class="compact-input block w-full rounded border px-2 text-xs" style="height: 28px;" placeholder="地址或連結"></div>
                                 <div><textarea id="form-details" rows="4" class="compact-input block w-full rounded border leading-normal p-2 text-xs !h-auto" placeholder="備註..."></textarea></div>
-                                <div class="bg-gray-50 p-2 rounded border border-gray-100 mt-1"><div class="flex items-center mb-1 gap-2"><label class="block compact-label">成員</label><button type="button" id="add-member-btn" class="text-[#7E92A1] text-xs font-bold px-1">＋</button></div><div id="form-members-container" class="space-y-1 mb-2"></div><div class="grid grid-cols-[1fr_20px_1fr] gap-2 items-center mt-2 border-t border-gray-200 pt-2"><div class="flex items-center gap-1"><label id="form-currency-label" class="text-[10px] font-bold text-[#7E92A1] w-8 text-right">USD</label><input type="number" id="form-amount" placeholder="0" class="w-full p-1 border rounded text-right text-[11px] bg-white"></div><div class="text-center text-gray-400 text-xs font-bold">=</div><div class="flex items-center gap-1"><span class="text-[10px] font-bold text-[#A9A9A9] w-8 text-right">TWD</span><input type="number" id="form-amount-twd" placeholder="0" class="w-full p-1 border bg-[#E0E0E0] rounded text-right text-[11px]"></div></div></div>
+                                <div class="bg-gray-50 p-2 rounded border border-gray-100 mt-1"><div class="flex items-center mb-1 gap-2"><label class="block compact-label">成員</label><button type="button" id="add-member-btn" class="text-[#7E92A1] text-xs font-bold px-1">＋</button></div><div id="form-members-container" class="space-y-1 mb-2"></div><div class="grid grid-cols-[1fr_20px_1fr] gap-2 items-center mt-2 border-t border-gray-200 pt-2"><div class="flex items-center gap-1"><label id="form-currency-label" class="text-[10px] font-bold text-[#7E92A1] w-8 text-right">USD</label><input type="number" id="form-amount" placeholder="0" class="w-full p-1 border rounded text-right text-[11px] bg-white"></div><div class="text-center text-gray-400 text-xs font-bold">=</div><div class="flex items-center gap-1"><span class="text-[10px] font-bold text-[#A9A9A9] w-8 text-right">TWD</span><input type="number" id="form-amount-twd" placeholder="0" class="w-full p-1 border bg-white rounded text-right text-[11px]"></div></div></div>
                                 <div class="flex justify-between items-center pt-2 mt-2 border-t border-[#E0E0E0]"><button type="button" id="modal-delete-btn" class="px-3 py-1 h-7 text-white bg-[#CB8572] rounded text-xs font-bold hidden">刪除</button><div class="flex-grow flex justify-end"><button type="button" id="modal-save-btn" class="px-3 py-1 h-7 text-white bg-[#7E92A1] rounded text-xs font-bold shadow-sm">儲存</button></div></div>
                             </form>`;
                     }
@@ -1030,7 +1029,32 @@
                     });
                     safeBind('modal-close-btn', 'onclick', () => document.getElementById('add-schedule-modal').style.display='none');
                     safeBind('modal-save-btn', 'onclick', submitSchedule);
-                    safeBind('form-amount', 'oninput', (e) => document.getElementById('form-amount-twd').value = e.target.value === '' ? '' : (e.target.value * currentTripRate).toFixed(0));
+
+                    // --- 自動分帳核心邏輯 ---
+                    const autoSplitExpense = (totalForeign) => {
+                        const memAmts = document.querySelectorAll('input[name="schedule-member-amount"]');
+                        if (memAmts.length > 0 && totalForeign > 0) {
+                            const per = (totalForeign / memAmts.length).toFixed(2);
+                            memAmts.forEach(input => input.value = per);
+                        }
+                    };
+
+                    safeBind('form-amount', 'oninput', (e) => {
+                        const val = parseFloat(e.target.value);
+                        const twd = document.getElementById('form-amount-twd');
+                        if (twd) twd.value = isNaN(val) ? '' : (val * currentTripRate).toFixed(0);
+                        autoSplitExpense(isNaN(val) ? 0 : val);
+                    });
+
+                    safeBind('form-amount-twd', 'oninput', (e) => {
+                        const twdVal = parseFloat(e.target.value);
+                        const foreignInp = document.getElementById('form-amount');
+                        const foreignVal = isNaN(twdVal) ? 0 : twdVal / currentTripRate;
+                        if (foreignInp) foreignInp.value = isNaN(twdVal) ? '' : foreignVal.toFixed(2);
+                        autoSplitExpense(foreignVal);
+                    });
+                    // -------------------------
+
                     safeBind('btn-lists', 'onclick', loadLists);
                     safeBind('lists-modal-close-btn', 'onclick', () => document.getElementById('lists-modal').style.display='none');
                     safeBind('split-expense-btn', 'onclick', loadExpenseSummary);
