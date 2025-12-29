@@ -621,7 +621,7 @@
                             </div>
                         </div>
                         <div><label class="compact-label">地址</label><input type="text" id="form-address" class="compact-input w-full rounded border" value="${s.Address||''}"></div>
-                        <div><label class="compact-label">備註內容</label><textarea id="form-details" rows="8" class="w-full rounded border p-1 text-[11px] text-[#5F6368] border-[#E0E0E0]" style="line-height: 1.2;" placeholder="備註內容...">${s.說明||''}</textarea></div>
+                        <div><label class="compact-label">備註內容</label><textarea id="form-details" rows="10" class="w-full rounded border p-1 text-[11px] text-[#5F6368] border-[#E0E0E0]" style="line-height: 1.2;" placeholder="備註內容...">${s.說明||''}</textarea></div>
                         <div class="bg-gray-50 p-2 rounded border">
                             <div class="flex items-center mb-1 gap-2"><label class="compact-label">成員</label><button type="button" id="add-member-btn" class="text-[#7E92A1] text-xs font-bold">＋</button></div>
                             <div id="form-members-container" class="space-y-1 mb-2"></div>
@@ -819,7 +819,9 @@
                     const wrap = document.createElement('div'); wrap.className = 'swipe-item-container';
                     const bg = document.createElement('div'); bg.className = 'swipe-item-delete-bg'; bg.innerHTML = `<button class="px-2 h-full bg-[#CB8572] text-white font-bold text-xs">刪除</button>`;
                     bg.querySelector('button').onclick = () => deleteListItem(listData, idx);
-                    const c = document.createElement('div'); c.className = 'swipe-item-content bg-white p-2 border border-gray-100 rounded-lg flex items-center gap-2';
+                    const c = document.createElement('div'); 
+                    // 修改清單卡片的上下留白 (p-2 -> py-1 px-2)
+                    c.className = 'swipe-item-content bg-white py-1 px-2 border border-gray-100 rounded-lg flex items-center gap-2';
                     const star = `<button class="${item.isImportant?'text-yellow-400':'text-gray-200'} text-lg">${item.isImportant?'★':'☆'}</button>`;
                     if(listData.type==='check') {
                         c.innerHTML = `${star}<div class="flex gap-1"><input type="checkbox" ${item.checkedLeft?'checked':''} class="checkL"><input type="checkbox" ${item.checkedRight?'checked':''} class="checkR"></div><input type="text" value="${item.text||''}" class="txt flex-grow border-none text-xs focus:ring-0">`;
@@ -828,14 +830,16 @@
                         c.querySelector('.checkR').onchange = (e) => updateListItem(listData, idx, {checkedRight: e.target.checked});
                         c.querySelector('.txt').onchange = (e) => updateListItem(listData, idx, {text: e.target.value});
                     } else {
+                        // 購物清單排版修改：地點欄位改為 textarea (方形、多列) 並擴大品名空間
+                        // 說明欄位也改為 textarea 以便多列顯示
                         c.style.display = 'grid'; 
                         c.style.gridTemplateColumns = '24px 50px 1fr 60px 20px';
                         c.innerHTML = `
                             ${star}
                             <div class="shopping-img-box">${item.imageUrl?`<img src="${item.imageUrl}" class="w-full h-full object-cover">`:'📷'}</div>
-                            <div class="flex flex-col min-w-0 pr-1 border-r border-gray-50">
+                            <div class="flex flex-col min-w-0 pr-1 border-r border-gray-50 justify-center">
                                 <input type="text" value="${item.text||''}" class="name font-bold text-xs border-none p-0 focus:ring-0 truncate" placeholder="品名">
-                                <input type="text" value="${item.desc||''}" class="desc text-[10px] text-gray-400 border-none p-0 focus:ring-0 truncate" placeholder="說明">
+                                <textarea class="desc text-[9px] text-gray-400 border-none p-0 focus:ring-0 resize-none h-8 w-full bg-transparent leading-tight no-scrollbar" placeholder="說明">${item.desc||''}</textarea>
                             </div>
                             <div class="flex items-center pl-1">
                                 <textarea class="loc text-[9px] text-gray-400 border-none p-0 focus:ring-0 resize-none h-10 w-full bg-transparent leading-tight no-scrollbar" placeholder="地點">${item.location||''}</textarea>
