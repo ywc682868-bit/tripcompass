@@ -318,9 +318,23 @@
                 // 優先嘗試取得目前的定位
                 if (navigator.geolocation) {
                     navigator.geolocation.getCurrentPosition(
-                        (position) => {
-                            // 定位成功：使用經緯度與名稱「目前位置」
-                            fetchWeather(position.coords.latitude, position.coords.longitude, "目前位置");
+                        async (position) => {
+                            const lat = position.coords.latitude;
+                            const lon = position.coords.longitude;
+                            let localizedName = "目前位置";
+                            
+                            try {
+                                // 呼叫反向地理編碼 API 取得具體地名 (繁體中文)
+                                const geoRes = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=zh-tw`);
+                                const geoData = await geoRes.json();
+                                // 優先取城市名，若無則取行政區或國家名
+                                localizedName = geoData.city || geoData.locality || geoData.countryName || "目前位置";
+                            } catch (e) {
+                                console.error("Reverse Geocoding Error:", e);
+                            }
+                            
+                            // 使用取得的地名更新天氣
+                            fetchWeather(lat, lon, localizedName);
                         },
                         () => {
                             // 定位失敗 (如拒絕權限)：使用行程預設位置
