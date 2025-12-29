@@ -288,7 +288,7 @@
     <div id="image-zoom-modal" class="modal-overlay hidden z-[150] bg-black/80"><img id="zoom-img" class="max-w-[95%] max-h-[90%] rounded shadow-lg object-contain"></div>
     <div id="settings-modal" class="modal-overlay hidden"><div class="bg-white rounded-xl shadow-2xl p-4 w-11/12 max-w-sm"></div></div>
     <div id="new-trip-modal" class="modal-overlay hidden"><div class="bg-white rounded-xl shadow-2xl p-4 w-11/12 max-w-sm"><h3 class="text-base font-bold mb-3 flex justify-between items-center text-[#4A4B4D]">新增旅行計畫<button id="new-trip-modal-close-btn" class="text-[#A9A9A9] hover:text-[#5F6368] text-xl">×</button></h3><div id="new-trip-modal-content"></div></div></div>
-    <div id="split-expense-modal" class="modal-overlay hidden"><div class="bg-white rounded-xl shadow-2xl p-4 w-11/12 max-w-sm flex flex-col max-h-[90vh]"></div></div>
+    <div id="split-expense-modal" class="modal-overlay hidden"><div class="bg-white rounded-xl shadow-2xl p-4 w-11/12 max-w-sm flex flex-col max-h-[90vh]"><h3 class="text-sm font-bold mb-2 flex justify-between items-center flex-shrink-0 text-[#4A4B4D]">花費<button id="split-expense-close-btn" class="text-[#A9A9A9] hover:text-[#5F6368] text-xl leading-none">×</button></h3><div class="flex-shrink-0 mb-2 bg-[#F9F9F9] p-2 rounded border border-[#E0E0E0]"><div class="flex justify-between items-end mb-1 border-b border-[#E0E0E0] pb-0.5"><span class="text-[#5F6368] font-medium text-xs">總花費</span><span class="text-sm font-extrabold text-[#4A4B4D]">TWD$ <span id="expense-total-amount">0</span></span></div><div id="expense-chart-container" class="h-32 w-full relative flex justify-center items-center"><canvas id="expense-chart"></canvas></div></div><div class="overflow-y-auto flex-grow mb-1 pr-1"><div id="expense-member-list" class="space-y-0.5"></div></div></div></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
@@ -313,8 +313,7 @@
                 'TW': { name: '台灣', currency: 'TWD', localName: '台北', lat: 25.03, lon: 121.56, img: 'taiwan' } 
             };
             
-            // 加入 'fee' 分類顏色
-            const CATEGORY_COLORS = { 'coffee': { bg: 'bg-[#9C8B74]', hex: '#9C8B74', text: 'text-[#9C8B74]' }, 'restaurant': { bg: 'bg-[#CB8572]', hex: '#CB8572', text: 'text-[#CB8572]' }, 'location': { bg: 'bg-[#8F9E8B]', hex: '#8F9E8B', text: 'text-[#8F9E8B]' }, '交通': { bg: 'bg-[#7E92A1]', hex: '#7E92A1', text: 'text-[#7E92A1]' }, 'shopping': { bg: 'bg-[#9E869C]', hex: '#9E869C', text: 'text-[#9E869C]' }, 'accommodation': { bg: 'bg-[#A9A9A9]', hex: '#A9A9A9', text: 'text-[#A9A9A9]' }, 'fee': { bg: 'bg-[#A0AEC0]', hex: '#A0AEC0', text: 'text-[#A0AEC0]' }, 'default': { bg: 'bg-[#A9A9A9]', hex: '#A9A9A9', text: 'text-[#A9A9A9]' } };
+            const CATEGORY_COLORS = { 'coffee': { bg: 'bg-[#9C8B74]', hex: '#9C8B74', text: 'text-[#9C8B74]' }, 'restaurant': { bg: 'bg-[#CB8572]', hex: '#CB8572', text: 'text-[#CB8572]' }, 'location': { bg: 'bg-[#8F9E8B]', hex: '#8F9E8B', text: 'text-[#8F9E8B]' }, '交通': { bg: 'bg-[#7E92A1]', hex: '#7E92A1', text: 'text-[#7E92A1]' }, 'shopping': { bg: 'bg-[#9E869C]', hex: '#9E869C', text: 'text-[#9E869C]' }, 'accommodation': { bg: 'bg-[#A9A9A9]', hex: '#A9A9A9', text: 'text-[#A9A9A9]' }, 'fee': { bg: 'bg-[#D4A5A5]', hex: '#D4A5A5', text: 'text-[#D4A5A5]' }, 'default': { bg: 'bg-[#A9A9A9]', hex: '#A9A9A9', text: 'text-[#A9A9A9]' } };
             const MEMBER_COLORS = ['text-[#CB8572]', 'text-[#7E92A1]', 'text-[#8F9E8B]', 'text-[#9E869C]', 'text-[#9C8B74]'];
             const CATEGORY_NAMES = { 'location': '景點', 'restaurant': '餐廳', 'coffee': '咖啡廳', '交通': '交通', 'shopping': '購物', 'accommodation': '住宿', 'fee': '手續費', 'default': '未分類' };
 
@@ -328,7 +327,7 @@
             function formatDateForHeader(date) { const year = String(date.getFullYear()).slice(-2); const month = String(date.getMonth() + 1).padStart(2, '0'); const day = String(date.getDate()).padStart(2, '0'); const dayOfWeekMap = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']; return `${year}.${month}.${day} ${dayOfWeekMap[date.getDay()]}`; }
             function dateDiffInDays(date2, date1) { return Math.ceil(Math.abs(date2.getTime() - date1.getTime()) / (1000 * 60 * 60 * 24)); }
             function getDateFromDayId(trip, dayId) { if (!trip || !trip.startDate) return null; const d = new Date(trip.startDate); d.setDate(d.getDate() + (parseInt(dayId.replace('Day ', '')) - 1)); return d; }
-            function getCardStyle(type) { const c = CATEGORY_COLORS[type] || CATEGORY_COLORS['default']; const icons = {'coffee':'☕','restaurant':'🍽️','location':'📍','交通':'🚗','shopping':'🛍️','accommodation':'🛏️', 'fee':'🏷️'}; return { color: c.bg, icon: icons[type] || '❓', hex: c.hex, text: c.text }; }
+            function getCardStyle(type) { const c = CATEGORY_COLORS[type] || CATEGORY_COLORS['default']; const icons = {'coffee':'☕','restaurant':'🍽️','location':'📍','交通':'🚗','shopping':'🛍️','accommodation':'🛏️','fee':'🧧'}; return { color: c.bg, icon: icons[type] || '❓', hex: c.hex, text: c.text }; }
             function navigateToMap(input) { if (!input) return; const url = (input.includes('http') || input.includes('maps.')) ? input : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(input)}`; window.open(url, '_blank'); }
             function formatCurrency(value) { if (typeof value !== 'number') value = parseFloat(value); if (isNaN(value) || value === 0) return '0'; return value.toFixed(2).replace(/\.00$/, '').replace(/(\.\d)0$/, '$1'); }
             async function fetchExchangeRate(baseCurrency) { const fallback = { 'USD': 32.5, 'JPY': 0.215, 'KRW': 0.023, 'GBP': 41.2, 'CNY': 4.5, 'TWD': 1 }; if (!baseCurrency || baseCurrency === 'TWD') return 1; try { const r = await fetch(`https://open.er-api.com/v6/latest/${baseCurrency}`); const d = await r.json(); if (d && d.rates && d.rates.TWD) return d.rates.TWD; } catch (e) {} return fallback[baseCurrency] || 1; }
@@ -415,7 +414,7 @@
                     start.setHours(0, 0, 0, 0);
                     const diffTime = today.getTime() - start.getTime();
                     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-                    const calculatedDay = diffDays + 1;
+                    const calculatedDay = diffDays + 1; // 假設 D-0 是 Day 1, D+1 是 Day 2
 
                     if (calculatedDay >= 1 && calculatedDay <= (trip.numDays || 1)) {
                         currentDayId = `Day ${calculatedDay}`;
@@ -437,19 +436,30 @@
                 const config = CATEGORY_COLORS[schedule.Type] || CATEGORY_COLORS['default'];
                 const rate = schedule.Rate || 1;
                 const members = schedule.members || [];
-                const fee = parseFloat(schedule.Fee) || 0; // 手續費
                 
-                // --- 改動：計算 TWD 總額 ---
-                let totalTWD = fee; 
+                // 計算台幣總額：現金換算 + 刷卡直記 + 手續費
+                let amountTWD = 0;
                 members.forEach(m => {
-                    if (typeof m !== 'string' && m.amount) {
-                        const amt = parseFloat(m.amount) || 0;
-                        if (m.method === 'card') totalTWD += amt; // 刷卡直加台幣
-                        else totalTWD += (amt * rate); // 現金換算
+                    const mAmt = m.amount || 0;
+                    const mFee = m.fee || 0;
+                    if (m.isPayer) {
+                        if (m.method === 'card') amountTWD += (mAmt + mFee);
+                        else amountTWD += (mAmt * rate);
                     }
                 });
 
-                const perPersonTWD = members.length > 0 ? totalTWD / members.length : 0;
+                // 若完全沒有勾選 Payer，則回退到主欄位計算（主要為了相容舊資料）
+                if (amountTWD === 0 && schedule.Amount > 0) {
+                    amountTWD = schedule.Amount * rate;
+                }
+
+                const participants = members.filter(m => {
+                    if (typeof m === 'string') return true;
+                    if (m.amount > 0 && !m.isPayer) return false;
+                    return true;
+                });
+                
+                const perPersonTWD = participants.length > 0 ? amountTWD / participants.length : 0;
                 
                 let memberHtml = '';
                 if (members.length > 0) {
@@ -502,8 +512,8 @@
                     <div class="card-right-col h-full flex flex-col">
                         <div class="card-static-actions"></div>
                         <div class="flex flex-col gap-1 mt-1">
-                            <div class="flex items-center justify-start w-full"><span class="text-[#8F9E8B] font-bold text-[10px]">💰 $${totalTWD.toFixed(0)}</span></div>
-                            <div class="flex items-center justify-start w-full"><span class="text-[#888888] font-bold text-[10px]">👫 $${perPersonTWD.toFixed(0)}</span></div>
+                            <div class="flex items-center justify-start w-full"><span class="text-[#8F9E8B] font-bold text-[10px]">💰 TWD$${amountTWD.toFixed(0)}</span></div>
+                            <div class="flex items-center justify-start w-full"><span class="text-[#888888] font-bold text-[10px]">👫 TWD$${formatCurrency(perPersonTWD)}</span></div>
                         </div>
                         ${mustGoHtml}
                     </div>`;
@@ -601,17 +611,18 @@
                 document.getElementById('add-schedule-modal-title').textContent = s.Location || '編輯行程'; 
                 document.getElementById('modal-delete-btn').style.display = 'block'; 
                 safeBind('modal-delete-btn', 'onclick', () => deleteSchedule(s.id));
-                ['Date','Time','Location','Type','說明','Address'].forEach(k => { 
+                ['Date','Time','Location','Type','說明','Address','Amount'].forEach(k => { 
                     const el = document.getElementById(`form-${k.toLowerCase().replace('說明','details')}`); 
                     if(el) el.value = s[k] || ''; 
                 });
-                document.getElementById('form-currency-label').textContent = tripData[currentTripId].currency || 'KRW';
-                document.getElementById('form-must-go').checked = s.MustGo || false;
-                document.getElementById('form-set-alarm').checked = s.SetAlarm || false;
+                document.getElementById('form-currency-label').textContent = tripData[currentTripId].currency || 'TWD';
                 
-                // 加入手續費欄位
-                const feeInp = document.getElementById('form-fee');
-                if(feeInp) feeInp.value = s.Fee || '';
+                const amtVal = s.Amount || 0;
+                document.getElementById('form-amount-twd').value = amtVal > 0 ? (amtVal * currentTripRate).toFixed(0) : '';
+                
+                document.getElementById('form-must-go').checked = s.MustGo || false;
+                const alarmCheckbox = document.getElementById('form-set-alarm');
+                if(alarmCheckbox) alarmCheckbox.checked = s.SetAlarm || false;
 
                 const c = document.getElementById('form-members-container'); c.innerHTML = '';
                 const mems = s.members || []; 
@@ -619,68 +630,61 @@
                     mems.forEach(m => {
                         const name = typeof m === 'string' ? m : m.name;
                         const amt = (typeof m === 'string' || !m.amount) ? '' : m.amount;
+                        const fee = (typeof m === 'string' || !m.fee) ? '' : m.fee;
                         const isPayer = m.isPayer || false;
                         const method = m.method || 'cash';
-                        addMemberInput(name, amt, isPayer, method);
+                        addMemberInput(name, amt, isPayer, method, fee);
                     }); 
                 } else { addMemberInput(); addMemberInput(); }
                 document.getElementById('add-schedule-modal').style.display = 'flex';
-                updateFormTotalPreview();
             }
             
-            // --- 改動：更新表單預覽總額 ---
-            function updateFormTotalPreview() {
-                const rows = document.getElementById('form-members-container').children;
-                const rate = currentTripRate || 1;
-                const fee = parseFloat(document.getElementById('form-fee').value) || 0;
-                let totalTWD = fee;
-                
-                for(let row of rows) {
-                    const amtVal = parseFloat(row.querySelector('input[name="schedule-member-amount"]').value) || 0;
-                    const method = row.querySelector('.payment-method').value;
-                    const label = row.querySelector('.currency-badge');
-                    
-                    if(method === 'card') {
-                        totalTWD += amtVal;
-                        label.textContent = 'TWD';
-                        label.style.color = '#7E92A1';
-                    } else {
-                        totalTWD += (amtVal * rate);
-                        label.textContent = tripData[currentTripId].currency || 'KRW';
-                        label.style.color = '#A9A9A9';
-                    }
-                }
-                const previewEl = document.getElementById('form-total-preview-val');
-                if(previewEl) previewEl.textContent = totalTWD.toFixed(0);
-            }
-
-            function addMemberInput(name='', amt='', isPayer=false, method='cash') { 
+            function addMemberInput(name='', amt='', isPayer=false, method='cash', fee='') { 
                 const d = document.createElement('div'); 
-                d.className = 'flex items-center w-full gap-2 border-b border-gray-100 pb-2 mb-2 last:border-0 last:mb-0'; 
-                const nameInput = document.createElement('input'); nameInput.type = 'text'; nameInput.name = 'schedule-member-name'; nameInput.value = name; nameInput.placeholder = '名字'; nameInput.className = 'compact-input w-16 rounded-md font-bold text-[10px] flex-shrink-0';
+                d.className = 'flex flex-col w-full border-b border-gray-100 pb-2 mb-2 last:border-0 last:mb-0'; 
                 
-                const amtInput = document.createElement('input'); amtInput.type = 'number'; amtInput.name = 'schedule-member-amount'; amtInput.value = amt; amtInput.placeholder = '金額'; amtInput.className = 'compact-input w-16 rounded-md text-[10px] flex-shrink-0';
-                amtInput.oninput = () => updateFormTotalPreview();
+                const mainRow = document.createElement('div');
+                mainRow.className = 'flex items-center w-full gap-1.5';
 
-                const currencyBadge = document.createElement('span');
-                currencyBadge.className = 'currency-badge text-[9px] font-bold w-7 text-right';
-                currencyBadge.textContent = method === 'card' ? 'TWD' : (tripData[currentTripId].currency || 'KRW');
-
-                const optsDiv = document.createElement('div'); optsDiv.className = 'flex flex-row items-center gap-1'; 
-                const label = document.createElement('label'); label.className = 'flex items-center text-xs text-[#7E92A1] cursor-pointer leading-none select-none whitespace-nowrap';
-                const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.className = 'payer-check mr-1 h-4 w-4'; checkbox.checked = isPayer;
-                label.appendChild(checkbox); label.appendChild(document.createTextNode('先付'));
+                const nameInput = document.createElement('input'); nameInput.type = 'text'; nameInput.name = 'schedule-member-name'; nameInput.value = name; nameInput.placeholder = '名字'; nameInput.className = 'compact-input w-14 rounded-md font-bold text-[10px] flex-shrink-0';
                 
-                const select = document.createElement('select'); select.className = 'payment-method text-xs border border-gray-200 rounded px-1 py-0 text-[#5F6368] bg-white h-6 leading-none text-center';
+                const amtInput = document.createElement('input'); amtInput.type = 'number'; amtInput.name = 'schedule-member-amount'; amtInput.value = amt; 
+                amtInput.placeholder = method === 'card' ? 'TWD' : '金額'; 
+                amtInput.className = 'compact-input w-16 rounded-md text-[10px] flex-shrink-0';
+                
+                const feeInput = document.createElement('input'); feeInput.type = 'number'; feeInput.name = 'schedule-member-fee'; feeInput.value = fee; feeInput.placeholder = '手續費';
+                feeInput.className = `compact-input w-12 rounded-md text-[10px] flex-shrink-0 ${method === 'card' ? '' : 'hidden'}`;
+
+                const select = document.createElement('select'); select.className = 'payment-method text-[10px] border border-gray-200 rounded px-1 py-0 text-[#5F6368] bg-white h-6 leading-none text-center flex-shrink-0';
                 const op1 = document.createElement('option'); op1.value='cash'; op1.text='現金'; const op2 = document.createElement('option'); op2.value='card'; op2.text='刷卡';
                 select.add(op1); select.add(op2); select.value = method;
-                select.onchange = () => updateFormTotalPreview();
 
-                optsDiv.appendChild(label); optsDiv.appendChild(select);
-                const delBtn = document.createElement('button'); delBtn.type = 'button'; delBtn.className = 'text-[#CB8572] font-bold p-1 rm-btn ml-auto text-lg leading-none w-6 flex justify-center items-center'; delBtn.textContent = '×';
-                delBtn.onclick = () => { d.remove(); updateFormTotalPreview(); };
+                select.onchange = (e) => {
+                    if (e.target.value === 'card') {
+                        feeInput.classList.remove('hidden');
+                        amtInput.placeholder = 'TWD';
+                    } else {
+                        feeInput.classList.add('hidden');
+                        amtInput.placeholder = '金額';
+                        feeInput.value = '';
+                    }
+                };
+
+                const label = document.createElement('label'); label.className = 'flex items-center text-[10px] text-[#7E92A1] cursor-pointer leading-none select-none whitespace-nowrap ml-auto';
+                const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.className = 'payer-check mr-1 h-3.5 w-3.5'; checkbox.checked = isPayer;
+                label.appendChild(checkbox); label.appendChild(document.createTextNode('先付'));
+
+                const delBtn = document.createElement('button'); delBtn.type = 'button'; delBtn.className = 'text-[#CB8572] font-bold p-1 rm-btn text-lg leading-none w-5 flex justify-center items-center'; delBtn.textContent = '×';
+                delBtn.onclick = () => d.remove();
+
+                mainRow.appendChild(nameInput); 
+                mainRow.appendChild(select);
+                mainRow.appendChild(amtInput); 
+                mainRow.appendChild(feeInput);
+                mainRow.appendChild(label); 
+                mainRow.appendChild(delBtn);
                 
-                d.appendChild(nameInput); d.appendChild(amtInput); d.appendChild(currencyBadge); d.appendChild(optsDiv); d.appendChild(delBtn);
+                d.appendChild(mainRow);
                 document.getElementById('form-members-container').appendChild(d); 
             }
 
@@ -692,15 +696,23 @@
                     for (let row of memberRows) {
                         const name = row.querySelector('input[name="schedule-member-name"]').value.trim();
                         const amountStr = row.querySelector('input[name="schedule-member-amount"]').value;
+                        const feeStr = row.querySelector('input[name="schedule-member-fee"]').value;
                         const isPayer = row.querySelector('.payer-check').checked;
                         const method = row.querySelector('.payment-method').value;
-                        if (name) members.push({ name: name, amount: amountStr ? parseFloat(amountStr) : null, isPayer: isPayer, method: method });
+                        if (name) members.push({ 
+                            name: name, 
+                            amount: amountStr ? parseFloat(amountStr) : null, 
+                            fee: feeStr ? parseFloat(feeStr) : null,
+                            isPayer: isPayer, 
+                            method: method 
+                        });
                     }
                     const uid = auth.currentUser ? auth.currentUser.uid : null; 
+                    let rawAmount = parseFloat(document.getElementById('form-amount').value); if (isNaN(rawAmount)) rawAmount = 0;
                     const data = { 
                         dayId, Date: dateVal, Time: document.getElementById('form-time').value, Location: document.getElementById('form-location').value, 
                         Type: document.getElementById('form-type').value, 說明: document.getElementById('form-details').value, 
-                        Address: document.getElementById('form-address').value, Fee: parseFloat(document.getElementById('form-fee').value) || 0, Rate: currentTripRate || 1, 
+                        Address: document.getElementById('form-address').value, Amount: rawAmount, Rate: currentTripRate || 1, 
                         members, uid: uid, MustGo: document.getElementById('form-must-go').checked || false, SetAlarm: document.getElementById('form-set-alarm').checked || false 
                     };
                     const col = collection(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`);
@@ -860,7 +872,7 @@
             async function updateListItem(l, i, chg) { try { const ni = [...l.items]; if (!ni[i]) ni[i] = {}; ni[i] = {...ni[i], ...chg}; await updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Lists/${l.id}`), {items:ni}); } catch(e) { } }
             async function deleteListItem(l, i) { const ni=l.items.filter((_,x)=>x!==i); await updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Lists/${l.id}`), {items:ni}); }
 
-            // --- 修改後的分帳核心邏輯 (含手續費與刷卡換算) ---
+            // --- 總記帳與分帳邏輯 ---
             async function loadExpenseSummary() {
                 if(!currentTripId) return; 
                 const snap = await getDocs(collection(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`));
@@ -869,98 +881,125 @@
                 snap.forEach(d => {
                     const da = d.data(); 
                     const rate = da.Rate || 1;
-                    const fee = parseFloat(da.Fee) || 0; // 手續費
                     const members = da.members || [];
                     if (members.length === 0) return;
 
-                    // 1. 決定該行程總額
-                    let effectiveTotal = fee; // 先加手續費
-                    if (fee > 0) types['fee'] = (types['fee'] || 0) + fee; // 紀錄手續費總分類
-
+                    let effectiveTotal = 0;
+                    let feeTotal = 0;
                     let currentCreditors = [];
 
+                    // 計算該筆行程的成員權益與總額
                     members.forEach(m => {
-                        const mAmt = parseFloat(m.amount) || 0;
-                        const amtTWD = (m.method === 'card') ? mAmt : (mAmt * rate);
-                        effectiveTotal += amtTWD;
-                        if(m.isPayer) currentCreditors.push({ name: m.name, lent: amtTWD });
+                        const amt = m.amount || 0;
+                        const fee = m.fee || 0;
+                        let valTWD = 0;
+                        let mFeeTWD = 0;
+
+                        if (m.method === 'card') {
+                            valTWD = amt; 
+                            mFeeTWD = fee;
+                        } else {
+                            valTWD = amt * rate;
+                            mFeeTWD = 0;
+                        }
+
+                        if (m.isPayer) {
+                            effectiveTotal += valTWD;
+                            feeTotal += mFeeTWD;
+                            currentCreditors.push({ name: m.name, lent: valTWD + mFeeTWD });
+                        }
                     });
 
-                    // 如果有手續費且有代墊者，將手續費分攤給代墊者(簡化:給第一個代墊者)
-                    if (fee > 0 && currentCreditors.length > 0) {
-                        currentCreditors[0].lent += fee;
+                    // 備援邏輯
+                    if (effectiveTotal === 0 && da.Amount > 0) {
+                        effectiveTotal = da.Amount * rate;
                     }
 
-                    if (effectiveTotal <= 0) return;
-                    total += effectiveTotal;
-                    types[da.Type] = (types[da.Type] || 0) + (effectiveTotal - fee); // 原始類型不含手續費
+                    if (effectiveTotal <= 0 && feeTotal <= 0) return;
 
-                    // 2. 結算
-                    const perPersonTWD = effectiveTotal / members.length;
-                    
-                    // 債務/權益
-                    currentCreditors.forEach(c => balances[c.name] = (balances[c.name] || 0) + c.lent);
-                    members.forEach(m => {
-                        const mName = typeof m === 'string' ? m : m.name;
-                        balances[mName] = (balances[mName] || 0) - perPersonTWD;
-                        
-                        if(!mems[mName]) mems[mName] = { total: 0, cats: {} };
-                        mems[mName].total += perPersonTWD;
-                        mems[mName].cats[da.Type] = (mems[mName].cats[da.Type] || 0) + (perPersonTWD * (effectiveTotal-fee)/effectiveTotal);
-                        if(fee>0) mems[mName].cats['fee'] = (mems[mName].cats['fee'] || 0) + (perPersonTWD * fee/effectiveTotal);
+                    total += (effectiveTotal + feeTotal);
+                    types[da.Type] = (types[da.Type] || 0) + effectiveTotal;
+                    if (feeTotal > 0) types['fee'] = (types['fee'] || 0) + feeTotal;
+
+                    const activeParticipants = members.filter(m => {
+                        if (typeof m === 'string') return true;
+                        if (m.amount > 0 && !m.isPayer) return false;
+                        return true;
                     });
+
+                    if (activeParticipants.length > 0) {
+                        const debtPerPerson = (effectiveTotal + feeTotal) / activeParticipants.length;
+
+                        currentCreditors.forEach(c => {
+                            balances[c.name] = (balances[c.name] || 0) + c.lent;
+                        });
+
+                        activeParticipants.forEach(p => {
+                            const pName = typeof p === 'string' ? p : p.name;
+                            balances[pName] = (balances[pName] || 0) - debtPerPerson;
+                            
+                            if(!mems[pName]) mems[pName] = { total: 0, cats: {} };
+                            mems[pName].total += debtPerPerson;
+                            
+                            // 將手續費比例分配進個人的分類統計 (或是統一歸類到 fee)
+                            const basePortion = (effectiveTotal / (effectiveTotal + feeTotal)) * debtPerPerson;
+                            const feePortion = debtPerPerson - basePortion;
+
+                            mems[pName].cats[da.Type] = (mems[pName].cats[da.Type] || 0) + basePortion;
+                            if (feePortion > 0) mems[pName].cats['fee'] = (mems[pName].cats['fee'] || 0) + feePortion;
+                        });
+                    }
                 });
 
-                renderSummaryModal(total, types, mems, balances);
-            }
-
-            function renderSummaryModal(total, types, mems, balances) {
-                const modal = document.getElementById('split-expense-modal');
-                modal.style.display = 'flex';
-                modal.innerHTML = `<div class="bg-white rounded-xl shadow-2xl p-4 w-11/12 max-w-sm flex flex-col max-h-[90vh]"><h3 class="text-sm font-bold mb-2 flex justify-between items-center text-[#4A4B4D]">花費<button id="split-expense-close-btn" class="text-[#A9A9A9] text-xl leading-none">×</button></h3><div class="flex-shrink-0 mb-2 bg-[#F9F9F9] p-2 rounded border border-[#E0E0E0]"><div class="flex justify-between items-end mb-1 border-b border-[#E0E0E0] pb-0.5"><span class="text-[#5F6368] font-medium text-xs">總花費</span><span class="text-sm font-extrabold text-[#4A4B4D]">TWD$ <span id="expense-total-amount">${total.toFixed(0)}</span></span></div><div class="h-32 w-full relative flex justify-center items-center"><canvas id="expense-chart"></canvas></div></div><div class="overflow-y-auto flex-grow mb-1 pr-1"><div id="expense-member-list"></div></div></div>`;
-                
-                safeBind('split-expense-close-btn', 'onclick', () => modal.style.display='none');
-                
-                const ctx = document.getElementById('expense-chart').getContext('2d');
-                const sortedKeys = Object.keys(types).sort((a,b) => types[b] - types[a]);
+                document.getElementById('expense-total-amount').textContent = total.toFixed(0);
+                const ctx = document.getElementById('expense-chart').getContext('2d'); 
                 if(expenseChart) expenseChart.destroy();
-                expenseChart = new Chart(ctx, {
-                    type: 'doughnut',
+                const sortedKeys = Object.keys(types).sort((a,b) => types[b] - types[a]);
+                expenseChart = new Chart(ctx, { 
+                    type: 'doughnut', 
                     data: {
-                        labels: sortedKeys.map(k => CATEGORY_NAMES[k]||k),
+                        labels: sortedKeys.map(k => CATEGORY_NAMES[k]||k), 
                         datasets: [{ data: sortedKeys.map(k => types[k]), backgroundColor: sortedKeys.map(k => (CATEGORY_COLORS[k]||CATEGORY_COLORS.default).hex), borderWidth: 0 }]
-                    },
-                    options: { responsive: true, maintainAspectRatio: false, cutout: '55%', plugins: { legend: { display: false } } }
+                    }, 
+                    options: { responsive: true, maintainAspectRatio: false, cutout: '45%', plugins: { legend: { display: false } } } 
                 });
 
-                const l = document.getElementById('expense-member-list');
+                const leftContainer = document.getElementById('expense-legend-left');
+                const rightContainer = document.getElementById('expense-legend-right');
+                leftContainer.innerHTML = ''; rightContainer.innerHTML = '';
+                sortedKeys.forEach((key, index) => {
+                    const itemHtml = `<div class="flex flex-col ${index >= 3 ? 'items-end text-right' : 'items-start text-left'} w-full"><div class="flex items-center gap-1 ${index >= 3 ? 'flex-row-reverse' : 'flex-row'} w-full"><div class="w-2 h-2 rounded-full flex-shrink-0" style="background-color: ${(CATEGORY_COLORS[key] || CATEGORY_COLORS.default).hex};"></div><span class="text-[9px] font-bold text-[#5F6368] truncate">${CATEGORY_NAMES[key] || key}</span></div><span class="text-[9px] text-[#A9A9A9] font-medium leading-none mt-0.5">$${types[key].toFixed(0)}</span></div>`;
+                    if (index >= 3) rightContainer.innerHTML += itemHtml; else leftContainer.innerHTML += itemHtml;
+                });
+
+                const l = document.getElementById('expense-member-list'); 
                 l.innerHTML = `<div class="grid grid-cols-[40%_20%_40%] border-b border-[#E0E0E0] pb-1 mb-2 font-bold text-[#5F6368] text-[10px]"><span>成員</span><span class="text-center">類別</span><span class="text-right">分攤金額</span></div>`;
-                Object.keys(mems).sort().forEach(n => {
-                    let first=true;
-                    Object.keys(mems[n].cats).forEach(c => {
-                        l.innerHTML += `<div class="grid grid-cols-[40%_20%_40%] py-0.5 text-[10px] border-b border-[#F0F0F0] items-center">${first ? `<span class="font-bold truncate">${n}</span>` : '<span></span>'}<span class="text-center ${(CATEGORY_COLORS[c]||CATEGORY_COLORS.default).text}">${CATEGORY_NAMES[c]}</span><span class="text-right text-[#888888]">$${mems[n].cats[c].toFixed(0)}</span></div>`;
-                        first=false;
-                    });
-                    l.innerHTML += `<div class="grid grid-cols-[40%_20%_40%] py-1 mb-2 bg-[#F9F9F9] text-[10px] font-bold"><span></span><span class="text-center">個人總計</span><span class="text-right">$${mems[n].total.toFixed(0)}</span></div>`;
+                Object.keys(mems).sort().forEach(n => { 
+                    let first=true; 
+                    Object.keys(mems[n].cats).forEach(c => { 
+                        l.innerHTML += `<div class="grid grid-cols-[40%_20%_40%] py-0.5 text-[10px] border-b border-[#F0F0F0] items-center">${first ? `<span class="font-bold truncate">${n}</span>` : '<span></span>'}<span class="text-center ${(CATEGORY_COLORS[c]||CATEGORY_COLORS.default).text}">${CATEGORY_NAMES[c]}</span><span class="text-right text-[#888888]">$${mems[n].cats[c].toFixed(0)}</span></div>`; 
+                        first=false; 
+                    }); 
+                    l.innerHTML += `<div class="grid grid-cols-[40%_20%_40%] py-1 mb-2 bg-[#F9F9F9] text-[10px] font-bold"><span></span><span class="text-center">個人總計</span><span class="text-right">$${mems[n].total.toFixed(0)}</span></div>`; 
                 });
 
-                // 轉帳建議
                 let debtors = [], creditors = [];
                 for (let name in balances) {
                     if (balances[name] < -1) debtors.push({name, amount: Math.abs(balances[name])});
                     else if (balances[name] > 1) creditors.push({name, amount: balances[name]});
                 }
                 l.innerHTML += `<div class="mt-3 mb-1 text-[11px] font-extrabold text-[#7E92A1]">結算轉帳</div>`;
-                if (!debtors.length && !creditors.length) l.innerHTML += `<div class="text-[10px] text-gray-400 py-1 text-center">皆已平分</div>`;
+                if (debtors.length === 0 && creditors.length === 0) l.innerHTML += `<div class="text-[10px] text-gray-400 py-1 text-center">皆已平分</div>`;
                 else {
                     let i=0, j=0;
                     while(i < debtors.length && j < creditors.length){
-                        let move = Math.min(debtors[i].amount, creditors[j].amount);
-                        if (move > 0.5) l.innerHTML += `<div class="grid grid-cols-[15%_30%_35%_20%] items-center py-2 px-0 text-[10px] border-b border-gray-50"><span class="font-bold text-[#CB8572] truncate pl-1">${debtors[i].name}</span><span class="text-gray-400 text-center">轉給</span><span class="font-bold text-[#7E92A1] truncate pl-1">${creditors[j].name}</span><span class="font-bold text-[#5F6368] text-right">$${move.toFixed(0)}</span></div>`;
-                        debtors[i].amount -= move; creditors[j].amount -= move;
+                        let amount = Math.min(debtors[i].amount, creditors[j].amount);
+                        if (amount > 0.5) l.innerHTML += `<div class="grid grid-cols-[15%_30%_35%_20%] items-center py-2 px-0 text-[10px] border-b border-gray-50"><span class="font-bold text-[#CB8572] truncate pl-1">${debtors[i].name}</span><span class="text-gray-400 text-center">轉給</span><span class="font-bold text-[#7E92A1] truncate pl-1">${creditors[j].name}</span><span class="font-bold text-[#5F6368] text-right">$${amount.toFixed(0)}</span></div>`;
+                        debtors[i].amount -= amount; creditors[j].amount -= amount;
                         if(debtors[i].amount < 1) i++; if(creditors[j].amount < 1) j++;
                     }
                 }
+                document.getElementById('split-expense-modal').style.display = 'flex';
             }
 
             async function deleteSchedule(id) { if(!confirm('確定刪除?')) return; await deleteDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`, id)); loadSchedules(currentTripId, currentDayId); }
@@ -968,6 +1007,7 @@
 
             function initApp() {
                 document.addEventListener('DOMContentLoaded', async () => {
+                    document.getElementById('rate-display-label').textContent = '匯率 ≈ ...';
                     const app = initializeApp(firebaseConfig); db = getFirestore(app); auth = getAuth(app); 
                     const userCred = await signInAnonymously(auth); currentUser = userCred.user;
                     
@@ -984,15 +1024,18 @@
                                 </div>
                                 <div class="flex gap-2 items-center"><div class="flex-grow"><label class="block compact-label">地點</label><input type="text" id="form-location" class="compact-input block w-full rounded border px-2 text-xs" style="height: 32px;" placeholder="地點名稱"></div><div class="flex gap-2 h-10 items-center"><div class="flex flex-col items-center"><span class="compact-label text-[10px] text-[#CB8572]">必去</span><input type="checkbox" id="form-must-go" class="w-3.5 h-3.5 accent-[#CB8572]"></div><div class="flex flex-col items-center"><span class="compact-label text-[10px] text-[#7E92A1]">鬧鐘</span><input type="checkbox" id="form-set-alarm" class="w-3.5 h-3.5 accent-[#7E92A1]"></div></div></div>
                                 <div><label class="block compact-label">地址</label><input type="text" id="form-address" class="compact-input block w-full rounded border px-2 text-xs" style="height: 28px;" placeholder="地址或連結"></div>
-                                <div><textarea id="form-details" rows="3" class="compact-input block w-full rounded border leading-normal p-2 text-xs !h-auto" placeholder="備註..."></textarea></div>
-                                <div class="bg-gray-50 p-2 rounded border border-gray-100 mt-1"><div class="flex items-center mb-1 gap-2"><label class="block compact-label">成員分帳</label><button type="button" id="add-member-btn" class="text-[#7E92A1] text-xs font-bold px-1">＋</button></div><div id="form-members-container" class="space-y-1 mb-2"></div>
-                                <div class="grid grid-cols-2 gap-2 border-t border-gray-200 pt-2 items-center">
-                                    <div class="flex items-center gap-1"><label class="text-[10px] font-bold text-[#A0AEC0]">手續費(TWD)</label><input type="number" id="form-fee" class="w-full p-1 border rounded text-right text-[11px] bg-white" oninput="window.App.updateFormTotalPreview()"></div>
-                                    <div class="flex flex-col items-end"><span class="text-[9px] text-gray-400">預估台幣總額</span><span class="text-sm font-black text-[#7E92A1]">$<span id="form-total-preview-val">0</span></span></div>
-                                </div>
-                                </div>
+                                <div><textarea id="form-details" rows="4" class="compact-input block w-full rounded border leading-normal p-2 text-xs !h-auto" placeholder="備註..."></textarea></div>
+                                <div class="bg-gray-50 p-2 rounded border border-gray-100 mt-1"><div class="flex items-center mb-1 gap-2"><label class="block compact-label">成員</label><button type="button" id="add-member-btn" class="text-[#7E92A1] text-xs font-bold px-1">＋</button></div><div id="form-members-container" class="space-y-1 mb-2"></div><div class="grid grid-cols-[1fr_20px_1fr] gap-2 items-center mt-2 border-t border-gray-200 pt-2"><div class="flex items-center gap-1"><label id="form-currency-label" class="text-[10px] font-bold text-[#7E92A1] w-8 text-right">USD</label><input type="number" id="form-amount" placeholder="" class="w-full p-1 border rounded text-right text-[11px] bg-white"></div><div class="text-center text-gray-400 text-xs font-bold">=</div><div class="flex items-center gap-1"><span class="text-[10px] font-bold text-[#A9A9A9] w-8 text-right">TWD</span><input type="number" id="form-amount-twd" placeholder="" class="w-full p-1 border bg-white rounded text-right text-[11px]"></div></div></div>
                                 <div class="flex justify-between items-center pt-2 mt-2 border-t border-[#E0E0E0]"><button type="button" id="modal-delete-btn" class="px-3 py-1 h-7 text-white bg-[#CB8572] rounded text-xs font-bold hidden">刪除</button><div class="flex-grow flex justify-end"><button type="button" id="modal-save-btn" class="px-3 py-1 h-7 text-white bg-[#7E92A1] rounded text-xs font-bold shadow-sm">儲存</button></div></div>
                             </form>`;
+                    }
+
+                    const splitExpenseModalContent = document.querySelector('#split-expense-modal > div');
+                    if (splitExpenseModalContent) {
+                        splitExpenseModalContent.innerHTML = `
+                            <h3 class="text-sm font-bold mb-2 flex justify-between items-center text-[#4A4B4D]">花費<button id="split-expense-close-btn" class="text-[#A9A9A9] text-xl">×</button></h3>
+                            <div class="flex-shrink-0 mb-2 bg-[#F9F9F9] p-2 rounded border border-[#E0E0E0]"><div class="flex justify-between items-end mb-2 border-b border-[#E0E0E0] pb-0.5"><span class="text-[#5F6368] font-medium text-xs">總花費</span><span class="text-sm font-extrabold text-[#4A4B4D]">TWD$ <span id="expense-total-amount">0</span></span></div><div class="grid grid-cols-[28%_44%_28%] h-32 w-full items-center"><div id="expense-legend-left" class="flex flex-col justify-center gap-1.5 pl-1 h-full overflow-hidden"></div><div id="expense-chart-container" class="relative h-full w-full flex justify-center items-center"><canvas id="expense-chart"></canvas></div><div id="expense-legend-right" class="flex flex-col justify-center gap-1.5 pr-1 items-end h-full overflow-hidden"></div></div></div>
+                            <div class="overflow-y-auto flex-grow mb-1 pr-1"><div id="expense-member-list" class="space-y-0.5"></div></div>`;
                     }
 
                     const settingsModalContent = document.querySelector('#settings-modal > div');
@@ -1020,15 +1063,26 @@
                         (t.members||[]).forEach(n=>addMemberInput(n)); 
                         if(!(t.members||[]).length){addMemberInput();addMemberInput();} 
                         document.getElementById('add-schedule-modal').style.display='flex'; 
-                        updateFormTotalPreview();
                     });
                     safeBind('modal-close-btn', 'onclick', () => document.getElementById('add-schedule-modal').style.display='none');
                     safeBind('modal-save-btn', 'onclick', submitSchedule);
 
+                    safeBind('form-amount', 'oninput', (e) => {
+                        const val = parseFloat(e.target.value);
+                        const twd = document.getElementById('form-amount-twd');
+                        if (twd) twd.value = isNaN(val) ? '' : (val * currentTripRate).toFixed(0);
+                    });
+
+                    safeBind('form-amount-twd', 'oninput', (e) => {
+                        const twdVal = parseFloat(e.target.value);
+                        const foreignInp = document.getElementById('form-amount');
+                        if (foreignInp) foreignInp.value = isNaN(twdVal) ? '' : (twdVal / currentTripRate).toFixed(2);
+                    });
+
                     safeBind('btn-lists', 'onclick', loadLists);
                     safeBind('lists-modal-close-btn', 'onclick', () => document.getElementById('lists-modal').style.display='none');
                     safeBind('split-expense-btn', 'onclick', loadExpenseSummary);
-                    
+                    safeBind('split-expense-close-btn', 'onclick', () => document.getElementById('split-expense-modal').style.display='none');
                     safeBind('settings-btn', 'onclick', () => { 
                         const trip = tripData[currentTripId]; if (!trip) return;
                         document.getElementById('settings-trip-name').value = trip.name; 
@@ -1064,7 +1118,7 @@
                     safeBind('add-member-btn', 'onclick', () => addMemberInput());
                 });
             }
-            return { initApp, updateFormTotalPreview };
+            return { initApp };
         })();
         window.App.initApp();
     </script>
