@@ -460,6 +460,43 @@
                 contentEl.addEventListener('touchend', () => { contentEl.style.transform = (isSwiping && currentTranslate < -70) ? `translateX(-140px)` : `translateX(0)`; });
             }
 
+            // --- 行事曆連動輔助函式 ---
+            function addToCalendar(event) {
+                const title = event.Location || '行程';
+                const desc = event.說明 || '';
+                const loc = event.Address || '';
+                const startDateStr = event.Date.replace(/-/g, '');
+                const startTimeStr = event.Time.replace(/:/g, '') + '00';
+                
+                // 產生 ICS 內容
+                const icsContent = [
+                    'BEGIN:VCALENDAR',
+                    'VERSION:2.0',
+                    'PRODID:-//Trip Compass//Calendar Event//EN',
+                    'BEGIN:VEVENT',
+                    `DTSTART:${startDateStr}T${startTimeStr}`,
+                    `DTEND:${startDateStr}T${startTimeStr}`, // 同步時間
+                    `SUMMARY:${title}`,
+                    `DESCRIPTION:${desc}`,
+                    `LOCATION:${loc}`,
+                    'BEGIN:VALARM',
+                    'TRIGGER:-PT15M', // 提前 15 分鐘提醒
+                    'ACTION:DISPLAY',
+                    'DESCRIPTION:Reminder',
+                    'END:VALARM',
+                    'END:VEVENT',
+                    'END:VCALENDAR'
+                ].join('\n');
+
+                const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `${title}.ics`;
+                link.click();
+                URL.revokeObjectURL(url);
+            }
+
             // --- 行程編輯視窗 ---
             function openEditScheduleModal(s) {
                 editingScheduleId = s.id;
@@ -483,12 +520,13 @@
                         </div>
                         <div class="flex gap-2 items-center">
                             <div class="flex-grow"><label class="compact-label">地點</label><input type="text" id="form-location" class="compact-input w-full rounded border" value="${s.Location||''}"></div>
-                            <div class="flex gap-2 items-center">
+                            <div class="flex gap-3 items-center">
                                 <div class="flex flex-col items-center"><span class="compact-label text-[10px] text-[#CB8572]">必去</span><input type="checkbox" id="form-must-go" ${s.MustGo?'checked':''}></div>
+                                <div class="flex flex-col items-center"><span class="compact-label text-[10px] text-[#7E92A1]">⏰ 提醒</span><input type="checkbox" id="form-remind"></div>
                             </div>
                         </div>
                         <div><label class="compact-label">地址</label><input type="text" id="form-address" class="compact-input w-full rounded border" value="${s.Address||''}"></div>
-                        <div><textarea id="form-details" rows="3" class="compact-input w-full rounded border h-auto">${s.說明||''}</textarea></div>
+                        <div><textarea id="form-details" rows="3" class="compact-input w-full rounded border h-auto" placeholder="備註內容...">${s.說明||''}</textarea></div>
                         <div class="bg-gray-50 p-2 rounded border">
                             <div class="flex items-center mb-1 gap-2"><label class="compact-label">成員</label><button type="button" id="add-member-btn" class="text-[#7E92A1] text-xs font-bold">＋</button></div>
                             <div id="form-members-container" class="space-y-1 mb-2"></div>
@@ -546,18 +584,27 @@
                     const amt = row.querySelector('input[name="schedule-member-amount"]').value;
                     if (name) members.push({ name, amount: amt ? parseFloat(amt) : null, isPayer: row.querySelector('.payer-check').checked, method: row.querySelector('.payment-method').value });
                 });
+
+                const isRemind = document.getElementById('form-remind').checked;
                 const data = { 
                     dayId, Date: dateVal, Time: document.getElementById('form-time').value, Location: document.getElementById('form-location').value,
                     Type: document.getElementById('form-type').value, 說明: document.getElementById('form-details').value,
                     Address: document.getElementById('form-address').value, Amount: parseFloat(document.getElementById('form-amount').value) || 0, Rate: currentTripRate,
                     members, MustGo: document.getElementById('form-must-go').checked, uid: currentUser.uid
                 };
+                
                 const col = collection(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`);
                 if (editingScheduleId) await updateDoc(doc(col, editingScheduleId), data); else await addDoc(col, data);
+                
+                // 若勾選提醒，執行連動手機行事曆
+                if (isRemind) {
+                    addToCalendar(data);
+                }
+
                 document.getElementById('add-schedule-modal').style.display = 'none'; loadSchedules(currentTripId, dayId);
             }
 
-            // --- 清單與花費邏輯 (保持不變) ---
+            // --- 清單與花費邏輯 ---
             async function checkAndCreateDefaultLists(tripId) {
                 const col = collection(db, `artifacts/${appId}/public/data/Trips/${tripId}/Lists`);
                 const snap = await getDocs(col);
