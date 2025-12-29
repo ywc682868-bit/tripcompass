@@ -341,7 +341,6 @@
                     const diffTimeTrip = today.getTime() - start.getTime();
                     const diffDaysTrip = Math.floor(diffTimeTrip / (1000 * 60 * 60 * 24));
                     const calculatedDay = diffDaysTrip + 1;
-                    // 若行程尚未開始 (calculatedDay < 1)，預設顯示 Day 1
                     currentDayId = (calculatedDay >= 1 && calculatedDay <= (trip.numDays || 1)) ? `Day ${calculatedDay}` : 'Day 1';
                 } else currentDayId = 'Day 1';
                 currentListTabId = null; 
@@ -359,15 +358,9 @@
                 
                 let calculatedTotalTW = 0;
                 let anyPayer = members.some(m => typeof m !== 'string' && m.isPayer);
-                let allAmountsEntered = members.length > 0 && members.every(m => typeof m !== 'string' && m.amount !== null && m.amount !== undefined && !isNaN(m.amount));
 
-                if (!anyPayer && allAmountsEntered) {
-                    members.forEach(m => {
-                        const amt = parseFloat(m.amount) || 0;
-                        const fee = parseFloat(m.fee) || 0;
-                        calculatedTotalTW += (m.method === 'card' ? (amt + fee) : (amt * rate));
-                    });
-                } else {
+                // 修正：主頁面總計邏輯與花費頁面一致
+                if (anyPayer) {
                     members.forEach(m => {
                         if (typeof m !== 'string' && m.isPayer) {
                             const amt = parseFloat(m.amount) || 0;
@@ -375,13 +368,19 @@
                             calculatedTotalTW += (m.method === 'card' ? (amt + fee) : (amt * rate));
                         }
                     });
+                } else {
+                    members.forEach(m => {
+                        const amt = parseFloat(m.amount) || 0;
+                        const fee = parseFloat(m.fee) || 0;
+                        calculatedTotalTW += (m.method === 'card' ? (amt + fee) : (amt * rate));
+                    });
                 }
 
-                if (calculatedTotalTW === 0 && schedule.Amount > 0) {
-                    calculatedTotalTW = schedule.Amount * rate;
+                if (calculatedTotalTW === 0 && (parseFloat(schedule.Amount) || 0) > 0) {
+                    calculatedTotalTW = parseFloat(schedule.Amount) * rate;
                 }
 
-                const participants = members.filter(m => !(typeof m !== 'string' && m.amount > 0 && !m.isPayer));
+                const participants = members.filter(m => !(typeof m !== 'string' && (parseFloat(m.amount) || 0) > 0 && !m.isPayer));
                 const perPersonTW = participants.length > 0 ? calculatedTotalTW / participants.length : 0;
                 
                 let memberHtml = members.length > 0 ? `<div class="flex flex-nowrap overflow-hidden justify-end gap-x-1.5 ml-2 max-w-[120px]">` + members.map((m, i) => `<span class="${MEMBER_COLORS[i % MEMBER_COLORS.length]} text-[10px] font-bold whitespace-nowrap">${typeof m === 'string' ? m : m.name}</span>`).join('') + `</div>` : '';
@@ -544,11 +543,10 @@
                 const trip = tripData[currentTripId];
                 let sumTW = 0;
                 let sumLocal = 0;
-                let anyPayerChecked = false;
-                let allAmountsEntered = true;
-
+                
                 const memberRows = document.getElementById('form-members-container').querySelectorAll('.member-row');
-                if (memberRows.length === 0) allAmountsEntered = false;
+                // 修改：不論全員是否填寫，只要沒勾選先付，就加總所有已填寫金額
+                let anyPayerChecked = Array.from(memberRows).some(row => row.querySelector('.payer-check').checked);
 
                 memberRows.forEach(row => {
                     const isPayer = row.querySelector('.payer-check').checked;
@@ -558,37 +556,20 @@
                     const fee = parseFloat(row.querySelector('.member-fee-input').value) || 0;
                     const method = row.querySelector('.payment-method').value;
 
-                    if (isPayer) anyPayerChecked = true;
-                    if (amountStr === "") allAmountsEntered = false;
-
-                    if (isPayer) {
-                        if (method === 'card') {
-                            sumTW += (amount + fee);
-                        } else {
-                            sumLocal += amount;
-                            sumTW += (amount * currentTripRate);
+                    if (anyPayerChecked) {
+                        if (isPayer) {
+                            if (method === 'card') sumTW += (amount + fee);
+                            else { sumLocal += amount; sumTW += (amount * currentTripRate); }
                         }
+                    } else {
+                        // 沒人勾先付的情況：加總所有人的輸入值
+                        if (method === 'card') sumTW += (amount + fee);
+                        else { sumLocal += amount; sumTW += (amount * currentTripRate); }
                     }
                 });
 
-                if (!anyPayerChecked && allAmountsEntered) {
-                    let totalManualTW = 0;
-                    memberRows.forEach(row => {
-                        const amount = parseFloat(row.querySelector('input[name="schedule-member-amount"]').value) || 0;
-                        const fee = parseFloat(row.querySelector('.member-fee-input').value) || 0;
-                        const method = row.querySelector('.payment-method').value;
-                        if (method === 'card') {
-                            totalManualTW += (amount + fee);
-                        } else {
-                            totalManualTW += (amount * currentTripRate);
-                        }
-                    });
-                    document.getElementById('form-amount-twd').value = totalManualTW.toFixed(0);
-                    document.getElementById('form-amount').value = ''; 
-                } else {
-                    document.getElementById('form-amount').value = sumLocal > 0 ? sumLocal.toFixed(2).replace(/\.00$/, '') : '';
-                    document.getElementById('form-amount-twd').value = sumTW > 0 ? sumTW.toFixed(0) : '';
-                }
+                document.getElementById('form-amount').value = sumLocal > 0 ? sumLocal.toFixed(2).replace(/\.00$/, '') : '';
+                document.getElementById('form-amount-twd').value = sumTW > 0 ? sumTW.toFixed(0) : '';
             }
 
             // --- 行程編輯視窗 ---
@@ -974,7 +955,6 @@
 
                 const mList = document.getElementById('exp-mem-list');
                 Object.keys(mems).sort().forEach(n => {
-                    // 修改：類型名稱靠左 (flex-1)，金額區塊緊鄰並縮小間距 (gap-0.5)
                     let cats = Object.keys(mems[n].cats).map(c => {
                         const catStyle = CATEGORY_COLORS[c] || CATEGORY_COLORS.default;
                         return `<div class="flex items-center py-0.5 text-[10px] h-6">
@@ -996,7 +976,6 @@
                     let i=0, j=0;
                     while(i < debtors.length && j < creditors.length){
                         let amt = Math.min(debtors[i].a, creditors[j].a);
-                        // 修改：結算建議改為兩端分散對齊，且成員名與箭頭平均分散
                         setCont.innerHTML += `
                         <div class="flex justify-between items-center bg-gray-50 p-2.5 rounded-xl text-[11px] w-full">
                             <div class="flex justify-around items-center flex-grow text-gray-600 mr-4">
