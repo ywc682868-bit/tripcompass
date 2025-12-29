@@ -723,7 +723,7 @@
             }
 
             async function checkAndCreateDefaultLists(tripId) {
-                const col = collection(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Lists`);
+                const col = collection(db, `artifacts/${appId}/public/data/Trips/${tripId}/Lists`);
                 const snap = await getDocs(col);
                 if (snap.empty) {
                     await addDoc(col, {name: '物品', type: 'check', order: 1, items:[], uid: currentUser.uid});
@@ -828,17 +828,18 @@
                         c.querySelector('.checkR').onchange = (e) => updateListItem(listData, idx, {checkedRight: e.target.checked});
                         c.querySelector('.txt').onchange = (e) => updateListItem(listData, idx, {text: e.target.value});
                     } else {
+                        // 購物清單排版修改：地點欄位改為 textarea (方形、多列) 並擴大品名空間
                         c.style.display = 'grid'; 
-                        c.style.gridTemplateColumns = '24px 50px 1.2fr 0.8fr 20px';
+                        c.style.gridTemplateColumns = '24px 50px 1fr 60px 20px';
                         c.innerHTML = `
                             ${star}
                             <div class="shopping-img-box">${item.imageUrl?`<img src="${item.imageUrl}" class="w-full h-full object-cover">`:'📷'}</div>
-                            <div class="flex flex-col min-w-0 pr-2 border-r border-gray-50">
+                            <div class="flex flex-col min-w-0 pr-1 border-r border-gray-50">
                                 <input type="text" value="${item.text||''}" class="name font-bold text-xs border-none p-0 focus:ring-0 truncate" placeholder="品名">
                                 <input type="text" value="${item.desc||''}" class="desc text-[10px] text-gray-400 border-none p-0 focus:ring-0 truncate" placeholder="說明">
                             </div>
-                            <div class="flex items-center pl-2">
-                                <input type="text" value="${item.location||''}" class="loc text-[10px] text-gray-400 border-none p-0 focus:ring-0 truncate" placeholder="地點">
+                            <div class="flex items-center pl-1">
+                                <textarea class="loc text-[9px] text-gray-400 border-none p-0 focus:ring-0 resize-none h-10 w-full bg-transparent leading-tight no-scrollbar" placeholder="地點">${item.location||''}</textarea>
                             </div>
                             <button class="del text-gray-200">×</button>`;
                         
