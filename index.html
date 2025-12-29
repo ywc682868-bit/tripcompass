@@ -626,9 +626,9 @@
                             <div class="flex items-center mb-1 gap-2"><label class="compact-label">成員</label><button type="button" id="add-member-btn" class="text-[#7E92A1] text-xs font-bold">＋</button></div>
                             <div id="form-members-container" class="space-y-1 mb-2"></div>
                             <div class="grid grid-cols-[1fr_20px_1fr] gap-2 items-center mt-2 border-t pt-2">
-                                <div class="flex items-center gap-1"><label id="form-currency-label" class="text-[10px] font-bold text-[#7E92A1] w-8 text-right">${config.currency}</label><input type="number" id="form-amount" readonly class="w-full p-1 border rounded text-right text-[11px] bg-gray-100" value="${s.Amount||''}"></div>
+                                <div class="flex items-center gap-1"><label id="form-currency-label" class="text-[10px] font-bold text-[#7E92A1] w-8 text-right">${config.currency}</label><input type="number" id="form-amount" placeholder="" class="w-full p-1 border rounded text-right text-[11px] bg-gray-100" value="${s.Amount||''}"></div>
                                 <div class="text-center text-gray-400 text-xs font-bold">=</div>
-                                <div class="flex items-center gap-1"><span class="text-[10px] font-bold text-[#A9A9A9] w-8 text-right">TWD</span><input type="number" id="form-amount-twd" readonly class="w-full p-1 border rounded text-right text-[11px] bg-gray-100" value="${(s.Amount * currentTripRate).toFixed(0)}"></div>
+                                <div class="flex items-center gap-1"><span class="text-[10px] font-bold text-[#A9A9A9] w-8 text-right">TWD</span><input type="number" id="form-amount-twd" placeholder="" class="w-full p-1 border rounded text-right text-[11px] bg-gray-100" value="${s.Amount ? (s.Amount * currentTripRate).toFixed(0) : ''}"></div>
                             </div>
                         </div>
                         <div class="flex justify-between items-center pt-2 border-t">
@@ -745,16 +745,33 @@
                     if(!currentListTabId || !lists.find(l=>l.id===currentListTabId)) currentListTabId = lists[0].id;
                     lists.forEach(l => {
                         const t = document.createElement('div'); const isActive = l.id === currentListTabId;
-                        t.className = `cursor-pointer px-3 py-2 text-sm flex-shrink-0 whitespace-nowrap ${isActive ? 'border-b-2 border-[#7E92A1] text-[#7E92A1] font-bold' : 'text-[#A9A9A9]'}`;
-                        t.textContent = l.name; 
-                        t.onclick = () => { 
-                            if(isActive) {
-                                openListRenameSettings(l); 
-                            } else { 
-                                currentListTabId = l.id; 
-                                loadLists(); 
-                            } 
-                        };
+                        t.className = `cursor-pointer px-3 py-2 text-sm flex-shrink-0 whitespace-nowrap transition-all ${isActive ? 'border-b-2 border-[#7E92A1] text-[#7E92A1] font-bold' : 'text-[#A9A9A9]'}`;
+                        
+                        if (isActive) {
+                            // 當前分頁顯示為輸入框，以便直接編輯
+                            const inp = document.createElement('input');
+                            inp.type = 'text';
+                            inp.value = l.name;
+                            inp.className = 'bg-transparent border-none focus:ring-0 p-0 w-20 font-bold text-[#7E92A1] text-sm text-center';
+                            inp.onblur = async () => {
+                                const newName = inp.value.trim();
+                                if (newName === "") {
+                                    if(confirm(`要刪除清單「${l.name}」嗎？`)) {
+                                        await deleteDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Lists/${l.id}`));
+                                        currentListTabId = null;
+                                    } else {
+                                        inp.value = l.name;
+                                    }
+                                } else if (newName !== l.name) {
+                                    await updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Lists/${l.id}`), { name: newName });
+                                }
+                            };
+                            inp.onkeydown = (e) => { if(e.key === 'Enter') inp.blur(); };
+                            t.appendChild(inp);
+                        } else {
+                            t.textContent = l.name;
+                            t.onclick = () => { currentListTabId = l.id; loadLists(); };
+                        }
                         tabs.appendChild(t);
                     });
 
@@ -777,19 +794,6 @@
                     await addDoc(col, { name, type, order: snap.size + 1, items: [], uid: currentUser.uid });
                 };
                 tabsContainer.appendChild(addTab);
-            }
-
-            async function openListRenameSettings(listData) {
-                const newName = prompt("編輯清單名稱 (留空則會詢問是否刪除)：", listData.name);
-                if (newName === null) return;
-                if (newName.trim() === "") {
-                    if(confirm(`要刪除清單「${listData.name}」嗎？`)) {
-                        await deleteDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Lists/${listData.id}`));
-                        currentListTabId = null;
-                    }
-                } else {
-                    await updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Lists/${listData.id}`), { name: newName });
-                }
             }
 
             function renderListItems(listData, container) {
@@ -825,7 +829,6 @@
                         c.querySelector('.checkR').onchange = (e) => updateListItem(listData, idx, {checkedRight: e.target.checked});
                         c.querySelector('.txt').onchange = (e) => updateListItem(listData, idx, {text: e.target.value});
                     } else {
-                        // 購物清單排版修改：品名/說明在左，地點在右
                         c.style.display = 'grid'; 
                         c.style.gridTemplateColumns = '24px 50px 1.2fr 0.8fr 20px';
                         c.innerHTML = `
