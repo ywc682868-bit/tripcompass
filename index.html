@@ -887,7 +887,9 @@
                 const snap = await getDocs(collection(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`));
                 let total=0, types={}, mems={}, balances={};
                 snap.forEach(d => {
-                    const da = d.data(); const rate = da.Rate || 1; const members = da.members || [];
+                    const da = d.data(); 
+                    const rateVal = parseFloat(da.Rate) || 1; 
+                    const members = da.members || [];
                     if (!members.length) return;
                     let effectiveTotal = 0; let currentCreditors = [];
                     let anyPayer = members.some(m => typeof m !== 'string' && m.isPayer);
@@ -896,7 +898,7 @@
                         members.forEach(m => {
                             const m_amt = parseFloat(m.amount) || 0;
                             const m_fee = parseFloat(m.fee) || 0;
-                            const m_val = m.method === 'card' ? (m_amt + m_fee) : (m_amt * rate);
+                            const m_val = m.method === 'card' ? (m_amt + m_fee) : (m_amt * rateVal);
                             effectiveTotal += m_val; 
                             currentCreditors.push({ name: m.name, lent: m_val });
                         });
@@ -905,15 +907,15 @@
                             if (typeof m !== 'string' && m.isPayer) {
                                 const m_amt = parseFloat(m.amount) || 0;
                                 const m_fee = parseFloat(m.fee) || 0;
-                                const m_val = m.method === 'card' ? (m_amt + m_fee) : (m_amt * rate);
+                                const m_val = m.method === 'card' ? (m_amt + m_fee) : (m_amt * rateVal);
                                 effectiveTotal += m_val;
                                 currentCreditors.push({ name: m.name, lent: m_val });
                             }
                         });
                     }
 
-                    if (effectiveTotal === 0 && (parseFloat(da.Amount)||0) > 0) effectiveTotal = parseFloat(da.Amount) * rate;
-                    if (effectiveTotal <= 0) return;
+                    if (effectiveTotal === 0 && (parseFloat(da.Amount)||0) > 0) effectiveTotal = parseFloat(da.Amount) * rateVal;
+                    if (isNaN(effectiveTotal) || effectiveTotal <= 0) return;
                     total += effectiveTotal;
                     types[da.Type] = (types[da.Type] || 0) + effectiveTotal;
                     
@@ -937,9 +939,9 @@
                         <div class="bg-[#F9F9F9] p-3 rounded-xl border mb-3">
                             <div class="flex justify-between items-end border-b pb-1 mb-2"><span class="text-xs text-gray-500">總支出</span><span class="font-extrabold text-sm text-[#4A4B4D]">TW$ ${total.toFixed(0)}</span></div>
                             <div class="grid grid-cols-[25%_50%_25%] items-center h-44">
-                                <div id="leg-L" class="flex flex-col gap-2 text-[10px] overflow-hidden"></div>
+                                <div id="leg-L" class="flex flex-col text-[10px] overflow-hidden h-full justify-start"></div>
                                 <div class="flex justify-center items-center h-full"><canvas id="exp-chart" style="max-width: 100%; max-height: 100%;"></canvas></div>
-                                <div id="leg-R" class="flex flex-col gap-2 items-end text-[10px] overflow-hidden"></div>
+                                <div id="leg-R" class="flex flex-col text-[10px] overflow-hidden h-full justify-start items-end"></div>
                             </div>
                         </div>
                         <div class="overflow-y-auto flex-grow space-y-2">
@@ -956,11 +958,17 @@
                     options: { maintainAspectRatio: false, cutout: '65%', plugins: { legend: { display: false } } }
                 });
                 
+                // 修正左右類型顏色標記對齊：設定固定高度 h-12，左側 點+文字，右側 文字+點
                 sortedKeys.forEach((k, i) => {
                     const color = (CATEGORY_COLORS[k]||CATEGORY_COLORS.default).hex;
-                    const html = `<div class="flex items-center gap-1"><div class="w-2 h-2 rounded-full flex-shrink-0" style="background-color: ${color}"></div><div class="flex flex-col min-w-0"><span class="font-bold truncate text-[10px]">${CATEGORY_NAMES[k]||k}</span><span class="text-gray-400 text-[9px]">TW$${types[k].toFixed(0)}</span></div></div>`;
-                    if(i % 2 === 0) document.getElementById('leg-L').innerHTML += html; 
-                    else document.getElementById('leg-R').innerHTML += html;
+                    const isLeft = i % 2 === 0;
+                    const contentHtml = isLeft 
+                        ? `<div class="w-2 h-2 rounded-full flex-shrink-0" style="background-color: ${color}"></div><div class="flex flex-col min-w-0"><span class="font-bold truncate text-[10px]">${CATEGORY_NAMES[k]||k}</span><span class="text-gray-400 text-[9px]">TW$${types[k].toFixed(0)}</span></div>`
+                        : `<div class="flex flex-col min-w-0 items-end text-right"><span class="font-bold truncate text-[10px]">${CATEGORY_NAMES[k]||k}</span><span class="text-gray-400 text-[9px]">TW$${types[k].toFixed(0)}</span></div><div class="w-2 h-2 rounded-full flex-shrink-0" style="background-color: ${color}"></div>`;
+                    
+                    const rowHtml = `<div class="flex items-center gap-1.5 h-12">${contentHtml}</div>`;
+                    if(isLeft) document.getElementById('leg-L').innerHTML += rowHtml; 
+                    else document.getElementById('leg-R').innerHTML += rowHtml;
                 });
 
                 const mList = document.getElementById('exp-mem-list');
@@ -968,6 +976,7 @@
                     let cats = Object.keys(mems[n].cats).map(c => `<div class="flex justify-between py-0.5"><span class="${(CATEGORY_COLORS[c]||CATEGORY_COLORS.default).text}">${CATEGORY_NAMES[c]}</span><span>TW$${mems[n].cats[c].toFixed(0)}</span></div>`).join('');
                     mList.innerHTML += `<div><div class="font-bold text-gray-600 mb-1 border-b pb-0.5">${n}</div>${cats}</div>`;
                 });
+                
                 let debtors = [], creditors = [];
                 for(let n in balances) { if(balances[n] < -1) debtors.push({n, a: Math.abs(balances[n])}); else if(balances[n] > 1) creditors.push({n, a: balances[n]}); }
                 const setCont = document.getElementById('settlement');
