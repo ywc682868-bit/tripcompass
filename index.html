@@ -68,8 +68,8 @@
         content: '';
         position: absolute;
         left: 28px; 
-        top: -6px;           
-        bottom: -6px;           
+        top: -6px;          
+        bottom: -6px;          
         width: 2px;
         background-color: #9C8B74; 
         z-index: -1; 
@@ -426,11 +426,12 @@
                     const fee = parseFloat(row.querySelector('input[name="schedule-member-fee"]').value) || 0;
                     const method = row.querySelector('.payment-method').value;
 
+                    // 若為刷卡：直接加台幣金額與台幣手續費
                     if (method === 'card') {
-                        // 刷卡：總台幣 = 刷卡金額 + 手續費
                         totalTWD += (amt + fee);
-                    } else {
-                        // 現金：總台幣 = 現金外幣 * 匯率
+                    } 
+                    // 若為現金：加總外幣金額換匯後的台幣，並累計外幣總額顯示
+                    else {
                         totalTWD += (amt * currentTripRate);
                         totalForeign += amt;
                     }
@@ -643,13 +644,9 @@
                 const mainRow = document.createElement('div');
                 mainRow.className = 'flex items-center w-full gap-1.5';
 
-                // 處理預設值 0 不顯示：若數值為 0，則轉為空白字串
-                const displayAmt = (amt === 0 || amt === '0') ? '' : amt;
-                const displayFee = (fee === 0 || fee === '0') ? '' : fee;
-
                 const nameInput = document.createElement('input'); nameInput.type = 'text'; nameInput.name = 'schedule-member-name'; nameInput.value = name; nameInput.placeholder = '名字'; nameInput.className = 'compact-input w-14 rounded-md font-bold text-[10px] flex-shrink-0';
-                const amtInput = document.createElement('input'); amtInput.type = 'number'; amtInput.name = 'schedule-member-amount'; amtInput.value = displayAmt; amtInput.placeholder = method === 'card' ? 'TWD' : '金額'; amtInput.className = 'compact-input w-16 rounded-md text-[10px] flex-shrink-0';
-                const feeInput = document.createElement('input'); feeInput.type = 'number'; feeInput.name = 'schedule-member-fee'; feeInput.value = displayFee; feeInput.placeholder = '手續'; feeInput.className = `compact-input w-12 rounded-md text-[10px] flex-shrink-0 ${method === 'card' ? '' : 'hidden'}`;
+                const amtInput = document.createElement('input'); amtInput.type = 'number'; amtInput.name = 'schedule-member-amount'; amtInput.value = amt; amtInput.placeholder = method === 'card' ? 'TWD' : '金額'; amtInput.className = 'compact-input w-16 rounded-md text-[10px] flex-shrink-0';
+                const feeInput = document.createElement('input'); feeInput.type = 'number'; feeInput.name = 'schedule-member-fee'; feeInput.value = fee; feeInput.placeholder = '手續'; feeInput.className = `compact-input w-12 rounded-md text-[10px] flex-shrink-0 ${method === 'card' ? '' : 'hidden'}`;
 
                 const select = document.createElement('select'); select.className = 'payment-method text-[10px] border border-gray-200 rounded px-1 py-0 text-[#5F6368] bg-white h-6 flex-shrink-0';
                 const op1 = document.createElement('option'); op1.value='cash'; op1.text='現金'; const op2 = document.createElement('option'); op2.value='card'; op2.text='刷卡';
@@ -778,7 +775,6 @@
 
                     members.forEach(m => {
                         const amt = m.amount || 0, fee = m.fee || 0;
-                        // 更新：判斷刷卡與現金的台幣價值
                         let valTWD = (m.method === 'card') ? amt : (amt * rate);
                         let mFeeTWD = (m.method === 'card') ? fee : 0;
                         if (m.isPayer) {
