@@ -229,7 +229,6 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, getDocs, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, getDocs, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         window.App = (function() {
@@ -378,7 +377,7 @@
                 let perPersonTW = 0;
                 if (members.length > 0) {
                     if (manualFillCount > 0) {
-                        // 如果是手動模式，卡片下方暫不顯示平均，由各成員對應自己欄位
+                        // 如果是手動模式，卡片下方暫不顯示平均
                         perPersonTW = 0; 
                     } else {
                         // 平分模式
@@ -879,8 +878,7 @@
                     if (isNaN(actualTotalTW) || actualTotalTW <= 0) return;
 
                     let finalMemberShares = {};
-                    // 重要修正：只要有人填寫金額(>0)，就採取手動分帳模式
-                    // 沒填的人(amount為null或0)，個人份額(share)就是0
+                    // 手動分帳模式：只要有任何人輸入金額(>0)
                     if (manualFilledCount > 0) {
                         members.forEach(m => {
                             const amt = parseFloat(m.amount) || 0;
@@ -888,7 +886,7 @@
                             finalMemberShares[m.name] = m.method === 'card' ? (amt + fee) : (amt * rateVal);
                         });
                     } else {
-                        // 全員都沒填個人金額時，才啟動平均分配模式
+                        // 全員都沒填個人金額，才啟動平均分配
                         const avg = actualTotalTW / members.length;
                         members.forEach(m => finalMemberShares[m.name] = avg);
                     }
@@ -905,11 +903,9 @@
 
                     let payers = members.filter(m => m.isPayer);
                     if (payers.length > 0) {
-                        // 代墊者獲得整個行程總額的 credit
                         let creditPerPayer = actualTotalTW / payers.length;
                         payers.forEach(p => balances[p.name] = (balances[p.name] || 0) + creditPerPayer);
                         
-                        // 每個人根據自己的 share 扣除 debit
                         for (let name in finalMemberShares) {
                             balances[name] = (balances[name] || 0) - finalMemberShares[name];
                         }
