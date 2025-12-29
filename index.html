@@ -427,18 +427,36 @@
 
             const loadSchedules = (tripId, dayId) => {
                 if (unsubscribeSchedule) unsubscribeSchedule();
-                const container = document.getElementById('schedule-list-container'); container.innerHTML = '<div class="p-4 text-center text-[#A9A9A9] text-xs">載入中...</div>';
-                const q = query(collection(db, `artifacts/${appId}/public/data/Trips/${tripId}/Schedules`), where('dayId', '==', dayId), orderBy('Time'));
+                const container = document.getElementById('schedule-list-container');
+                container.innerHTML = '<div class="p-4 text-center text-[#A9A9A9] text-xs">行程加載中...</div>';
+                
+                const q = query(
+                    collection(db, `artifacts/${appId}/public/data/Trips/${tripId}/Schedules`), 
+                    where('dayId', '==', dayId)
+                );
+
                 unsubscribeSchedule = onSnapshot(q, (snapshot) => {
                     container.innerHTML = '';
-                    const trip = tripData[currentTripId]; if (trip && trip.startDate) updateHeaderDateWithDDay(getDateFromDayId(trip, dayId));
-                    if (snapshot.empty) container.innerHTML = `<div class="p-4 text-center text-[#A9A9A9] text-xs">此日暫無行程。</div>`;
-                    else snapshot.forEach(doc => container.appendChild(createTripCard({ id: doc.id, ...doc.data() })));
+                    const trip = tripData[currentTripId]; 
+                    if (trip && trip.startDate) updateHeaderDateWithDDay(getDateFromDayId(trip, dayId));
+                    
+                    if (snapshot.empty) {
+                        container.innerHTML = `<div class="p-4 text-center text-[#A9A9A9] text-xs">此日暫無行程。</div>`;
+                    } else {
+                        const schedules = [];
+                        snapshot.forEach(doc => schedules.push({ id: doc.id, ...doc.data() }));
+                        schedules.sort((a, b) => (a.Time || "").localeCompare(b.Time || ""));
+                        schedules.forEach(schedule => container.appendChild(createTripCard(schedule)));
+                    }
+                }, (error) => {
+                    console.error("Firestore Error:", error);
+                    container.innerHTML = `<div class="p-4 text-center text-red-400 text-xs">讀取行程失敗，請檢查網路連線。</div>`;
                 });
             };
 
             const loadTripList = () => {
-                unsubscribeTrips = onSnapshot(collection(db, `artifacts/${appId}/public/data/Trips`), (snapshot) => {
+                const colRef = collection(db, `artifacts/${appId}/public/data/Trips`);
+                unsubscribeTrips = onSnapshot(colRef, (snapshot) => {
                     const select = document.getElementById('trip-select'); select.innerHTML = ''; tripData = {}; let firstId = null;
                     snapshot.forEach(doc => { 
                         const d = doc.data(); tripData[doc.id] = { id: doc.id, ...d }; 
@@ -738,7 +756,9 @@
                 const fab = document.createElement('div'); fab.className = 'list-fab-dynamic'; fab.textContent = '＋';
                 fab.style.cssText = `position: absolute; bottom: 20px; right: 20px; width: 44px; height: 44px; background-color: #7E92A1; border-radius: 50%; color: white; font-size: 24px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.25); cursor: pointer; z-index: 50;`;
                 fab.onclick = async () => {
-                    const newItem = listData.type === 'check' ? { id: Date.now(), text: '', checkedLeft: false, checkedRight: false, isImportant: false } : { id: Date.now(), text: '', desc: '', location: '', imageUrl: '', isImportant: false };
+                    const newItem = listData.type === 'check' 
+                        ? { id: Date.now(), text: '', checkedLeft: false, checkedRight: false, isImportant: false } 
+                        : { id: Date.now(), text: '', desc: '', location: '', imageUrl: '', isImportant: false };
                     await updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Lists/${listData.id}`), { items: [...(listData.items||[]), newItem] });
                 };
                 modalBody.appendChild(fab);
@@ -746,7 +766,6 @@
                 const inner = document.createElement('div'); 
                 inner.className = listData.type === 'check' ? 'grid grid-cols-2 gap-2 pb-16 mt-2' : 'space-y-2 pb-16 mt-2';
                 
-                // 置頂星號項目邏輯：建立一個帶有原始索引的副本進行排序
                 const itemsWithOriginalIdx = (listData.items || []).map((item, index) => ({...item, originalIdx: index}));
                 itemsWithOriginalIdx.sort((a, b) => (b.isImportant ? 1 : 0) - (a.isImportant ? 1 : 0));
 
@@ -764,10 +783,24 @@
                         c.querySelector('.checkR').onchange = (e) => updateListItem(listData, idx, {checkedRight: e.target.checked});
                         c.querySelector('.txt').onchange = (e) => updateListItem(listData, idx, {text: e.target.value});
                     } else {
-                        c.style.display = 'grid'; c.style.gridTemplateColumns = '24px 50px 1fr 20px';
-                        c.innerHTML = `${star}<div class="shopping-img-box">${item.imageUrl?`<img src="${item.imageUrl}" class="w-full h-full object-cover">`:'📷'}</div><div class="flex flex-col"><input type="text" value="${item.text||''}" class="name font-bold text-xs border-none p-0 focus:ring-0" placeholder="品名"><input type="text" value="${item.location||''}" class="loc text-[10px] text-gray-400 border-none p-0 focus:ring-0" placeholder="地點"></div><button class="del text-gray-200">×</button>`;
+                        // 購物清單排版修改：品名/說明在左，地點在右
+                        c.style.display = 'grid'; 
+                        c.style.gridTemplateColumns = '24px 50px 1.2fr 0.8fr 20px';
+                        c.innerHTML = `
+                            ${star}
+                            <div class="shopping-img-box">${item.imageUrl?`<img src="${item.imageUrl}" class="w-full h-full object-cover">`:'📷'}</div>
+                            <div class="flex flex-col min-w-0 pr-2 border-r border-gray-50">
+                                <input type="text" value="${item.text||''}" class="name font-bold text-xs border-none p-0 focus:ring-0 truncate" placeholder="品名">
+                                <input type="text" value="${item.desc||''}" class="desc text-[10px] text-gray-400 border-none p-0 focus:ring-0 truncate" placeholder="說明">
+                            </div>
+                            <div class="flex items-center pl-2">
+                                <input type="text" value="${item.location||''}" class="loc text-[10px] text-gray-400 border-none p-0 focus:ring-0 truncate" placeholder="地點">
+                            </div>
+                            <button class="del text-gray-200">×</button>`;
+                        
                         c.querySelector('button').onclick = () => updateListItem(listData, idx, {isImportant: !item.isImportant});
                         c.querySelector('.name').onchange = (e) => updateListItem(listData, idx, {text: e.target.value});
+                        c.querySelector('.desc').onchange = (e) => updateListItem(listData, idx, {desc: e.target.value});
                         c.querySelector('.loc').onchange = (e) => updateListItem(listData, idx, {location: e.target.value});
                         c.querySelector('.del').onclick = () => deleteListItem(listData, idx);
                         c.querySelector('.shopping-img-box').onclick = () => {
