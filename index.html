@@ -221,7 +221,7 @@
 
     <div id="add-schedule-modal" class="modal-overlay hidden"><div class="bg-white rounded-xl shadow-2xl p-3 w-11/12 max-w-sm max-h-[90vh] overflow-y-auto relative"></div></div>
     <div id="lists-modal" class="modal-overlay hidden"><div class="bg-white rounded-xl shadow-2xl p-4 w-11/12 max-w-sm max-h-[80vh] flex flex-col relative"><h3 class="text-base font-bold mb-2 flex justify-between items-center flex-shrink-0 text-[#4A4B4D]">清單<button id="lists-modal-close-btn" class="text-[#A9A9A9] text-xl leading-none">×</button></h3><div id="list-tabs" class="flex items-center gap-1 border-b border-gray-100 mb-2 overflow-x-auto no-scrollbar flex-shrink-0"></div><div id="list-content" class="flex-grow overflow-y-auto flex flex-col relative"></div></div></div>
-    <div id="split-expense-modal" class="modal-overlay hidden"><div class="bg-white rounded-xl shadow-2xl p-4 w-11/12 max-w-sm flex flex-col max-h-[90vh]"></div></div>
+    <div id="split-expense-modal" class="modal-overlay hidden"></div>
     <div id="image-zoom-modal" class="modal-overlay hidden z-[150] bg-black/80"><img id="zoom-img" class="max-w-[95%] max-h-[90%] rounded shadow-lg object-contain"></div>
     <div id="settings-modal" class="modal-overlay hidden"><div class="bg-white rounded-xl shadow-2xl p-4 w-11/12 max-w-sm"></div></div>
     <div id="new-trip-modal" class="modal-overlay hidden"><div class="bg-white rounded-xl shadow-2xl p-4 w-11/12 max-w-sm"></div></div>
@@ -823,7 +823,6 @@
                     c.className = 'swipe-item-content bg-white py-1 px-2 border border-gray-100 rounded-lg flex items-center gap-2';
                     const star = `<button class="${item.isImportant?'text-yellow-400':'text-gray-200'} text-lg">${item.isImportant?'★':'☆'}</button>`;
                     if(listData.type==='check') {
-                        // 物品清單版面修改：新增桌面版叉叉按鈕
                         c.innerHTML = `
                             ${star}
                             <div class="flex gap-1">
@@ -926,13 +925,17 @@
                     }
                 });
                 const modal = document.getElementById('split-expense-modal');
+                // 加入限制寬度的容器，確保與清單頁面寬度一致
                 modal.innerHTML = `
-                    <div class="flex justify-between items-center mb-3"><h3 class="font-bold text-[#4A4B4D]">花費</h3><button id="exp-close" class="text-2xl text-gray-400">×</button></div>
-                    <div class="bg-[#F9F9F9] p-3 rounded-xl border mb-3">
-                        <div class="flex justify-between items-end border-b pb-1 mb-2"><span class="text-xs text-gray-500">總支出</span><span class="font-extrabold text-sm text-[#4A4B4D]">TW$ ${total.toFixed(0)}</span></div>
-                        <div class="grid grid-cols-[30%_40%_30%] items-center h-32"><div id="leg-L" class="flex flex-col gap-1 text-[9px]"></div><canvas id="exp-chart"></canvas><div id="leg-R" class="flex flex-col gap-1 items-end text-[9px]"></div></div>
-                    </div>
-                    <div class="overflow-y-auto flex-grow space-y-2"><div id="exp-mem-list" class="text-[10px]"></div><div class="mt-4 pt-2 border-t"><h4 class="font-bold text-[#7E92A1] text-xs mb-2">結算建議</h4><div id="settlement" class="space-y-1"></div></div></div>`;
+                    <div class="bg-white rounded-xl shadow-2xl p-4 w-11/12 max-w-sm flex flex-col max-h-[90vh]">
+                        <div class="flex justify-between items-center mb-3"><h3 class="font-bold text-[#4A4B4D]">花費</h3><button id="exp-close" class="text-2xl text-gray-400">×</button></div>
+                        <div class="bg-[#F9F9F9] p-3 rounded-xl border mb-3">
+                            <div class="flex justify-between items-end border-b pb-1 mb-2"><span class="text-xs text-gray-500">總支出</span><span class="font-extrabold text-sm text-[#4A4B4D]">TW$ ${total.toFixed(0)}</span></div>
+                            <div class="grid grid-cols-[30%_40%_30%] items-center h-32"><div id="leg-L" class="flex flex-col gap-1 text-[9px]"></div><canvas id="exp-chart"></canvas><div id="leg-R" class="flex flex-col gap-1 items-end text-[9px]"></div></div>
+                        </div>
+                        <div class="overflow-y-auto flex-grow space-y-2"><div id="exp-mem-list" class="text-[10px]"></div><div class="mt-4 pt-2 border-t"><h4 class="font-bold text-[#7E92A1] text-xs mb-2">結算建議</h4><div id="settlement" class="space-y-1"></div></div></div>
+                    </div>`;
+                
                 document.getElementById('exp-close').onclick = () => modal.style.display = 'none';
                 const sortedKeys = Object.keys(types).sort((a,b)=>types[b]-types[a]);
                 expenseChart = new Chart(document.getElementById('exp-chart'), {
