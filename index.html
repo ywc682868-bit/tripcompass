@@ -420,6 +420,7 @@
 
                 for (let row of rows) {
                     const isPayer = row.querySelector('.payer-check').checked;
+                    // 只有勾選「先付」的人才算入總支出權益
                     if (!isPayer) continue;
 
                     const amt = parseFloat(row.querySelector('input[name="schedule-member-amount"]').value) || 0;
@@ -427,8 +428,10 @@
                     const method = row.querySelector('.payment-method').value;
 
                     if (method === 'card') {
+                        // 刷卡：直接加台幣金額與手續費
                         totalTWD += (amt + fee);
                     } else {
+                        // 現金：金額先加總原幣，再換算台幣
                         totalTWD += (amt * currentTripRate);
                         totalCashForeign += amt;
                     }
@@ -436,6 +439,8 @@
 
                 const foreignInp = document.getElementById('form-amount');
                 const twdInp = document.getElementById('form-amount-twd');
+                
+                // 更新底部顯示
                 if (foreignInp) foreignInp.value = totalCashForeign > 0 ? totalCashForeign.toFixed(0) : '';
                 if (twdInp) twdInp.value = totalTWD > 0 ? totalTWD.toFixed(0) : '';
             }
@@ -630,6 +635,8 @@
                         addMemberInput(typeof m === 'string' ? m : m.name, (typeof m === 'string' || !m.amount) ? '' : m.amount, m.isPayer || false, m.method || 'cash', (typeof m === 'string' || !m.fee) ? '' : m.fee);
                     }); 
                 } else { addMemberInput(); addMemberInput(); }
+                
+                // 開啟時立即計算一次總額
                 updateModalTotalTWD();
                 document.getElementById('add-schedule-modal').style.display = 'flex';
             }
@@ -647,18 +654,12 @@
                 select.add(op1); select.add(op2); select.value = method;
 
                 const feeInput = document.createElement('input'); feeInput.type = 'number'; feeInput.name = 'schedule-member-fee'; feeInput.value = fee; feeInput.placeholder = '手續'; feeInput.className = `compact-input w-12 rounded-md text-[10px] flex-shrink-0 ${method === 'card' ? '' : 'hidden'}`;
-                
+
                 const amtInput = document.createElement('input'); amtInput.type = 'number'; amtInput.name = 'schedule-member-amount'; amtInput.value = amt; amtInput.placeholder = method === 'card' ? 'TWD' : '金額'; amtInput.className = 'compact-input w-16 rounded-md text-[10px] flex-shrink-0';
 
                 select.onchange = (e) => {
-                    if (e.target.value === 'card') { 
-                        feeInput.classList.remove('hidden'); 
-                        amtInput.placeholder = 'TWD'; 
-                    } else { 
-                        feeInput.classList.add('hidden'); 
-                        amtInput.placeholder = '金額'; 
-                        feeInput.value = ''; 
-                    }
+                    if (e.target.value === 'card') { feeInput.classList.remove('hidden'); amtInput.placeholder = 'TWD'; }
+                    else { feeInput.classList.add('hidden'); amtInput.placeholder = '金額'; feeInput.value = ''; }
                     updateModalTotalTWD();
                 };
 
@@ -666,6 +667,7 @@
                 const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.className = 'payer-check mr-1 h-3.5 w-3.5'; checkbox.checked = isPayer;
                 label.appendChild(checkbox); label.appendChild(document.createTextNode('先付'));
                 
+                // 綁定監聽：任何變動都重算總額
                 checkbox.onchange = updateModalTotalTWD;
                 amtInput.oninput = updateModalTotalTWD;
                 feeInput.oninput = updateModalTotalTWD;
@@ -673,14 +675,8 @@
                 const delBtn = document.createElement('button'); delBtn.type = 'button'; delBtn.className = 'text-[#CB8572] font-bold p-1 text-lg leading-none w-5 flex justify-center items-center'; delBtn.textContent = '×';
                 delBtn.onclick = () => { d.remove(); updateModalTotalTWD(); };
 
-                // 排序：名字 -> 付款方式 -> 手續費(右側) -> 金額 -> 先付 -> 刪除
-                mainRow.appendChild(nameInput); 
-                mainRow.appendChild(select); 
-                mainRow.appendChild(feeInput);
-                mainRow.appendChild(amtInput); 
-                mainRow.appendChild(label); 
-                mainRow.appendChild(delBtn);
-                
+                // 將手續費移到付款方式的右邊
+                mainRow.appendChild(nameInput); mainRow.appendChild(select); mainRow.appendChild(feeInput); mainRow.appendChild(amtInput); mainRow.appendChild(label); mainRow.appendChild(delBtn);
                 d.appendChild(mainRow);
                 document.getElementById('form-members-container').appendChild(d); 
             }
@@ -777,10 +773,12 @@
                 if(!currentTripId) return; 
                 const snap = await getDocs(collection(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`));
                 let total=0, types={}, mems={}, balances={};
+                
                 snap.forEach(d => {
                     const da = d.data(); const rate = da.Rate || 1; const members = da.members || [];
                     if (members.length === 0) return;
                     let effectiveTotal = 0, feeTotal = 0, currentCreditors = [];
+
                     members.forEach(m => {
                         const amt = m.amount || 0, fee = m.fee || 0;
                         let valTWD = (m.method === 'card') ? amt : (amt * rate);
@@ -790,11 +788,14 @@
                             currentCreditors.push({ name: m.name, lent: valTWD + mFeeTWD });
                         }
                     });
+
                     if (effectiveTotal === 0 && da.Amount > 0) effectiveTotal = da.Amount * rate;
                     if (effectiveTotal <= 0 && feeTotal <= 0) return;
+
                     total += (effectiveTotal + feeTotal);
                     types[da.Type] = (types[da.Type] || 0) + effectiveTotal;
                     if (feeTotal > 0) types['fee'] = (types['fee'] || 0) + feeTotal;
+
                     const activeParticipants = members.filter(m => !(typeof m !== 'string' && m.amount > 0 && !m.isPayer));
                     if (activeParticipants.length > 0) {
                         const debtPerPerson = (effectiveTotal + feeTotal) / activeParticipants.length;
@@ -810,6 +811,7 @@
                         });
                     }
                 });
+
                 document.getElementById('expense-total-amount').textContent = total.toFixed(0);
                 const ctx = document.getElementById('expense-chart').getContext('2d'); 
                 if(expenseChart) expenseChart.destroy();
@@ -819,6 +821,7 @@
                     data: { labels: sortedKeys.map(k => CATEGORY_NAMES[k]||k), datasets: [{ data: sortedKeys.map(k => types[k]), backgroundColor: sortedKeys.map(k => (CATEGORY_COLORS[k]||CATEGORY_COLORS.default).hex), borderWidth: 0 }] }, 
                     options: { responsive: true, maintainAspectRatio: false, cutout: '45%', plugins: { legend: { display: false } } } 
                 });
+
                 const l = document.getElementById('expense-member-list'); 
                 l.innerHTML = `<div class="grid grid-cols-[40%_20%_40%] border-b pb-1 mb-2 font-bold text-[10px]"><span>成員</span><span class="text-center">類別</span><span class="text-right">分攤金額</span></div>`;
                 Object.keys(mems).sort().forEach(n => { 
