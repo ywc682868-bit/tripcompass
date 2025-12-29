@@ -359,23 +359,15 @@
                 let calculatedTotalTW = 0;
                 let anyPayer = members.some(m => typeof m !== 'string' && m.isPayer);
 
-                // 修正：主頁面總計邏輯與花費頁面一致
-                if (anyPayer) {
-                    members.forEach(m => {
-                        if (typeof m !== 'string' && m.isPayer) {
-                            const amt = parseFloat(m.amount) || 0;
-                            const fee = parseFloat(m.fee) || 0;
-                            calculatedTotalTW += (m.method === 'card' ? (amt + fee) : (amt * rate));
-                        }
-                    });
-                } else {
-                    members.forEach(m => {
-                        const amt = parseFloat(m.amount) || 0;
-                        const fee = parseFloat(m.fee) || 0;
-                        calculatedTotalTW += (m.method === 'card' ? (amt + fee) : (amt * rate));
-                    });
-                }
+                // 修改：主頁面行程卡片總金額計算邏輯
+                // 無論是否勾選先付，都加總所有成員已輸入的數值
+                members.forEach(m => {
+                    const amt = parseFloat(m.amount) || 0;
+                    const fee = parseFloat(m.fee) || 0;
+                    calculatedTotalTW += (m.method === 'card' ? (amt + fee) : (amt * rate));
+                });
 
+                // 若成員金額皆未填，則回退到單一 Amount 欄位
                 if (calculatedTotalTW === 0 && (parseFloat(schedule.Amount) || 0) > 0) {
                     calculatedTotalTW = parseFloat(schedule.Amount) * rate;
                 }
@@ -545,27 +537,17 @@
                 let sumLocal = 0;
                 
                 const memberRows = document.getElementById('form-members-container').querySelectorAll('.member-row');
-                // 修改：不論全員是否填寫，只要沒勾選先付，就加總所有已填寫金額
-                let anyPayerChecked = Array.from(memberRows).some(row => row.querySelector('.payer-check').checked);
-
+                // 修改：無論成員是否填寫，只要有成員勾選先付，加總邏輯應反映債務。
+                // 為了編輯視窗的預覽，我們加總所有輸入的金額作為總計。
                 memberRows.forEach(row => {
-                    const isPayer = row.querySelector('.payer-check').checked;
                     const amountInput = row.querySelector('input[name="schedule-member-amount"]');
                     const amountStr = amountInput.value.trim();
                     const amount = parseFloat(amountStr) || 0;
                     const fee = parseFloat(row.querySelector('.member-fee-input').value) || 0;
                     const method = row.querySelector('.payment-method').value;
 
-                    if (anyPayerChecked) {
-                        if (isPayer) {
-                            if (method === 'card') sumTW += (amount + fee);
-                            else { sumLocal += amount; sumTW += (amount * currentTripRate); }
-                        }
-                    } else {
-                        // 沒人勾先付的情況：加總所有人的輸入值
-                        if (method === 'card') sumTW += (amount + fee);
-                        else { sumLocal += amount; sumTW += (amount * currentTripRate); }
-                    }
+                    if (method === 'card') sumTW += (amount + fee);
+                    else { sumLocal += amount; sumTW += (amount * currentTripRate); }
                 });
 
                 document.getElementById('form-amount').value = sumLocal > 0 ? sumLocal.toFixed(2).replace(/\.00$/, '') : '';
@@ -874,47 +856,55 @@
                     const rateVal = parseFloat(da.Rate) || 1; 
                     const members = da.members || [];
                     if (!members.length) return;
-                    let effectiveTotal = 0; let currentCreditors = [];
-                    let anyPayer = members.some(m => typeof m !== 'string' && m.isPayer);
                     
-                    if (!anyPayer) {
+                    let cardTotalTW = 0;
+                    // 先計算該行程卡片的總支出 (Sum of all amount boxes)
+                    members.forEach(m => {
+                        const m_amt = parseFloat(m.amount) || 0;
+                        const m_fee = parseFloat(m.fee) || 0;
+                        cardTotalTW += m.method === 'card' ? (m_amt + m_fee) : (m_amt * rateVal);
+                    });
+
+                    if (cardTotalTW === 0 && (parseFloat(da.Amount)||0) > 0) cardTotalTW = parseFloat(da.Amount) * rateVal;
+                    if (isNaN(cardTotalTW) || cardTotalTW <= 0) return;
+
+                    total += cardTotalTW;
+                    types[da.Type] = (types[da.Type] || 0) + cardTotalTW;
+
+                    let payers = members.filter(m => typeof m !== 'string' && m.isPayer);
+                    
+                    if (payers.length > 0) {
+                        // 【邏輯核心】：勾選「先付」的人獲得全額信用 (Credit)
+                        let creditPerPayer = cardTotalTW / payers.length;
+                        payers.forEach(p => {
+                            balances[p.name] = (balances[p.name] || 0) + creditPerPayer;
+                        });
+                        // 每個成員根據自己的 box amount 產生債務 (Debit)
                         members.forEach(m => {
                             const m_amt = parseFloat(m.amount) || 0;
                             const m_fee = parseFloat(m.fee) || 0;
                             const m_val = m.method === 'card' ? (m_amt + m_fee) : (m_amt * rateVal);
-                            effectiveTotal += m_val; 
-                            currentCreditors.push({ name: m.name, lent: m_val });
+                            
+                            balances[m.name] = (balances[m.name] || 0) - m_val;
+                            
+                            if(!mems[m.name]) mems[m.name] = { total: 0, cats: {} };
+                            mems[m.name].total += m_val;
+                            mems[m.name].cats[da.Type] = (mems[m.name].cats[da.Type] || 0) + m_val;
                         });
                     } else {
+                        // 沒人勾先付：假設各自付帳，Balance 互不相欠，但仍計入支出統計
                         members.forEach(m => {
-                            if (typeof m !== 'string' && m.isPayer) {
-                                const m_amt = parseFloat(m.amount) || 0;
-                                const m_fee = parseFloat(m.fee) || 0;
-                                const m_val = m.method === 'card' ? (m_amt + m_fee) : (m_amt * rateVal);
-                                effectiveTotal += m_val;
-                                currentCreditors.push({ name: m.name, lent: m_val });
-                            }
-                        });
-                    }
-
-                    if (effectiveTotal === 0 && (parseFloat(da.Amount)||0) > 0) effectiveTotal = parseFloat(da.Amount) * rateVal;
-                    if (isNaN(effectiveTotal) || effectiveTotal <= 0) return;
-                    total += effectiveTotal;
-                    types[da.Type] = (types[da.Type] || 0) + effectiveTotal;
-                    
-                    const activeParticipants = members.filter(m => !(typeof m !== 'string' && (parseFloat(m.amount)||0) > 0 && !m.isPayer));
-                    if (activeParticipants.length) {
-                        const debtPer = effectiveTotal / activeParticipants.length;
-                        currentCreditors.forEach(c => balances[c.name] = (balances[c.name] || 0) + c.lent);
-                        activeParticipants.forEach(p => {
-                            const n = typeof p === 'string' ? p : p.name;
-                            balances[n] = (balances[n] || 0) - debtPer;
-                            if(!mems[n]) mems[n] = { total: 0, cats: {} };
-                            mems[n].total += debtPer;
-                            mems[n].cats[da.Type] = (mems[n].cats[da.Type] || 0) + debtPer;
+                            const m_amt = parseFloat(m.amount) || 0;
+                            const m_fee = parseFloat(m.fee) || 0;
+                            const m_val = m.method === 'card' ? (m_amt + m_fee) : (m_amt * rateVal);
+                            
+                            if(!mems[m.name]) mems[m.name] = { total: 0, cats: {} };
+                            mems[m.name].total += m_val;
+                            mems[m.name].cats[da.Type] = (mems[m.name].cats[da.Type] || 0) + m_val;
                         });
                     }
                 });
+
                 const modal = document.getElementById('split-expense-modal');
                 modal.innerHTML = `
                     <div class="bg-white rounded-xl shadow-2xl p-4 w-11/12 max-w-sm flex flex-col max-h-[90vh]">
@@ -969,7 +959,11 @@
                 });
                 
                 let debtors = [], creditors = [];
-                for(let n in balances) { if(balances[n] < -1) debtors.push({n, a: Math.abs(balances[n])}); else if(balances[n] > 1) creditors.push({n, a: balances[n]}); }
+                for(let n in balances) { 
+                    if(balances[n] < -0.99) debtors.push({n, a: Math.abs(balances[n])}); 
+                    else if(balances[n] > 0.99) creditors.push({n, a: balances[n]}); 
+                }
+
                 const setCont = document.getElementById('settlement');
                 if(!debtors.length) setCont.innerHTML = '<div class="text-[10px] text-gray-400 text-center">已結清</div>';
                 else {
