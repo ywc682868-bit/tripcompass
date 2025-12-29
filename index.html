@@ -823,11 +823,21 @@
                     c.className = 'swipe-item-content bg-white py-1 px-2 border border-gray-100 rounded-lg flex items-center gap-2';
                     const star = `<button class="${item.isImportant?'text-yellow-400':'text-gray-200'} text-lg">${item.isImportant?'★':'☆'}</button>`;
                     if(listData.type==='check') {
-                        c.innerHTML = `${star}<div class="flex gap-1"><input type="checkbox" ${item.checkedLeft?'checked':''} class="checkL"><input type="checkbox" ${item.checkedRight?'checked':''} class="checkR"></div><input type="text" value="${item.text||''}" class="txt flex-grow border-none text-xs focus:ring-0">`;
+                        // 物品清單版面修改：新增桌面版叉叉按鈕
+                        c.innerHTML = `
+                            ${star}
+                            <div class="flex gap-1">
+                                <input type="checkbox" ${item.checkedLeft?'checked':''} class="checkL">
+                                <input type="checkbox" ${item.checkedRight?'checked':''} class="checkR">
+                            </div>
+                            <input type="text" value="${item.text||''}" class="txt flex-grow border-none text-xs focus:ring-0">
+                            <button class="del text-gray-300 ml-1 desktop-del-btn font-bold text-lg">×</button>`;
+                        
                         c.querySelector('button').onclick = () => updateListItem(listData, idx, {isImportant: !item.isImportant});
                         c.querySelector('.checkL').onchange = (e) => updateListItem(listData, idx, {checkedLeft: e.target.checked});
                         c.querySelector('.checkR').onchange = (e) => updateListItem(listData, idx, {checkedRight: e.target.checked});
                         c.querySelector('.txt').onchange = (e) => updateListItem(listData, idx, {text: e.target.value});
+                        c.querySelector('.del').onclick = () => deleteListItem(listData, idx);
                     } else {
                         c.style.display = 'grid'; 
                         c.style.gridTemplateColumns = '24px 50px 1fr 60px 20px';
