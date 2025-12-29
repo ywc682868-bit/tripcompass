@@ -468,19 +468,18 @@
                 const startDateStr = event.Date.replace(/-/g, '');
                 const startTimeStr = event.Time.replace(/:/g, '') + '00';
                 
-                // 產生 ICS 內容
                 const icsContent = [
                     'BEGIN:VCALENDAR',
                     'VERSION:2.0',
                     'PRODID:-//Trip Compass//Calendar Event//EN',
                     'BEGIN:VEVENT',
                     `DTSTART:${startDateStr}T${startTimeStr}`,
-                    `DTEND:${startDateStr}T${startTimeStr}`, // 同步時間
+                    `DTEND:${startDateStr}T${startTimeStr}`, 
                     `SUMMARY:${title}`,
                     `DESCRIPTION:${desc}`,
                     `LOCATION:${loc}`,
                     'BEGIN:VALARM',
-                    'TRIGGER:-PT15M', // 提前 15 分鐘提醒
+                    'TRIGGER:-PT15M', 
                     'ACTION:DISPLAY',
                     'DESCRIPTION:Reminder',
                     'END:VALARM',
@@ -543,7 +542,7 @@
                     </form>`;
                 
                 const memCont = content.querySelector('#form-members-container');
-                (s.members || []).forEach(m => addMemberInput(typeof m === 'string' ? m : m.name, m.amount || '', m.isPayer || false, m.method || 'cash'));
+                (s.members || []).forEach(m => addMemberInput(typeof m === 'string' ? m : m.name, m.amount || '', m.isPayer || false, m.method || 'cash', m.fee || ''));
                 if(!(s.members || []).length) { addMemberInput(); addMemberInput(); }
 
                 document.getElementById('modal-close-btn').onclick = () => modal.style.display = 'none';
@@ -560,16 +559,29 @@
                 modal.style.display = 'flex';
             }
 
-            function addMemberInput(name='', amt='', isPayer=false, method='cash') {
+            function addMemberInput(name='', amt='', isPayer=false, method='cash', fee='') {
                 const d = document.createElement('div'); d.className = 'flex items-center w-full gap-2 border-b pb-1 last:border-0';
                 d.innerHTML = `
                     <input type="text" name="schedule-member-name" value="${name}" placeholder="名字" class="compact-input w-16 rounded-md font-bold text-[10px]">
-                    <input type="number" name="schedule-member-amount" value="${amt}" placeholder="金額" class="compact-input w-16 rounded-md text-[10px]">
+                    <input type="number" name="schedule-member-amount" value="${amt}" placeholder="金額" class="compact-input w-14 rounded-md text-[10px]">
                     <div class="flex items-center gap-1">
                         <label class="flex items-center text-xs text-[#7E92A1] cursor-pointer whitespace-nowrap"><input type="checkbox" class="payer-check mr-1 h-4 w-4" ${isPayer?'checked':''}>先付</label>
                         <select class="payment-method text-xs border rounded px-1 h-6 text-center"><option value="cash" ${method==='cash'?'selected':''}>現金</option><option value="card" ${method==='card'?'selected':''}>刷卡</option></select>
+                        <input type="number" name="schedule-member-fee" value="${fee}" placeholder="手續費" class="member-fee-input compact-input w-12 rounded-md text-[10px] ${method==='card'?'':'hidden'}">
                     </div>
                     <button type="button" class="text-[#CB8572] font-bold p-1 ml-auto text-lg">×</button>`;
+                
+                const sel = d.querySelector('.payment-method');
+                const feeInp = d.querySelector('.member-fee-input');
+                sel.onchange = (e) => {
+                    if (e.target.value === 'card') {
+                        feeInp.classList.remove('hidden');
+                    } else {
+                        feeInp.classList.add('hidden');
+                        feeInp.value = '';
+                    }
+                };
+                
                 d.querySelector('button').onclick = () => d.remove();
                 document.getElementById('form-members-container').appendChild(d);
             }
@@ -582,7 +594,14 @@
                 document.getElementById('form-members-container').querySelectorAll('div').forEach(row => {
                     const name = row.querySelector('input[name="schedule-member-name"]').value.trim();
                     const amt = row.querySelector('input[name="schedule-member-amount"]').value;
-                    if (name) members.push({ name, amount: amt ? parseFloat(amt) : null, isPayer: row.querySelector('.payer-check').checked, method: row.querySelector('.payment-method').value });
+                    const fee = row.querySelector('.member-fee-input').value;
+                    if (name) members.push({ 
+                        name, 
+                        amount: amt ? parseFloat(amt) : null, 
+                        isPayer: row.querySelector('.payer-check').checked, 
+                        method: row.querySelector('.payment-method').value,
+                        fee: fee ? parseFloat(fee) : 0
+                    });
                 });
 
                 const isRemind = document.getElementById('form-remind').checked;
@@ -596,7 +615,6 @@
                 const col = collection(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`);
                 if (editingScheduleId) await updateDoc(doc(col, editingScheduleId), data); else await addDoc(col, data);
                 
-                // 若勾選提醒，執行連動手機行事曆
                 if (isRemind) {
                     addToCalendar(data);
                 }
