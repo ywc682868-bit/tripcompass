@@ -958,7 +958,6 @@
                     options: { maintainAspectRatio: false, cutout: '65%', plugins: { legend: { display: false } } }
                 });
                 
-                // 修正左右類型顏色標記對齊：設定固定高度 h-12，左側 點+文字，右側 文字+點
                 sortedKeys.forEach((k, i) => {
                     const color = (CATEGORY_COLORS[k]||CATEGORY_COLORS.default).hex;
                     const isLeft = i % 2 === 0;
@@ -973,7 +972,11 @@
 
                 const mList = document.getElementById('exp-mem-list');
                 Object.keys(mems).sort().forEach(n => {
-                    let cats = Object.keys(mems[n].cats).map(c => `<div class="flex justify-between py-0.5"><span class="${(CATEGORY_COLORS[c]||CATEGORY_COLORS.default).text}">${CATEGORY_NAMES[c]}</span><span>TW$${mems[n].cats[c].toFixed(0)}</span></div>`).join('');
+                    // 修改：各類型金額套用與類型標誌一致的顏色，並優化 flex 佈局確保 TW$ 對齊靠右
+                    let cats = Object.keys(mems[n].cats).map(c => {
+                        const catStyle = CATEGORY_COLORS[c] || CATEGORY_COLORS.default;
+                        return `<div class="flex justify-between py-0.5 items-center"><span class="${catStyle.text} font-medium">${CATEGORY_NAMES[c]}</span><span class="${catStyle.text} font-bold">TW$${mems[n].cats[c].toFixed(0)}</span></div>`;
+                    }).join('');
                     mList.innerHTML += `<div><div class="font-bold text-gray-600 mb-1 border-b pb-0.5">${n}</div>${cats}</div>`;
                 });
                 
