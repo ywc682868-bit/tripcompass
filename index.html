@@ -292,23 +292,46 @@
             async function updateHeaderInfo() {
                 const trip = tripData[currentTripId]; if (!trip) return;
                 const config = COUNTRY_CONFIG[trip.country || 'TW'] || COUNTRY_CONFIG['TW'];
-                let lat = config.lat, lon = config.lon, displayName = config.localName;
-                document.getElementById('header-location-name').textContent = displayName;
+                
+                // 更新匯率與成員清單 (非天氣部分)
                 currentTripRate = await fetchExchangeRate(config.currency);
                 const barSelect = document.getElementById('bar-calc-currency'); 
                 if(barSelect) { barSelect.value = config.currency; calculateCurrency(); }
                 document.getElementById('header-members-list').innerHTML = (trip.members && trip.members.length) ? trip.members.map((m, i) => `<span class="${MEMBER_COLORS[i % MEMBER_COLORS.length]} mr-1">${m}</span>`).join('') : '尚未設定';
-                try { 
-                    const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&timezone=auto`); 
-                    const data = await res.json(); 
-                    const code = data.current.weather_code;
-                    let icon = code > 50 ? '🌧️' : (code > 3 ? '☁️' : '☀️'); 
-                    document.getElementById('header-weather-icon').textContent = icon; 
-                    const temp = data.current.temperature_2m;
-                    document.getElementById('header-weather-temp').textContent = `${temp}°C`; 
-                    let clothing = temp >= 25 ? '🎽 短袖' : (temp >= 20 ? '👕 薄外套' : (temp >= 15 ? '🧥 外套' : (temp >= 10 ? '🧥 大衣' : '🧣 羽絨')));
-                    document.getElementById('header-clothing-advice').textContent = clothing;
-                } catch (e) { }
+
+                // 天氣抓取共用邏輯
+                const fetchWeather = async (lat, lon, displayName) => {
+                    document.getElementById('header-location-name').textContent = displayName;
+                    try { 
+                        const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&timezone=auto`); 
+                        const data = await res.json(); 
+                        const code = data.current.weather_code;
+                        let icon = code > 50 ? '🌧️' : (code > 3 ? '☁️' : '☀️'); 
+                        document.getElementById('header-weather-icon').textContent = icon; 
+                        const temp = data.current.temperature_2m;
+                        document.getElementById('header-weather-temp').textContent = `${temp}°C`; 
+                        let clothing = temp >= 25 ? '🎽 短袖' : (temp >= 20 ? '👕 薄外套' : (temp >= 15 ? '🧥 外套' : (temp >= 10 ? '🧥 大衣' : '🧣 羽絨')));
+                        document.getElementById('header-clothing-advice').textContent = clothing;
+                    } catch (e) { }
+                };
+
+                // 優先嘗試取得目前的定位
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        (position) => {
+                            // 定位成功：使用經緯度與名稱「目前位置」
+                            fetchWeather(position.coords.latitude, position.coords.longitude, "目前位置");
+                        },
+                        () => {
+                            // 定位失敗 (如拒絕權限)：使用行程預設位置
+                            fetchWeather(config.lat, config.lon, config.localName);
+                        },
+                        { timeout: 5000 } // 設定超時
+                    );
+                } else {
+                    // 瀏覽器不支援：直接使用行程預設位置
+                    fetchWeather(config.lat, config.lon, config.localName);
+                }
             }
 
             function changeTrip(tripId) { 
@@ -538,7 +561,7 @@
                 document.getElementById('add-schedule-modal').style.display = 'none'; loadSchedules(currentTripId, dayId);
             }
 
-            // --- 清單邏輯 (由新版本取代) ---
+            // --- 清單邏輯 ---
             async function checkAndCreateDefaultLists(tripId) {
                 const col = collection(db, `artifacts/${appId}/public/data/Trips/${tripId}/Lists`);
                 const snap = await getDocs(col);
@@ -631,7 +654,7 @@
                 }
             }
 
-            // --- 花費邏輯 (完整結算版) ---
+            // --- 花費邏輯 ---
             async function loadExpenseSummary() {
                 if(!currentTripId) return;
                 const snap = await getDocs(collection(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`));
@@ -696,7 +719,6 @@
                 
                 document.getElementById('exp-close').onclick = () => modal.style.display = 'none';
 
-                // 圖表與圖例
                 const sortedKeys = Object.keys(types).sort((a,b)=>types[b]-types[a]);
                 expenseChart = new Chart(document.getElementById('exp-chart'), {
                     type: 'doughnut',
@@ -712,14 +734,12 @@
                     else document.getElementById('leg-R').innerHTML += html;
                 });
 
-                // 成員明細
                 const mList = document.getElementById('exp-mem-list');
                 Object.keys(mems).sort().forEach(n => {
                     let cats = Object.keys(mems[n].cats).map(c => `<div class="flex justify-between py-0.5"><span class="${(CATEGORY_COLORS[c]||CATEGORY_COLORS.default).text}">${CATEGORY_NAMES[c]}</span><span>$${mems[n].cats[c].toFixed(0)}</span></div>`).join('');
                     mList.innerHTML += `<div class="border-b pb-1 mb-1"><div class="font-bold text-gray-600 mb-1">${n} (共 $${mems[n].total.toFixed(0)})</div>${cats}</div>`;
                 });
 
-                // 結算
                 let debtors = [], creditors = [];
                 for(let n in balances) {
                     if(balances[n] < -1) debtors.push({n, a: Math.abs(balances[n])});
