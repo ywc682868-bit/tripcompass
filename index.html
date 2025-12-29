@@ -197,6 +197,10 @@
     .compact-input:focus { border-color: #7E92A1; outline: none; ring: 1px solid #7E92A1; }
     .compact-label { font-size: 0.7rem; color: #7E92A1; font-weight: 700; margin-bottom: 0; }
     input[type="time"], input[type="date"] { text-align: center; }
+    
+    /* 清單專用樣式 */
+    .list-tab-active { border-bottom: 2px solid #7E92A1; color: #7E92A1; font-weight: bold; }
+    .list-tab-inactive { color: #A9A9A9; }
     .shopping-img-box { width: 50px; height: 50px; background-color: #f0f0f0; border-radius: 6px; overflow: hidden; display: flex; justify-content: center; align-items: center; cursor: pointer; border: 1px dashed #ccc; position: relative; }
     .shopping-img-box img { width: 100%; height: 100%; object-fit: cover; }
 </style>
@@ -271,7 +275,16 @@
     <div id="add-schedule-modal" class="modal-overlay hidden">
         <div class="bg-white rounded-xl shadow-2xl p-3 w-11/12 max-w-sm max-h-[90vh] overflow-y-auto relative"></div>
     </div>
-    <div id="lists-modal" class="modal-overlay hidden"><div class="bg-white rounded-xl shadow-2xl p-4 w-11/12 max-w-sm max-h-[80vh] flex flex-col relative"><h3 class="text-base font-bold mb-2 flex justify-between items-center flex-shrink-0 text-[#4A4B4D]">清單<button id="lists-modal-close-btn" class="text-[#A9A9A9] hover:text-[#5F6368] text-xl leading-none">×</button></h3><div id="list-tabs" class="flex gap-1 border-b border-gray-100 mb-2 overflow-x-auto no-scrollbar flex-shrink-0"></div><div id="list-content" class="flex-grow overflow-y-auto flex flex-col relative"></div></div></div>
+    <div id="lists-modal" class="modal-overlay hidden">
+        <div class="bg-white rounded-xl shadow-2xl p-4 w-11/12 max-w-sm max-h-[80vh] flex flex-col relative">
+            <h3 class="text-base font-bold mb-2 flex justify-between items-center flex-shrink-0 text-[#4A4B4D]">
+                清單
+                <button id="lists-modal-close-btn" class="text-[#A9A9A9] hover:text-[#5F6368] text-xl leading-none">×</button>
+            </h3>
+            <div id="list-tabs" class="flex gap-1 border-b border-gray-100 mb-2 overflow-x-auto no-scrollbar flex-shrink-0"></div>
+            <div id="list-content" class="flex-grow overflow-y-auto flex flex-col relative"></div>
+        </div>
+    </div>
     <div id="image-zoom-modal" class="modal-overlay hidden z-[150] bg-black/80"><img id="zoom-img" class="max-w-[95%] max-h-[90%] rounded shadow-lg object-contain"></div>
     <div id="settings-modal" class="modal-overlay hidden"><div class="bg-white rounded-xl shadow-2xl p-4 w-11/12 max-w-sm"></div></div>
     <div id="new-trip-modal" class="modal-overlay hidden"><div class="bg-white rounded-xl shadow-2xl p-4 w-11/12 max-w-sm"><h3 class="text-base font-bold mb-3 flex justify-between items-center text-[#4A4B4D]">新增旅行計畫<button id="new-trip-modal-close-btn" class="text-[#A9A9A9] hover:text-[#5F6368] text-xl">×</button></h3><div id="new-trip-modal-content"></div></div></div>
@@ -458,22 +471,18 @@
 
                     totalFeesTWD += (mMethod === 'card' ? mFee : 0);
 
-                    // 1. 如果有勾選先付
                     if (isPayer) {
                         hasAdvancedPayer = true;
                         if (mMethod === 'card') advancedPayerTotalTWD += (mAmt + mFee);
                         else advancedPayerTotalTWD += (mAmt * rate);
                     }
 
-                    // 2. 判斷是否有人手動填入金額（用於判斷是否已分帳）
                     if (mAmt > 0) hasMemberAmounts = true;
 
-                    // 3. 計算整個行程的總支出台幣
                     if (mMethod === 'card') amountTWD += (mAmt + mFee);
                     else amountTWD += (mAmt * rate);
                 });
 
-                // 若成員皆未輸入個別金額，則以主欄位的 Amount 加總
                 if (!hasMemberAmounts && schedule.Amount > 0) {
                     amountTWD = (schedule.Amount * rate) + totalFeesTWD;
                 }
@@ -481,15 +490,11 @@
                 const participantCount = members.length || 1;
                 let perPersonTWD = 0;
 
-                // 核心顯示邏輯
                 if (hasAdvancedPayer) {
-                    // 若有勾選先付，顯示 (代墊金額 / 人數)
                     perPersonTWD = advancedPayerTotalTWD / participantCount;
                 } else if (hasMemberAmounts) {
-                    // 若已分帳（有人填錢）但沒人勾先付，顯示 0
                     perPersonTWD = 0;
                 } else {
-                    // 未分帳，顯示 (總金額 + 手續費) / 人數
                     perPersonTWD = amountTWD / participantCount;
                 }
                 
@@ -716,6 +721,7 @@
                 } catch(e) { console.error(e); }
             }
 
+            // --- 新版清單邏輯開始 ---
             async function checkAndCreateDefaultLists(tripId) { 
                 try {
                     const col = collection(db, `artifacts/${appId}/public/data/Trips/${tripId}/Lists`); 
@@ -726,6 +732,39 @@
                         await addDoc(col, {name: '購物', type: 'shopping', order: 2, items:[], uid: uid}); 
                     } 
                 } catch(e) {}
+            }
+
+            function openListSettings(listData) {
+                const oldModal = document.getElementById('list-settings-modal'); if(oldModal) oldModal.remove();
+                const overlay = document.createElement('div'); overlay.id = 'list-settings-modal'; overlay.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-[110]'; 
+                overlay.innerHTML = `
+                    <div class="bg-white rounded-xl shadow-2xl p-4 w-10/12 max-w-[280px] relative">
+                        <h3 class="text-sm font-bold text-[#7E92A1] mb-3 text-center">編輯清單</h3>
+                        <div class="mb-4">
+                            <label class="block text-[10px] text-gray-400 mb-1">清單名稱</label>
+                            <input type="text" id="setting-list-name" value="${listData.name}" class="w-full border-b border-[#7E92A1] text-center font-bold text-[#4A4B4D] py-1 focus:outline-none text-lg">
+                        </div>
+                        <div class="flex items-center justify-between mt-4 pt-2 border-t border-gray-100">
+                            <button id="setting-del-btn" class="p-2 rounded-full text-[#CB8572] hover:bg-red-50 transition-colors">🗑️</button>
+                            <button id="setting-save-btn" class="px-4 py-1.5 bg-[#7E92A1] text-white text-xs font-bold rounded-lg hover:bg-[#64748B]">儲存</button>
+                        </div>
+                        <button id="setting-close-btn" class="absolute top-2 right-3 text-gray-300 hover:text-gray-500 text-xl">×</button>
+                    </div>`;
+                document.body.appendChild(overlay);
+                const close = () => overlay.remove();
+                document.getElementById('setting-close-btn').onclick = close;
+                overlay.onclick = (e) => { if(e.target === overlay) close(); };
+                document.getElementById('setting-save-btn').onclick = async () => {
+                    const newName = document.getElementById('setting-list-name').value;
+                    if (newName && newName.trim() && newName !== listData.name) {
+                        try { await updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Lists/${listData.id}`), { name: newName.trim() }); close(); } catch(e) { alert("更新失敗"); }
+                    } else close();
+                };
+                document.getElementById('setting-del-btn').onclick = async () => {
+                    if(confirm(`確定要刪除「${listData.name}」嗎？`)) {
+                        try { await deleteDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Lists/${listData.id}`)); currentListTabId = null; close(); } catch(e) { alert("刪除失敗"); }
+                    }
+                };
             }
 
             function loadLists() {
@@ -743,11 +782,24 @@
                         if (!currentListTabId && lists.length > 0) currentListTabId = lists[0].id;
                         lists.forEach(l => { 
                             const t = document.createElement('div'); const isActive = l.id === currentListTabId;
-                            t.className = `cursor-pointer px-3 py-2 text-sm flex-shrink-0 transition-colors whitespace-nowrap ${isActive ? 'border-b-2 border-[#7E92A1] text-[#7E92A1] font-bold' : 'text-[#A9A9A9] hover:text-[#5F6368]'}`;
+                            t.className = `cursor-pointer px-3 py-2 text-sm flex-shrink-0 transition-colors whitespace-nowrap select-none ${isActive ? 'border-b-2 border-[#7E92A1] text-[#7E92A1] font-bold' : 'text-[#A9A9A9] hover:text-[#5F6368]'}`;
                             t.textContent = l.name; 
-                            t.onclick = () => { currentListTabId = l.id; loadLists(); }; 
+                            t.onclick = () => { if (isActive) openListSettings(l); else { currentListTabId = l.id; loadLists(); } }; 
                             tabs.appendChild(t); 
                         });
+                        const addTab = document.createElement('div'); addTab.className = 'cursor-pointer px-3 py-2 text-sm flex-shrink-0 text-[#7E92A1] font-bold flex items-center justify-center'; addTab.innerHTML = '＋';
+                        addTab.onclick = async () => {
+                            const newName = prompt("請輸入新清單名稱:");
+                            if (newName && newName.trim()) {
+                                const typeMap = confirm("這是「購物/代購」清單嗎？") ? 'shopping' : 'check';
+                                try {
+                                    const uid = auth.currentUser ? auth.currentUser.uid : null;
+                                    const newDoc = await addDoc(collection(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Lists`), { name: newName.trim(), type: typeMap, order: Date.now(), items: [], uid: uid });
+                                    currentListTabId = newDoc.id; 
+                                } catch(e) { }
+                            }
+                        };
+                        tabs.appendChild(addTab);
                         const targetList = lists.find(l => l.id === currentListTabId); if (targetList) renderListItems(targetList, cont);
                     });
                 } catch (err) {}
@@ -758,25 +810,72 @@
                 const modalBody = container.parentElement; 
                 const oldFab = modalBody.querySelector('.list-fab-dynamic'); if(oldFab) oldFab.remove();
                 const fab = document.createElement('div'); fab.className = 'list-fab-dynamic'; fab.textContent = '＋';
-                fab.style.cssText = `position: absolute; bottom: 20px; right: 20px; width: 44px; height: 44px; background-color: #7E92A1; border-radius: 50%; color: white; font-size: 24px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.25); cursor: pointer; z-index: 50;`;
+                fab.style.cssText = `position: absolute; bottom: 20px; right: 20px; width: 44px; height: 44px; background-color: #7E92A1; border-radius: 50%; color: white; font-size: 24px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.25); cursor: pointer; z-index: 50; transition: transform 0.1s;`;
                 fab.onclick = async () => { 
                     const newItem = listData.type === 'check' ? { id: Date.now(), text: '', checkedLeft: false, checkedRight: false, isImportant: false } : { id: Date.now(), text: '', desc: '', location: '', imageUrl: '', isImportant: false }; 
                     await updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Lists/${listData.id}`), { items: [...listData.items, newItem] }); 
                 };
                 modalBody.appendChild(fab);
+
                 const inner = document.createElement('div'); 
-                inner.className = 'space-y-2 pb-16 px-1 mt-2';
-                listData.items.forEach((item, idx) => {
-                    const wrap = document.createElement('div'); wrap.className = 'p-2 border rounded-lg bg-white flex items-center gap-2';
+                if(listData.type === 'check') inner.className = 'grid grid-cols-2 gap-2 pb-16 px-1 mt-2'; else inner.className = 'space-y-2 pb-16 px-1 mt-2'; 
+                
+                const sortedItems = [...listData.items].map((item, index) => ({...item, _origIdx: index}))
+                    .sort((a, b) => (!!b.isImportant === !!a.isImportant) ? 0 : (b.isImportant ? 1 : -1));
+
+                sortedItems.forEach((item) => {
+                    const realIdx = item._origIdx;
+                    const wrap = document.createElement('div'); wrap.className = 'swipe-item-container'; 
+                    const bg = document.createElement('div'); bg.className = 'swipe-item-delete-bg'; bg.innerHTML = `<button class="px-2 py-1 h-full text-xs font-bold bg-[#CB8572] text-white">刪除</button>`;
+                    const c = document.createElement('div'); c.className = 'swipe-item-content bg-white relative';
+                    const starHtml = `<button class="star-btn flex-shrink-0 w-5 h-full flex items-center justify-center text-[15px] leading-none ${item.isImportant ? 'text-yellow-400' : 'text-gray-200'}">${item.isImportant ? '★' : '☆'}</button>`;
+
                     if (listData.type === 'check') {
-                        wrap.innerHTML = `<input type="checkbox" ${item.checkedLeft ? 'checked' : ''} class="w-4 h-4"><input type="text" class="flex-grow border-none text-sm p-0 focus:ring-0" value="${item.text}">`;
+                        c.style.cssText = "display:flex; align-items:center; gap:2px; padding:6px 2px; border:1px solid #f0f0f0; border-radius:8px;";
+                        c.innerHTML = `${starHtml}<div class="flex gap-1 ml-1"><input type="checkbox" class="check-left w-3.5 h-3.5" ${item.checkedLeft?'checked':''}> <input type="checkbox" class="check-right w-3.5 h-3.5" ${item.checkedRight?'checked':''}></div><input type="text" class="check-text flex-grow border-none text-[13px] font-medium p-0 focus:ring-0" value="${item.text||''}" placeholder="物品">`;
+                        c.querySelector('.star-btn').onclick = () => updateListItem(listData, realIdx, {isImportant: !item.isImportant});
+                        c.querySelector('.check-left').onchange = (e) => updateListItem(listData, realIdx, {checkedLeft: e.target.checked});
+                        c.querySelector('.check-right').onchange = (e) => updateListItem(listData, realIdx, {checkedRight: e.target.checked});
+                        c.querySelector('.check-text').onchange = (e) => updateListItem(listData, realIdx, {text: e.target.value});
                     } else {
-                        wrap.innerHTML = `<div class="w-10 h-10 bg-gray-100 rounded"></div><div class="flex-grow"><div class="text-sm font-bold">${item.text || '品名'}</div><div class="text-xs text-gray-400">${item.desc || '備註'}</div></div>`;
+                        c.className += ' p-1.5 border border-gray-100 rounded-lg shadow-sm'; c.style.display = 'grid'; c.style.gridTemplateColumns = '24px 50px 1fr 80px 20px'; c.style.gap = '4px'; c.style.alignItems = 'center'; 
+                        const imgBox = `<div class="shopping-img-box">${item.imageUrl ? `<img src="${item.imageUrl}">` : `<span class="text-gray-300">📷</span>`}</div>`;
+                        c.innerHTML = `${starHtml}${imgBox}<div class="flex flex-col justify-center"><input type="text" class="item-name font-bold text-[13px] border-none p-0 focus:ring-0" value="${item.text||''}" placeholder="品名"><textarea class="item-desc text-[11px] text-gray-400 border-none p-0 focus:ring-0 resize-none h-6" placeholder="備註">${item.desc||''}</textarea></div><textarea class="item-loc text-[10px] border border-gray-50 bg-gray-50 rounded p-1 h-12 focus:ring-0" placeholder="地點">${item.location||''}</textarea><button class="desktop-del-btn text-gray-200 hover:text-red-300 font-bold">×</button>`;
+                        
+                        c.querySelector('.star-btn').onclick = () => updateListItem(listData, realIdx, {isImportant: !item.isImportant});
+                        c.querySelector('.item-name').onchange = (e) => updateListItem(listData, realIdx, {text: e.target.value});
+                        c.querySelector('.item-desc').onchange = (e) => updateListItem(listData, realIdx, {desc: e.target.value});
+                        c.querySelector('.item-loc').onchange = (e) => updateListItem(listData, realIdx, {location: e.target.value});
+                        c.querySelector('.desktop-del-btn').onclick = () => deleteListItem(listData, realIdx);
+                        
+                        const fileInp = document.createElement('input'); fileInp.type='file'; fileInp.accept='image/*'; fileInp.style.display='none';
+                        c.querySelector('.shopping-img-box').onclick = () => { if(item.imageUrl) { document.getElementById('zoom-img').src=item.imageUrl; document.getElementById('image-zoom-modal').style.display='flex'; } else fileInp.click(); };
+                        fileInp.onchange = (e) => {
+                            if(!e.target.files[0]) return;
+                            const reader = new FileReader();
+                            reader.onload = (ev) => {
+                                const img = new Image();
+                                img.onload = () => {
+                                    const canvas = document.createElement('canvas'); const scale = 400 / img.width; canvas.width = 400; canvas.height = img.height * scale;
+                                    canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+                                    updateListItem(listData, realIdx, {imageUrl: canvas.toDataURL("image/jpeg", 0.7)});
+                                };
+                                img.src = ev.target.result;
+                            };
+                            reader.readAsDataURL(e.target.files[0]);
+                        };
+                        c.appendChild(fileInp);
                     }
-                    inner.appendChild(wrap);
+                    wrap.appendChild(bg); wrap.appendChild(c); inner.appendChild(wrap);
+                    enableSwipeToDelete(c, bg, 'list');
+                    bg.querySelector('button').onclick = () => deleteListItem(listData, realIdx);
                 });
                 container.appendChild(inner);
             }
+
+            async function updateListItem(l, i, chg) { const ni = [...l.items]; ni[i] = {...ni[i], ...chg}; await updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Lists/${l.id}`), {items:ni}); }
+            async function deleteListItem(l, i) { if(!confirm('刪除此物品?')) return; const ni=l.items.filter((_,x)=>x!==i); await updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Lists/${l.id}`), {items:ni}); }
+            // --- 新版清單邏輯結束 ---
 
             async function loadExpenseSummary() {
                 if(!currentTripId) return; 
@@ -868,14 +967,6 @@
                             </form>`;
                     }
 
-                    const splitExpenseModalContent = document.querySelector('#split-expense-modal > div');
-                    if (splitExpenseModalContent) {
-                        splitExpenseModalContent.innerHTML = `
-                            <h3 class="text-sm font-bold mb-2 flex justify-between items-center text-[#4A4B4D]">花費<button id="split-expense-close-btn" class="text-[#A9A9A9] text-xl">×</button></h3>
-                            <div class="flex-shrink-0 mb-2 bg-[#F9F9F9] p-2 rounded border border-[#E0E0E0]"><div class="flex justify-between items-end mb-2 border-b border-[#E0E0E0] pb-0.5"><span class="text-[#5F6368] font-medium text-xs">總花費</span><span class="text-sm font-extrabold text-[#4A4B4D]">TW$ <span id="expense-total-amount">0</span></span></div><div class="grid grid-cols-[28%_44%_28%] h-32 w-full items-center"><div id="expense-legend-left" class="flex flex-col justify-center gap-1.5 pl-1 h-full overflow-hidden"></div><div id="expense-chart-container" class="relative h-full w-full flex justify-center items-center"><canvas id="expense-chart"></canvas></div><div id="expense-legend-right" class="flex flex-col justify-center gap-1.5 pr-1 items-end h-full overflow-hidden"></div></div></div>
-                            <div class="overflow-y-auto flex-grow mb-1 pr-1"><div id="expense-member-list" class="space-y-0.5"></div></div>`;
-                    }
-
                     loadTripList();
                     safeBind('trip-select', 'onchange', (e) => changeTrip(e.target.value));
                     safeBind('bar-calc-currency', 'onchange', calculateCurrency);
@@ -896,16 +987,7 @@
                     safeBind('lists-modal-close-btn', 'onclick', () => document.getElementById('lists-modal').style.display='none');
                     safeBind('split-expense-btn', 'onclick', loadExpenseSummary);
                     safeBind('split-expense-close-btn', 'onclick', () => document.getElementById('split-expense-modal').style.display='none');
-                    safeBind('settings-btn', 'onclick', () => { 
-                        const trip = tripData[currentTripId]; if (!trip) return;
-                        document.getElementById('settings-trip-name').value = trip.name; 
-                        document.getElementById('settings-trip-country').value = trip.country || 'TW';
-                        document.getElementById('settings-start-date').value = trip.startDate;
-                        document.getElementById('settings-num-days').value = trip.numDays;
-                        document.getElementById('settings-modal').style.display = 'flex'; 
-                        document.getElementById('settings-members-container').innerHTML = ''; 
-                        (trip.members||[]).forEach(m => addSettingsMemberInput(m));
-                    });
+                    safeBind('image-zoom-modal', 'onclick', () => document.getElementById('image-zoom-modal').style.display='none');
                     safeBind('add-member-btn', 'onclick', () => addMemberInput());
                 });
             }
