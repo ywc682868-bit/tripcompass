@@ -823,7 +823,6 @@
                     c.className = 'swipe-item-content bg-white py-1 px-2 border border-gray-100 rounded-lg flex items-center gap-2';
                     const star = `<button class="${item.isImportant?'text-yellow-400':'text-gray-200'} text-lg">${item.isImportant?'★':'☆'}</button>`;
                     if(listData.type==='check') {
-                        // 物品清單版面：修正輸入框寬度（flex-1 min-w-0）避免擠壓刪除鈕
                         c.innerHTML = `
                             ${star}
                             <div class="flex gap-1 flex-none">
@@ -892,18 +891,24 @@
                     if (!members.length) return;
                     let effectiveTotal = 0; let currentCreditors = [];
                     let anyPayer = members.some(m => typeof m !== 'string' && m.isPayer);
-                    let allAmountsSet = members.every(m => typeof m !== 'string' && m.amount !== null && !isNaN(m.amount));
-
-                    if (!anyPayer && allAmountsSet) {
+                    
+                    // 修改邏輯：即使沒勾 payer，也要正確解析金額，避免 NaN
+                    if (!anyPayer) {
                         members.forEach(m => {
-                            const m_tw = m.method === 'card' ? (parseFloat(m.amount) + parseFloat(m.fee||0)) : (parseFloat(m.amount) * rate);
-                            effectiveTotal += m_tw; currentCreditors.push({ name: m.name, lent: m_tw });
+                            const m_amt = parseFloat(m.amount) || 0;
+                            const m_fee = parseFloat(m.fee) || 0;
+                            const m_val = m.method === 'card' ? (m_amt + m_fee) : (m_amt * rate);
+                            effectiveTotal += m_val; 
+                            currentCreditors.push({ name: m.name, lent: m_val });
                         });
                     } else {
                         members.forEach(m => {
                             if (typeof m !== 'string' && m.isPayer) {
-                                let m_tw = m.method === 'card' ? (parseFloat(m.amount) + parseFloat(m.fee||0)) : (parseFloat(m.amount) * rate);
-                                effectiveTotal += m_tw; currentCreditors.push({ name: m.name, lent: m_tw });
+                                const m_amt = parseFloat(m.amount) || 0;
+                                const m_fee = parseFloat(m.fee) || 0;
+                                const m_val = m.method === 'card' ? (m_amt + m_fee) : (m_amt * rate);
+                                effectiveTotal += m_val;
+                                currentCreditors.push({ name: m.name, lent: m_val });
                             }
                         });
                     }
@@ -912,7 +917,8 @@
                     if (effectiveTotal <= 0) return;
                     total += effectiveTotal;
                     types[da.Type] = (types[da.Type] || 0) + effectiveTotal;
-                    const activeParticipants = members.filter(m => !(typeof m !== 'string' && m.amount > 0 && !m.isPayer));
+                    
+                    const activeParticipants = members.filter(m => !(typeof m !== 'string' && (parseFloat(m.amount)||0) > 0 && !m.isPayer));
                     if (activeParticipants.length) {
                         const debtPer = effectiveTotal / activeParticipants.length;
                         currentCreditors.forEach(c => balances[c.name] = (balances[c.name] || 0) + c.lent);
@@ -931,7 +937,11 @@
                         <div class="flex justify-between items-center mb-3"><h3 class="font-bold text-[#4A4B4D]">花費</h3><button id="exp-close" class="text-2xl text-gray-400">×</button></div>
                         <div class="bg-[#F9F9F9] p-3 rounded-xl border mb-3">
                             <div class="flex justify-between items-end border-b pb-1 mb-2"><span class="text-xs text-gray-500">總支出</span><span class="font-extrabold text-sm text-[#4A4B4D]">TW$ ${total.toFixed(0)}</span></div>
-                            <div class="grid grid-cols-[30%_40%_30%] items-center h-32"><div id="leg-L" class="flex flex-col gap-1 text-[9px]"></div><canvas id="exp-chart"></canvas><div id="leg-R" class="flex flex-col gap-1 items-end text-[9px]"></div></div>
+                            <div class="grid grid-cols-[30%_40%_30%] items-center h-32">
+                                <div id="leg-L" class="flex flex-col gap-1 text-[9px] overflow-hidden"></div>
+                                <div class="flex justify-center items-center"><canvas id="exp-chart" style="max-width: 100%; max-height: 100%;"></canvas></div>
+                                <div id="leg-R" class="flex flex-col gap-1 items-end text-[9px] overflow-hidden"></div>
+                            </div>
                         </div>
                         <div class="overflow-y-auto flex-grow space-y-2"><div id="exp-mem-list" class="text-[10px]"></div><div class="mt-4 pt-2 border-t"><h4 class="font-bold text-[#7E92A1] text-xs mb-2">結算建議</h4><div id="settlement" class="space-y-1"></div></div></div>
                     </div>`;
@@ -941,12 +951,15 @@
                 expenseChart = new Chart(document.getElementById('exp-chart'), {
                     type: 'doughnut',
                     data: { datasets: [{ data: sortedKeys.map(k=>types[k]), backgroundColor: sortedKeys.map(k=>(CATEGORY_COLORS[k]||CATEGORY_COLORS.default).hex), borderWidth: 0 }] },
-                    options: { maintainAspectRatio: false, cutout: '50%', plugins: { legend: { display: false } } }
+                    options: { maintainAspectRatio: false, cutout: '65%', plugins: { legend: { display: false } } }
                 });
+                
                 sortedKeys.forEach((k, i) => {
-                    const html = `<div class="flex flex-col"><span class="font-bold truncate">${CATEGORY_NAMES[k]||k}</span><span class="text-gray-400">$${types[k].toFixed(0)}</span></div>`;
-                    if(i < 3) document.getElementById('leg-L').innerHTML += html; else document.getElementById('leg-R').innerHTML += html;
+                    const color = (CATEGORY_COLORS[k]||CATEGORY_COLORS.default).hex;
+                    const html = `<div class="flex items-center gap-1"><div class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background-color: ${color}"></div><div class="flex flex-col min-w-0"><span class="font-bold truncate text-[8px]">${CATEGORY_NAMES[k]||k}</span><span class="text-gray-400 text-[8px]">$${types[k].toFixed(0)}</span></div></div>`;
+                    if(i % 2 === 0) document.getElementById('leg-L').innerHTML += html; else document.getElementById('leg-R').innerHTML += html;
                 });
+
                 const mList = document.getElementById('exp-mem-list');
                 Object.keys(mems).sort().forEach(n => {
                     let cats = Object.keys(mems[n].cats).map(c => `<div class="flex justify-between py-0.5"><span class="${(CATEGORY_COLORS[c]||CATEGORY_COLORS.default).text}">${CATEGORY_NAMES[c]}</span><span>$${mems[n].cats[c].toFixed(0)}</span></div>`).join('');
