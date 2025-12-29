@@ -57,9 +57,14 @@
         z-index: 0;
         scroll-snap-align: start;
         scroll-snap-stop: always;
+        scroll-snap-stop: always;
         scroll-margin-top: 180px;
     }
-    #schedule-list-container .trip-card:first-child { margin-top: 10px; }
+
+    #schedule-list-container .trip-card:first-child {
+        margin-top: 10px; 
+    }
+
     .trip-card::before {
         content: '';
         position: absolute;
@@ -71,9 +76,15 @@
         z-index: -1; 
         transform: translateX(-50%);
     }
-    .trip-card:first-child::before { top: -60px; bottom: -6px; height: auto; }
+    
+    .trip-card:first-child::before { 
+        top: -60px; 
+        bottom: -6px; 
+        height: auto; 
+    }
     .trip-card:last-child::before { bottom: auto; height: 100%; }
 
+    /* 卡片視覺容器 */
     .trip-card-visual-wrapper {
         position: relative;
         width: 100%;
@@ -84,61 +95,142 @@
         z-index: 10; 
     }
 
-    /* --- Header --- */
+    /* --- Header 固定區 --- */
     header { 
-        position: fixed; top: 0; left: 0; right: 0;
-        width: 100%; max-width: 500px; margin: 0 auto;
-        background-color: #ffffff; z-index: 50; 
+        position: fixed;
+        top: 0; 
+        left: 0;
+        right: 0;
+        width: 100%; 
+        max-width: 500px;
+        margin-left: auto;
+        margin-right: auto;
+        background-color: #ffffff;
+        z-index: 50; 
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     }
-    #header-content-wrapper { padding: calc(15px + env(safe-area-inset-top)) 12px 4px 12px; }
+    #header-content-wrapper {
+        padding-top: calc(15px + env(safe-area-inset-top)); 
+        padding-bottom: 4px; 
+        padding-left: 12px; 
+        padding-right: 12px;
+    }
     #trip-select { background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%237E92A1' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: right center; background-repeat: no-repeat; background-size: 1.25em 1.25em; -webkit-appearance: none; appearance: none; background-color: transparent; font-weight: 800; color: #4A4B4D; border: none; padding-right: 1.5rem; cursor: pointer; }
-    
-    /* --- Footer --- */
+    #trip-select:focus { outline: none; }
+    #header-day-date-container { padding-bottom: 0px; margin-top: 2px; margin-bottom: 1px; line-height: 1.2; }
+
+    /* --- Footer (底部工具列) --- */
     #combined-bottom-bar { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: 95%; max-width: 480px; background-color: white; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15); z-index: 50; display: flex; flex-direction: column; padding: 0.4rem 0.75rem 0.2rem 0.75rem; border-radius: 24px; border: 1px solid #f0f0f0; }
     .prominent-integrated-btn { width: 30px; height: 30px; background-color: #7E92A1; border-radius: 50%; color: white; font-size: 18px; font-weight: 300; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; transition: transform 0.1s; }
+    .prominent-integrated-btn:active { transform: scale(0.95); }
+    #rate-display-label { font-size: 0.85rem; font-weight: bold; color: #7E92A1; line-height: 20px; }
+    #bar-calc-result { font-size: 0.7rem; font-weight: bold; color: #7E92A1; }
 
-    /* 滑動與按鈕 */
     .swipe-item-container { position: relative; overflow: hidden; border-radius: 0.375rem; margin-bottom: 0.5rem; touch-action: pan-y; }
-    .swipe-item-delete-bg { position: absolute; top: 0; bottom: 0; right: 0; width: 140px; display: flex; align-items: center; justify-content: flex-end; z-index: 0; border-radius: 0.75rem; overflow: hidden; }
-    .swipe-item-content { position: relative; z-index: 10; background-color: white; transition: transform 0.2s ease-out; width: 100%; display: flex; align-items: stretch; border-radius: 0.75rem; overflow: hidden; }
     
-    .desktop-del-btn { display: none !important; }
-    .card-static-actions { display: none !important; }
-
-    @media (min-width: 501px) {
-        .desktop-del-btn { 
-            display: flex !important; align-items: center; justify-content: center; 
-            color: #D1D5DB; font-weight: bold; cursor: pointer; font-size: 20px; transition: color 0.2s; 
-        }
-        .desktop-del-btn:hover { color: #CB8572; }
-        .card-static-actions { display: flex !important; width: 100%; justify-content: flex-start; gap: 4px; padding: 0; margin: 0; }
-        .swipe-item-delete-bg { display: none !important; }
+    .swipe-item-delete-bg { 
+        position: absolute; top: 0; bottom: 0; right: 0; width: 140px; 
+        display: flex; align-items: center; justify-content: flex-end; 
+        z-index: 0; 
+        border-radius: 0.75rem;
+        overflow: hidden;
+    }
+    
+    .swipe-item-content { 
+        position: relative; z-index: 10; background-color: white; 
+        transition: transform 0.2s ease-out; transform: translateX(0); 
+        width: 100%; display: flex; align-items: stretch; 
+        border-radius: 0.75rem;
+        overflow: hidden;
+    }
+    
+    .card-right-col { 
+        display: flex; 
+        flex-direction: column; 
+        justify-content: flex-start; 
+        align-items: flex-start; 
+        gap: 8px; 
+        width: 95px; min-width: 95px; max-width: 95px; flex: 0 0 95px;
+        border-left: none; padding-left: 6px; padding-bottom: 0.25rem; padding-top: 12px; position: relative; 
+    }
+    .card-right-col::before {
+        content: ''; position: absolute; left: 0; top: 8%; bottom: 8%; width: 1px; background-color: #C0C0C0;
     }
 
-    .card-right-col { display: flex; flex-direction: column; width: 95px; padding-left: 6px; padding-top: 12px; position: relative; }
-    .card-right-col::before { content: ''; position: absolute; left: 0; top: 8%; bottom: 8%; width: 1px; background-color: #C0C0C0; }
+    .info-block-content { display: flex; flex-direction: column; justify-content: flex-start; align-items: flex-end; gap: 4px; width: 100%; }
+    
+    .card-static-actions { 
+        display: none !important; 
+        width: 100%; 
+        justify-content: flex-start !important; 
+        gap: 2px; 
+        padding: 0; 
+        margin: 0; 
+    }
+    
+    /* --- RWD Adjustments --- */
+    @media (min-width: 501px) {
+        .swipe-item-delete-bg { display: none !important; }
+        .trip-card .swipe-item-content { cursor: pointer; } 
+        .card-static-actions { display: flex !important; } 
+        .trip-card .content-text-block { margin-top: 5px; }
+        .desktop-del-btn { 
+            display: flex !important; /* 電腦版顯示 */
+            align-items: center;
+            justify-content: center;
+            color: #D1D5DB; /* 淺灰色 */
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 20px;
+            transition: color 0.2s;
+        }
+        .desktop-del-btn:hover {
+            color: #CB8572; /* 滑鼠移上去變紅色 */
+        }
+    }
+    @media (max-width: 500px) {
+        html { scroll-padding-top: 180px; }
+        #schedule-list-container { padding-top: 180px; }
+        .trip-card:first-child::before { top: -35px; }
+        .trip-card .content-text-block { margin-top: 8px; }
+        .desktop-del-btn { display: none !important; } 
+        
+        #currency-display-row { flex-wrap: nowrap !important; gap: 5px !important; }
+        #rate-display-container { width: auto !important; flex: 0 0 auto !important; border-right: none !important; }
+        #rate-display-label { font-size: 14px !important; white-space: nowrap !important; }
+        #currency-display-row > div:last-child { width: auto !important; flex: 1 1 auto !important; justify-content: flex-end !important; }
+        #bar-calc-amount { width: 50px !important; }
+        #bar-calc-currency { width: 45px !important; }
+        #btn-lists span:nth-child(2), #split-expense-btn span:nth-child(2) { font-size: 14px !important; }
+    }
 
+    /* --- Modals & Lists --- */
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(95, 99, 104, 0.4); display: flex; justify-content: center; align-items: center; z-index: 100; }
     .compact-input { padding: 0 0.3rem; font-size: 0.7rem; height: 28px; line-height: 28px; color: #5F6368; border-color: #E0E0E0; border-width: 1px; box-sizing: border-box; }
+    .compact-input:focus { border-color: #7E92A1; outline: none; ring: 1px solid #7E92A1; }
+    .compact-label { font-size: 0.7rem; color: #7E92A1; font-weight: 700; margin-bottom: 0; }
+    input[type="time"], input[type="date"] { text-align: center; }
     
     .list-tab-active { border-bottom: 2px solid #7E92A1; color: #7E92A1; font-weight: bold; }
     .list-tab-inactive { color: #A9A9A9; }
     .shopping-img-box { width: 50px; height: 50px; background-color: #f0f0f0; border-radius: 6px; overflow: hidden; display: flex; justify-content: center; align-items: center; cursor: pointer; border: 1px dashed #ccc; position: relative; }
     .shopping-img-box img { width: 100%; height: 100%; object-fit: cover; }
+    .swipe-item-container { position: relative; overflow: hidden; border-radius: 0.375rem; margin-bottom: 0.5rem; touch-action: pan-y; }
 </style>
 </head>
 
 <body>
     <div id="app-container">
         <header>
-            <div id="header-content-wrapper">
+            <div id="header-content-wrapper" class="px-3 pb-1" style="padding-top: calc(15px + env(safe-area-inset-top));">
                 <div class="flex justify-between items-start">
                     <div class="flex flex-col flex-grow min-w-0 mr-2">
                         <div class="flex items-center w-full mb-0.5">
-                              <button id="settings-btn" class="p-1 mr-0.5 text-[#888888]">📅</button>
+                              <button id="settings-btn" class="p-1 mr-0.5 text-[#888888] hover:text-[#5F6368]" title="計畫設定">📅</button>
                               <select id="trip-select" class="w-full text-lg truncate font-extrabold"></select>
-                              <button id="new-trip-btn" class="px-2 py-1 bg-[#7E92A1] text-white text-xs font-semibold rounded hidden">+ 新增</button>
+                              <div class="flex items-center flex-shrink-0 ml-2">
+                                <button id="new-trip-btn" class="px-2 py-1 bg-[#7E92A1] text-white text-xs font-semibold rounded hover:bg-[#64748B] transition-colors hidden">+ 新增</button>
+                              </div>
                         </div>
                         <div class="flex items-center space-x-1 text-[#888888] ml-1 mb-1.5">
                               <span class="font-bold text-xs">👫</span>
@@ -149,49 +241,58 @@
                             <h2 id="header-day-date-display" class="text-sm font-bold text-[#4A4B4D]"></h2>
                         </div>
                     </div>
-                    <div id="weather-info-container" class="flex flex-col items-end justify-start text-[#888888] flex-shrink-0 gap-1 pt-1">
-                          <div id="header-weather-icon" class="text-4xl leading-none"></div>
+                    <div id="weather-info-container" class="flex flex-col items-end justify-start text-[#888888] cursor-pointer flex-shrink-0 gap-2 pt-1">
+                          <div id="header-weather-icon" class="text-4xl leading-none mb-0"></div>
                           <span id="header-weather-temp" class="text-sm font-bold"></span>
-                          <span id="header-location-name" class="text-xs font-bold"></span>
-                          <span id="header-clothing-advice" class="text-[10px] font-bold text-[#CB8572] whitespace-nowrap"></span>
+                          <span id="header-location-name" class="text-xs font-bold mt-0.5"></span>
+                          <span id="header-clothing-advice" class="text-xs font-bold text-[#CB8572] mt-0.5 whitespace-nowrap"></span>
                     </div>
                 </div>
             </div>
         </header>
-        <div id="schedule-list-container" class="px-3 pt-0 pb-4"></div>
+        <div id="schedule-list-container" class="px-3 pt-0 pb-4">
+            <div class="p-4 text-center text-[#A9A9A9] text-xs">行程加載中...</div>
+        </div>
     </div>
 
     <div id="combined-bottom-bar">
-        <div id="currency-display-row" class="flex w-full border-b border-gray-100 pb-2 mb-1 mt-1.5">
-            <div id="rate-display-container" class="flex items-center justify-center border-r border-gray-100 w-1/2">
+        <div id="currency-display-row" class="flex w-full border-b border-gray-100 pb-2 mb-1 mt-1.5" style="flex-wrap: nowrap !important;">
+            <div id="rate-display-container" class="flex items-center justify-center border-r border-gray-100" style="width: 50% !important; flex: 0 0 50% !important; border-right: 1px solid #f3f4f6 !important;">
                 <span id="rate-display-label">匯率 ≈ ...</span> 
             </div>
-            <div class="flex items-center justify-start gap-0.5 pl-3 w-1/2">
-                <select id="bar-calc-currency" class="bg-gray-50 border border-[#E0E0E0] rounded text-[10px] h-6 w-10 text-center">
+            <div class="flex items-center justify-start gap-0.5 pl-3" style="width: 50% !important; flex: 0 0 50% !important;">
+                <select id="bar-calc-currency" class="bg-gray-50 border border-[#E0E0E0] rounded p-0.5 text-[10px] font-bold text-[#5F6368] h-6 w-10 text-center appearance-none cursor-pointer">
                     <option value="USD">USD</option><option value="JPY">JPY</option><option value="KRW">KRW</option><option value="CNY">CNY</option><option value="GBP">GBP</option>
                 </select>
-                <input type="number" id="bar-calc-amount" class="w-20 h-6 text-[10px] border border-[#E0E0E0] rounded text-center">
-                <span class="font-bold text-[#A9A9A9]">=</span>
-                <span class="text-[0.7rem] font-bold text-[#7E92A1]">TW</span>
-                <input type="text" id="bar-calc-result" readonly class="w-12 h-6 border-none bg-transparent text-[#7E92A1] font-extrabold pl-1">
+                <input type="number" id="bar-calc-amount" class="w-20 h-6 text-[10px] p-0.5 border border-[#E0E0E0] rounded text-center font-medium text-[#5F6368]">
+                <span class="text-[1.1rem] font-bold text-[#A9A9A9]">=</span>
+                <span class="text-[0.7rem] font-bold text-[#7E92A1] leading-[26px]">TW</span>
+                <input type="text" id="bar-calc-result" readonly value="" class="w-12 h-6 p-0 border-none bg-transparent text-[#7E92A1] font-extrabold text-left focus:outline-none truncate pl-1">
             </div>
         </div>
         <div class="flex justify-between items-center w-full px-2 py-1.5">
-             <button id="btn-lists" class="flex-1 flex flex-row items-center justify-center gap-2 text-[#888888]">
-                 <span class="text-xl">📝</span><span class="text-[12px] font-bold">清單</span>
+             <button id="btn-lists" class="flex-1 flex flex-row items-center justify-center gap-2 text-[#888888] hover:text-[#7E92A1]">
+                 <span class="text-xl leading-none">📝</span>
+                 <span class="text-[12px] font-bold leading-none">清單</span>
              </button>
-             <div class="flex-none px-4"><button id="center-add-btn" class="prominent-integrated-btn shadow-md">＋</button></div>
-             <button id="split-expense-btn" class="flex-1 flex flex-row items-center justify-center gap-2 text-[#888888]">
-                 <span class="text-xl">💰</span><span class="text-[12px] font-bold">花費</span>
+             <div class="flex-none px-4">
+                 <button id="center-add-btn" class="prominent-integrated-btn shadow-md">＋</button>
+             </div>
+             <button id="split-expense-btn" class="flex-1 flex flex-row items-center justify-center gap-2 text-[#888888] hover:text-[#8F9E8B]">
+                 <span class="text-xl leading-none">💰</span>
+                 <span class="text-[12px] font-bold leading-none">花費</span>
              </button>
         </div>
     </div>
 
-    <div id="add-schedule-modal" class="modal-overlay hidden"><div class="bg-white rounded-xl shadow-2xl p-3 w-11/12 max-w-sm max-h-[90vh] overflow-y-auto relative"></div></div>
-    <div id="lists-modal" class="modal-overlay hidden"><div class="bg-white rounded-xl shadow-2xl p-4 w-11/12 max-w-sm max-h-[80vh] flex flex-col relative"><h3 class="text-base font-bold mb-2 flex justify-between items-center text-[#4A4B4D]">清單<button id="lists-modal-close-btn" class="text-[#A9A9A9] text-xl">×</button></h3><div id="list-tabs" class="flex gap-1 border-b border-gray-100 mb-2 overflow-x-auto no-scrollbar"></div><div id="list-content" class="flex-grow overflow-y-auto flex flex-col relative"></div></div></div>
-    <div id="image-zoom-modal" class="modal-overlay hidden z-[150] bg-black/80"><img id="zoom-img" class="max-w-[95%] max-h-[90%] rounded object-contain"></div>
+    <div id="add-schedule-modal" class="modal-overlay hidden">
+        <div class="bg-white rounded-xl shadow-2xl p-3 w-11/12 max-w-sm max-h-[90vh] overflow-y-auto relative"></div>
+    </div>
+    <div id="lists-modal" class="modal-overlay hidden"><div class="bg-white rounded-xl shadow-2xl p-4 w-11/12 max-w-sm max-h-[80vh] flex flex-col relative"><h3 class="text-base font-bold mb-2 flex justify-between items-center flex-shrink-0 text-[#4A4B4D]">清單<button id="lists-modal-close-btn" class="text-[#A9A9A9] hover:text-[#5F6368] text-xl leading-none">×</button></h3><div id="list-tabs" class="flex gap-1 border-b border-gray-100 mb-2 overflow-x-auto no-scrollbar flex-shrink-0"></div><div id="list-content" class="flex-grow overflow-y-auto flex flex-col relative"></div></div></div>
+    <div id="image-zoom-modal" class="modal-overlay hidden z-[150] bg-black/80"><img id="zoom-img" class="max-w-[95%] max-h-[90%] rounded shadow-lg object-contain"></div>
     <div id="settings-modal" class="modal-overlay hidden"><div class="bg-white rounded-xl shadow-2xl p-4 w-11/12 max-w-sm"></div></div>
-    <div id="split-expense-modal" class="modal-overlay hidden"></div>
+    <div id="new-trip-modal" class="modal-overlay hidden"><div class="bg-white rounded-xl shadow-2xl p-4 w-11/12 max-w-sm"><h3 class="text-base font-bold mb-3 flex justify-between items-center text-[#4A4B4D]">新增旅行計畫<button id="new-trip-modal-close-btn" class="text-[#A9A9A9] hover:text-[#5F6368] text-xl">×</button></h3><div id="new-trip-modal-content"></div></div></div>
+    <div id="split-expense-modal" class="modal-overlay hidden"><div class="bg-white rounded-xl shadow-2xl p-4 w-11/12 max-w-sm flex flex-col max-h-[90vh]"><h3 class="text-sm font-bold mb-2 flex justify-between items-center flex-shrink-0 text-[#4A4B4D]">花費<button id="split-expense-close-btn" class="text-[#A9A9A9] hover:text-[#5F6368] text-xl leading-none">×</button></h3><div class="flex-shrink-0 mb-2 bg-[#F9F9F9] p-2 rounded border border-[#E0E0E0]"><div class="flex justify-between items-end mb-1 border-b border-[#E0E0E0] pb-0.5"><span class="text-[#5F6368] font-medium text-xs">總花費</span><span class="text-sm font-extrabold text-[#4A4B4D]">TW$ <span id="expense-total-amount">0</span></span></div><div id="expense-chart-container" class="h-32 w-full relative flex justify-center items-center"><canvas id="expense-chart"></canvas></div></div><div class="overflow-y-auto flex-grow mb-1 pr-1"><div id="expense-member-list" class="space-y-0.5"></div></div></div></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
@@ -200,19 +301,39 @@
 
         window.App = (function() {
             const appId = 'my-trip-app';
-            const firebaseConfig = { apiKey: "AIzaSyDx2yrJ3YUe93A-JdgJPtZChLvylCEht28", authDomain: "mytravelplanner-36283.firebaseapp.com", projectId: "mytravelplanner-36283", storageBucket: "mytravelplanner-36283.firebasestorage.app", messagingSenderId: "86504733738", appId: "1:86504733738:web:5167a6a795eb206dfed753" };
-            const COUNTRY_CONFIG = { 'USA': { name: '美國', currency: 'USD', localName: 'New York', lat: 40.71, lon: -74.00 }, 'JP': { name: '日本', currency: 'JPY', localName: '東京', lat: 35.68, lon: 139.76 }, 'KR': { name: '韓國', currency: 'KRW', localName: '서울', lat: 37.56, lon: 126.97 }, 'UK': { name: '英國', currency: 'GBP', localName: 'London', lat: 51.50, lon: -0.12 }, 'TW': { name: '台灣', currency: 'TWD', localName: '台北', lat: 25.03, lon: 121.56 } };
+            const firebaseConfig = {
+                apiKey: "AIzaSyDx2yrJ3YUe93A-JdgJPtZChLvylCEht28",
+                authDomain: "mytravelplanner-36283.firebaseapp.com",
+                projectId: "mytravelplanner-36283",
+                storageBucket: "mytravelplanner-36283.firebasestorage.app",
+                messagingSenderId: "86504733738",
+                appId: "1:86504733738:web:5167a6a795eb206dfed753"
+            };            
+            const COUNTRY_CONFIG = { 
+                'USA': { name: '美國', currency: 'USD', localName: 'New York', lat: 40.71, lon: -74.00, img: 'usa' }, 
+                'JP': { name: '日本', currency: 'JPY', localName: '東京', lat: 35.68, lon: 139.76, img: 'japan' }, 
+                'KR': { name: '韓國', currency: 'KRW', localName: '서울', lat: 37.56, lon: 126.97, img: 'korea' }, 
+                'UK': { name: '英國', currency: 'GBP', localName: 'London', lat: 51.50, lon: -0.12, img: 'london' }, 
+                'TW': { name: '台灣', currency: 'TWD', localName: '台北', lat: 25.03, lon: 121.56, img: 'taiwan' } 
+            };
+            
             const CATEGORY_COLORS = { 'coffee': { bg: 'bg-[#9C8B74]', hex: '#9C8B74', text: 'text-[#9C8B74]' }, 'restaurant': { bg: 'bg-[#CB8572]', hex: '#CB8572', text: 'text-[#CB8572]' }, 'location': { bg: 'bg-[#8F9E8B]', hex: '#8F9E8B', text: 'text-[#8F9E8B]' }, '交通': { bg: 'bg-[#7E92A1]', hex: '#7E92A1', text: 'text-[#7E92A1]' }, 'shopping': { bg: 'bg-[#9E869C]', hex: '#9E869C', text: 'text-[#9E869C]' }, 'accommodation': { bg: 'bg-[#A9A9A9]', hex: '#A9A9A9', text: 'text-[#A9A9A9]' }, 'fee': { bg: 'bg-[#D4A5A5]', hex: '#D4A5A5', text: 'text-[#D4A5A5]' }, 'default': { bg: 'bg-[#A9A9A9]', hex: '#A9A9A9', text: 'text-[#A9A9A9]' } };
             const MEMBER_COLORS = ['text-[#CB8572]', 'text-[#7E92A1]', 'text-[#8F9E8B]', 'text-[#9E869C]', 'text-[#9C8B74]'];
             const CATEGORY_NAMES = { 'location': '景點', 'restaurant': '餐廳', 'coffee': '咖啡廳', '交通': '交通', 'shopping': '購物', 'accommodation': '住宿', 'fee': '手續費', 'default': '未分類' };
 
-            let db, auth, currentTripId = '', currentDayId = 'Day 1', editingScheduleId = null, tripData = {}, unsubscribeSchedule = null, unsubscribeTrips = null, unsubscribeLists = null, expenseChart = null, currentTripRate = 1, currentListTabId = null;
+            let db, auth, currentUser;
+            let currentTripId = '', currentDayId = 'Day 1', editingScheduleId = null, tripData = {};
+            let unsubscribeSchedule = null, unsubscribeTrips = null, unsubscribeLists = null, expenseChart = null, currentTripRate = 1;
+            let currentListTabId = null; 
+            let pendingTripSwitchId = null; 
 
+            // --- 基礎工具 ---
             function formatDateForHeader(date) { const year = String(date.getFullYear()).slice(-2); const month = String(date.getMonth() + 1).padStart(2, '0'); const day = String(date.getDate()).padStart(2, '0'); const dayOfWeekMap = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']; return `${year}.${month}.${day} ${dayOfWeekMap[date.getDay()]}`; }
             function dateDiffInDays(date2, date1) { return Math.ceil(Math.abs(date2.getTime() - date1.getTime()) / (1000 * 60 * 60 * 24)); }
             function getDateFromDayId(trip, dayId) { if (!trip || !trip.startDate) return null; const d = new Date(trip.startDate); d.setDate(d.getDate() + (parseInt(dayId.replace('Day ', '')) - 1)); return d; }
             function getCardStyle(type) { const c = CATEGORY_COLORS[type] || CATEGORY_COLORS['default']; const icons = {'coffee':'☕','restaurant':'🍽️','location':'📍','交通':'🚗','shopping':'🛍️','accommodation':'🛏️','fee':'🧧'}; return { color: c.bg, icon: icons[type] || '❓', hex: c.hex, text: c.text }; }
             function navigateToMap(input) { if (!input) return; const url = (input.includes('http') || input.includes('maps.')) ? input : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(input)}`; window.open(url, '_blank'); }
+            function formatCurrency(value) { if (typeof value !== 'number') value = parseFloat(value); if (isNaN(value) || value === 0) return '0'; return value.toFixed(2).replace(/\.00$/, '').replace(/(\.\d)0$/, '$1'); }
             async function fetchExchangeRate(baseCurrency) { const fallback = { 'USD': 32.5, 'JPY': 0.215, 'KRW': 0.023, 'GBP': 41.2, 'CNY': 4.5, 'TWD': 1 }; if (!baseCurrency || baseCurrency === 'TWD') return 1; try { const r = await fetch(`https://open.er-api.com/v6/latest/${baseCurrency}`); const d = await r.json(); if (d && d.rates && d.rates.TWD) return d.rates.TWD; } catch (e) {} return fallback[baseCurrency] || 1; }
 
             function updateHeaderDateWithDDay(d) {
@@ -224,12 +345,13 @@
                     const tripStart = new Date(trip.startDate); tripStart.setHours(0, 0, 0, 0);
                     const diffDaysTrip = Math.floor((today.getTime() - tripStart.getTime()) / (1000 * 60 * 60 * 24));
                     let dString = diffDaysTrip === 0 ? 'D-0' : (diffDaysTrip > 0 ? `D+${diffDaysTrip + 1}` : `D${diffDaysTrip}`);
-                    tripCountdownHtml = `<span class="ml-2 text-[#7E92A1] text-xs font-bold">🛫 ${dString}</span>`;
+                    tripCountdownHtml = `<span class="ml-2 text-[#7E92A1] text-xs font-bold tracking-wide">🛫 ${dString}</span>`;
                 }
                 const anniversary = new Date('2025-08-01T00:00:00');
                 const diffDaysLove = Math.floor((today.getTime() - anniversary.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-                let loveHtml = `<span class="ml-2 text-[#D4A5A5] text-xs font-extrabold">❤️ ${diffDaysLove}天</span>`;
-                document.getElementById('header-day-date-display').innerHTML = `${formatDateForHeader(d)}${tripCountdownHtml}${loveHtml}`;
+                let loveHtml = `<span class="ml-2 text-[#D4A5A5] text-xs font-extrabold tracking-wide">❤️ ${diffDaysLove}天</span>`;
+                const el = document.getElementById('header-day-date-display');
+                if(el) el.innerHTML = `${formatDateForHeader(d)}${tripCountdownHtml}${loveHtml}`;
             }
 
             async function updateHeaderInfo() {
@@ -237,8 +359,9 @@
                 const config = COUNTRY_CONFIG[trip.country || 'TW'] || COUNTRY_CONFIG['TW'];
                 document.getElementById('header-location-name').textContent = config.localName;
                 currentTripRate = await fetchExchangeRate(config.currency);
-                const barSelect = document.getElementById('bar-calc-currency'); if(barSelect) { barSelect.value = config.currency; calculateCurrency(); }
-                document.getElementById('header-members-list').innerHTML = (trip.members || []).map((m, i) => `<span class="${MEMBER_COLORS[i % MEMBER_COLORS.length]} mr-1">${m}</span>`).join('') || '尚未設定';
+                const barSelect = document.getElementById('bar-calc-currency'); 
+                if(barSelect) { barSelect.value = config.currency; calculateCurrency(); }
+                document.getElementById('header-members-list').innerHTML = (trip.members && trip.members.length) ? trip.members.map((m, i) => `<span class="${MEMBER_COLORS[i % MEMBER_COLORS.length]} mr-1">${m}</span>`).join('') : '尚未設定';
                 try { 
                     const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${config.lat}&longitude=${config.lon}&current=temperature_2m,weather_code&timezone=auto`); 
                     const data = await res.json(); 
@@ -246,7 +369,6 @@
                     const code = data.current.weather_code;
                     document.getElementById('header-weather-icon').textContent = code > 50 ? '🌧️' : (code > 3 ? '☁️' : '☀️'); 
                     document.getElementById('header-weather-temp').textContent = `${temp}°C`; 
-                    // 穿衣建議邏輯
                     let clothing = temp >= 25 ? '🎽 短袖' : (temp >= 20 ? '👕 薄外套' : (temp >= 15 ? '🧥 外套' : (temp >= 10 ? '🧥 大衣' : '🧣 羽絨')));
                     if ([51, 53, 55, 61, 63, 65, 80, 81, 82, 95, 96, 99].includes(code)) clothing += ' ☔帶雨具';
                     document.getElementById('header-clothing-advice').textContent = clothing;
@@ -258,11 +380,26 @@
                 const trip = tripData[tripId];
                 if (trip && trip.startDate) {
                     const today = new Date(); today.setHours(0, 0, 0, 0);
-                    const diffDays = Math.floor((today.getTime() - new Date(trip.startDate).getTime()) / (1000 * 60 * 60 * 24));
+                    const start = new Date(trip.startDate); start.setHours(0, 0, 0, 0);
+                    const diffDays = Math.floor((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
                     const calculatedDay = diffDays + 1;
                     currentDayId = (calculatedDay >= 1 && calculatedDay <= (trip.numDays || 1)) ? `Day ${calculatedDay}` : 'Day 1';
                 } else currentDayId = 'Day 1';
                 updateHeaderInfo(); renderDayTabs(); loadSchedules(currentTripId, currentDayId); checkAndCreateDefaultLists(tripId); 
+            }
+
+            function updateModalTotalTWD() {
+                const rows = document.getElementById('form-members-container').children;
+                let totalTWD = 0, totalCashForeign = 0;
+                for (let row of rows) {
+                    const amt = parseFloat(row.querySelector('input[name="schedule-member-amount"]').value) || 0;
+                    const fee = parseFloat(row.querySelector('input[name="schedule-member-fee"]').value) || 0;
+                    if (row.querySelector('.payment-method').value === 'card') { totalTWD += (amt + fee); } 
+                    else { totalTWD += (amt * currentTripRate); totalCashForeign += amt; }
+                }
+                const foreignInp = document.getElementById('form-amount'), twdInp = document.getElementById('form-amount-twd');
+                if (foreignInp) foreignInp.value = totalCashForeign > 0 ? totalCashForeign.toFixed(0) : '';
+                if (twdInp) twdInp.value = totalTWD > 0 ? totalTWD.toFixed(0) : '';
             }
 
             function createTripCard(schedule) {
@@ -298,18 +435,14 @@
                             <span class="text-[#888888] font-bold text-[10px]">👫 TW$${perPersonTWD.toFixed(0)}</span>
                         </div>
                     </div>`;
-                
-                // 電腦版按鈕生成
-                const staticActions = content.querySelector('.card-static-actions');
-                const modBtn = document.createElement('button');
-                modBtn.className = "bg-[#7E92A1] text-white rounded px-1.5 py-0.5 text-[9px] font-bold shadow-sm";
-                modBtn.textContent = "修改";
-                modBtn.onclick = (e) => { e.stopPropagation(); openEditScheduleModal(schedule); };
-                const delBtn = document.createElement('button');
-                delBtn.className = "bg-[#CB8572] text-white rounded px-1.5 py-0.5 text-[9px] font-bold shadow-sm";
-                delBtn.textContent = "刪除";
-                delBtn.onclick = (e) => { e.stopPropagation(); deleteSchedule(schedule.id); };
-                staticActions.appendChild(modBtn); staticActions.appendChild(delBtn);
+
+                // PC 版修改按鈕
+                const sa = content.querySelector('.card-static-actions');
+                const mb = document.createElement('button'); mb.className = "bg-[#7E92A1] text-white rounded px-1.5 py-0.5 text-[9px] font-bold shadow-sm"; mb.textContent = "修改";
+                mb.onclick = (e) => { e.stopPropagation(); openEditScheduleModal(schedule); };
+                const dbn = document.createElement('button'); dbn.className = "bg-[#CB8572] text-white rounded px-1.5 py-0.5 text-[9px] font-bold shadow-sm"; dbn.textContent = "刪除";
+                dbn.onclick = (e) => { e.stopPropagation(); deleteSchedule(schedule.id); };
+                sa.appendChild(mb); sa.appendChild(dbn);
 
                 visualWrapper.appendChild(content); card.appendChild(visualWrapper);
                 content.querySelector('.map-link').onclick = (e) => { e.preventDefault(); navigateToMap(schedule.Address || schedule.Location); };
@@ -375,7 +508,7 @@
                 contentEl.addEventListener('touchend', () => { contentEl.style.transform = (isSwiping && currentTranslate < -70) ? `translateX(-140px)` : `translateX(0)`; });
             }
 
-            // --- 清單邏輯 ---
+            // --- 清單邏輯開始 ---
             async function checkAndCreateDefaultLists(tripId) { 
                 try {
                     const col = collection(db, `artifacts/${appId}/public/data/Trips/${tripId}/Lists`); 
@@ -432,14 +565,14 @@
             }
 
             function renderListItems(listData, container) {
-                if (!listData) return;
                 const modalBody = container.parentElement; 
                 const oldFab = modalBody.querySelector('.list-fab-dynamic'); if(oldFab) oldFab.remove();
                 const fab = document.createElement('div'); fab.className = 'list-fab-dynamic'; fab.textContent = '＋';
                 fab.style.cssText = `position: absolute; bottom: 20px; right: 20px; width: 44px; height: 44px; background-color: #7E92A1; border-radius: 50%; color: white; font-size: 24px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.25); cursor: pointer; z-index: 50; transition: transform 0.1s;`;
                 fab.onclick = async () => { 
                     const newItem = listData.type === 'check' ? { id: Date.now(), text: '', checkedLeft: false, checkedRight: false, isImportant: false } : { id: Date.now(), text: '', desc: '', location: '', imageUrl: '', isImportant: false }; 
-                    await updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Lists/${listData.id}`), { items: [...listData.items, newItem] }); 
+                    const currentItems = Array.isArray(listData.items) ? listData.items : [];
+                    await updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Lists/${listData.id}`), { items: [...currentItems, newItem] }); 
                 };
                 modalBody.appendChild(fab);
 
@@ -473,7 +606,7 @@
                         c.querySelector('.desktop-del-btn').onclick = () => deleteListItem(listData, realIdx);
                         
                         const fileInp = document.createElement('input'); fileInp.type='file'; fileInp.accept='image/*'; fileInp.style.display='none';
-                        c.querySelector('.shopping-img-box').onclick = () => { if(item.imageUrl) { document.getElementById('zoom-img').src=item.imageUrl; document.getElementById('image-zoom-modal').style.display='flex'; } else fileInp.click(); };
+                        c.querySelector('.shopping-img-box').onclick = () => { if(item.imageUrl) { document.getElementById('zoom-img').src=item.imageUrl; document.getElementById('image-zoom-modal').classList.remove('hidden'); } else fileInp.click(); };
                         fileInp.onchange = (e) => {
                             if(!e.target.files[0]) return;
                             const reader = new FileReader();
@@ -523,29 +656,20 @@
                         mems[name].total += debtPerPerson;
                     });
                 });
-                const modal = document.getElementById('split-expense-modal');
-                modal.innerHTML = `<div class="bg-white rounded-xl shadow-2xl p-4 w-11/12 max-w-sm flex flex-col max-h-[90vh]">
-                    <h3 class="text-sm font-bold mb-2 flex justify-between items-center text-[#4A4B4D]">花費<button id="split-expense-close-btn" class="text-[#A9A9A9] text-xl">×</button></h3>
-                    <div class="flex-shrink-0 mb-2 bg-[#F9F9F9] p-2 rounded border border-[#E0E0E0]">
-                        <div class="flex justify-between items-end mb-1 border-b border-[#E0E0E0] pb-0.5"><span class="text-[#5F6368] font-medium text-xs">總花費</span><span class="text-sm font-extrabold text-[#4A4B4D]">TW$ ${total.toFixed(0)}</span></div>
-                        <div class="h-32 w-full relative flex justify-center items-center"><canvas id="expense-chart"></canvas></div>
-                    </div>
-                    <div class="overflow-y-auto flex-grow mb-1 pr-1" id="expense-member-list"></div>
-                </div>`;
-                const ctx = modal.querySelector('#expense-chart').getContext('2d');
-                new Chart(ctx, { type: 'doughnut', data: { labels: Object.keys(types), datasets: [{ data: Object.values(types), backgroundColor: Object.keys(types).map(k => (CATEGORY_COLORS[k]||CATEGORY_COLORS.default).hex), borderWidth: 0 }] }, options: { maintainAspectRatio: false, plugins: { legend: { display: false } } } });
-                const list = modal.querySelector('#expense-member-list');
-                Object.keys(mems).forEach(n => { list.innerHTML += `<div class="flex justify-between py-1 text-xs border-b border-gray-50"><span>${n}</span><span>$${mems[n].total.toFixed(0)}</span></div>`; });
-                modal.querySelector('#split-expense-close-btn').onclick = () => modal.classList.add('hidden');
+                document.getElementById('expense-total-amount').textContent = total.toFixed(0);
+                const ctx = document.getElementById('expense-chart').getContext('2d');
+                if(expenseChart) expenseChart.destroy();
+                expenseChart = new Chart(ctx, { type: 'doughnut', data: { labels: Object.keys(types), datasets: [{ data: Object.values(types), backgroundColor: Object.keys(types).map(k => (CATEGORY_COLORS[k]||CATEGORY_COLORS.default).hex), borderWidth: 0 }] }, options: { maintainAspectRatio: false, plugins: { legend: { display: false } } } });
+                const list = document.getElementById('expense-member-list'); list.innerHTML = '';
+                Object.keys(mems).forEach(n => { list.innerHTML += `<div class="flex justify-between py-1 text-xs border-b"><span>${n}</span><span>$${mems[n].total.toFixed(0)}</span></div>`; });
             }
 
             async function deleteSchedule(id) { if(!confirm('確定刪除?')) return; await deleteDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`, id)); }
 
             function openEditScheduleModal(s) {
                 editingScheduleId = s.id;
-                const modal = document.getElementById('add-schedule-modal');
-                modal.classList.remove('hidden');
-                modal.querySelector('h3 span').textContent = s.Location || '編輯行程';
+                document.getElementById('add-schedule-modal').classList.remove('hidden');
+                document.getElementById('add-schedule-modal-title').textContent = s.Location || '編輯行程';
                 document.getElementById('form-date').value = s.Date || '';
                 document.getElementById('form-time').value = s.Time || '';
                 document.getElementById('form-type').value = s.Type || 'location';
@@ -554,7 +678,6 @@
                 document.getElementById('form-details').value = s.說明 || '';
                 document.getElementById('form-must-go').checked = s.MustGo || false;
                 document.getElementById('form-set-alarm').checked = s.SetAlarm || false;
-                
                 const c = document.getElementById('form-members-container'); c.innerHTML = '';
                 (s.members || []).forEach(m => addMemberInput(typeof m === 'string' ? m : m.name, m.amount, m.isPayer, m.method, m.fee));
                 updateModalTotalTWD();
@@ -563,11 +686,10 @@
 
             function initApp() {
                 document.addEventListener('DOMContentLoaded', async () => {
-                    const app = initializeApp(firebaseConfig); db = getFirestore(app); auth = getAuth(app); 
-                    await signInAnonymously(auth);
+                    const app = initializeApp(firebaseConfig); db = getFirestore(app); auth = getAuth(app); await signInAnonymously(auth);
                     
-                    const addScheduleModalContent = document.querySelector('#add-schedule-modal > div');
-                    addScheduleModalContent.innerHTML = `<h3 class="text-base font-bold mb-2 pr-8 truncate" id="add-schedule-modal-title"><span>新增行程</span></h3><button id="modal-close-btn" class="absolute top-3 right-3 text-[#A9A9A9] text-2xl">×</button>
+                    const sm = document.querySelector('#add-schedule-modal > div');
+                    sm.innerHTML = `<h3 class="text-base font-bold mb-2 pr-8 truncate" id="add-schedule-modal-title">新增行程</h3><button id="modal-close-btn" class="absolute top-3 right-3 text-[#A9A9A9] text-2xl">×</button>
                         <form id="add-schedule-form" class="space-y-2">
                             <div class="grid grid-cols-3 gap-1.5"> 
                                 <div><label class="block compact-label text-center">日期</label><input type="date" id="form-date" class="compact-input w-full rounded border text-[10px]"></div> 
@@ -576,7 +698,10 @@
                             </div>
                             <div class="flex gap-2">
                                 <div class="flex-grow"><label class="block compact-label">地點</label><input type="text" id="form-location" class="compact-input w-full rounded border" placeholder="地點名稱"></div>
-                                <div class="flex gap-1 items-center"><div class="flex flex-col items-center"><span class="text-[9px]">必去</span><input type="checkbox" id="form-must-go" class="w-3 h-3"></div><div class="flex flex-col items-center"><span class="text-[9px]">鬧鐘</span><input type="checkbox" id="form-set-alarm" class="w-3 h-3"></div></div>
+                                <div class="flex gap-1 items-center">
+                                    <div class="flex flex-col items-center"><span class="text-[9px]">必去</span><input type="checkbox" id="form-must-go" class="w-3 h-3"></div>
+                                    <div class="flex flex-col items-center"><span class="text-[9px]">鬧鐘</span><input type="checkbox" id="form-set-alarm" class="w-3 h-3"></div>
+                                </div>
                             </div>
                             <div><label class="block compact-label">地址</label><input type="text" id="form-address" class="compact-input w-full rounded border" placeholder="地址或連結"></div>
                             <div><textarea id="form-details" rows="3" class="compact-input w-full rounded border !h-auto" placeholder="備註..."></textarea></div>
@@ -586,12 +711,12 @@
 
                     loadTripList();
                     safeBind('trip-select', 'onchange', (e) => changeTrip(e.target.value));
+                    safeBind('bar-calc-currency', 'onchange', calculateCurrency);
+                    safeBind('bar-calc-amount', 'oninput', calculateCurrency);
                     safeBind('center-add-btn', 'onclick', () => { 
                         if(!currentTripId) return alert('請先建立計畫'); 
                         document.getElementById('add-schedule-modal').classList.remove('hidden'); 
-                        document.getElementById('add-schedule-form').reset(); editingScheduleId=null;
-                        document.getElementById('add-schedule-modal-title').querySelector('span').textContent = '新增行程';
-                        document.getElementById('modal-delete-btn').classList.add('hidden');
+                        document.getElementById('add-schedule-form').reset(); editingScheduleId=null; document.getElementById('modal-delete-btn').classList.add('hidden'); 
                         const t=tripData[currentTripId], d = getDateFromDayId(t, currentDayId);
                         if(d) document.getElementById('form-date').value=d.toISOString().split('T')[0]; 
                         document.getElementById('form-members-container').innerHTML=''; (t.members||[]).forEach(n=>addMemberInput(n)); 
@@ -601,6 +726,7 @@
                     safeBind('btn-lists', 'onclick', loadLists);
                     safeBind('lists-modal-close-btn', 'onclick', () => document.getElementById('lists-modal').classList.add('hidden'));
                     safeBind('split-expense-btn', 'onclick', loadExpenseSummary);
+                    safeBind('split-expense-close-btn', 'onclick', () => document.getElementById('split-expense-modal').classList.add('hidden'));
                     safeBind('image-zoom-modal', 'onclick', () => document.getElementById('image-zoom-modal').classList.add('hidden'));
                     safeBind('add-member-btn', 'onclick', () => addMemberInput());
                 });
