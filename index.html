@@ -621,7 +621,7 @@
                             </div>
                         </div>
                         <div><label class="compact-label">地址</label><input type="text" id="form-address" class="compact-input w-full rounded border" value="${s.Address||''}"></div>
-                        <div><textarea id="form-details" rows="10" class="compact-input w-full rounded border" style="line-height: 1.2;" placeholder="備註內容...">${s.說明||''}</textarea></div>
+                        <div><label class="compact-label">備註內容</label><textarea id="form-details" rows="8" class="w-full rounded border p-1 text-[11px] text-[#5F6368] border-[#E0E0E0]" style="line-height: 1.2;" placeholder="備註內容...">${s.說明||''}</textarea></div>
                         <div class="bg-gray-50 p-2 rounded border">
                             <div class="flex items-center mb-1 gap-2"><label class="compact-label">成員</label><button type="button" id="add-member-btn" class="text-[#7E92A1] text-xs font-bold">＋</button></div>
                             <div id="form-members-container" class="space-y-1 mb-2"></div>
@@ -828,7 +828,6 @@
                         c.querySelector('.checkR').onchange = (e) => updateListItem(listData, idx, {checkedRight: e.target.checked});
                         c.querySelector('.txt').onchange = (e) => updateListItem(listData, idx, {text: e.target.value});
                     } else {
-                        // 購物清單排版修改：地點欄位改為 textarea (方形、多列) 並擴大品名空間
                         c.style.display = 'grid'; 
                         c.style.gridTemplateColumns = '24px 50px 1fr 60px 20px';
                         c.innerHTML = `
