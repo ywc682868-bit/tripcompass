@@ -356,17 +356,19 @@
                 const rate = schedule.Rate || 1;
                 const members = schedule.members || [];
                 
-                // 修改：行程卡片顯示該項目所有成員填寫金額之總和
+                // 行程卡片總金額計算：加總所有成員框內的實付金額
                 let calculatedTotalTW = 0;
                 let hasFilledBox = false;
                 members.forEach(m => {
                     const amt = parseFloat(m.amount) || 0;
                     const fee = parseFloat(m.fee) || 0;
-                    if (amt > 0) hasFilledBox = true;
-                    calculatedTotalTW += (m.method === 'card' ? (amt + fee) : (amt * rate));
+                    if (amt > 0) {
+                        hasFilledBox = true;
+                        // 刷卡 = 台幣，現金 = 換匯
+                        calculatedTotalTW += (m.method === 'card' ? (amt + fee) : (amt * rate));
+                    }
                 });
 
-                // 若成員框皆為空，則採用主金額
                 if (!hasFilledBox && (parseFloat(schedule.Amount) || 0) > 0) {
                     calculatedTotalTW = parseFloat(schedule.Amount) * rate;
                 }
@@ -534,6 +536,7 @@
                 const trip = tripData[currentTripId];
                 let sumTW = 0;
                 let sumLocal = 0;
+                
                 const memberRows = document.getElementById('form-members-container').querySelectorAll('.member-row');
 
                 memberRows.forEach(row => {
@@ -543,8 +546,13 @@
                     const fee = parseFloat(row.querySelector('.member-fee-input').value) || 0;
                     const method = row.querySelector('.payment-method').value;
 
-                    if (method === 'card') sumTW += (amount + fee);
-                    else { sumLocal += amount; sumTW += (amount * currentTripRate); }
+                    // 修改：刷卡輸入即為台幣，現金需換匯
+                    if (method === 'card') {
+                        sumTW += (amount + fee);
+                    } else {
+                        sumLocal += amount;
+                        sumTW += (amount * currentTripRate);
+                    }
                 });
 
                 document.getElementById('form-amount').value = sumLocal > 0 ? sumLocal.toFixed(2).replace(/\.00$/, '') : '';
@@ -852,37 +860,42 @@
                     const members = da.members || [];
                     if (!members.length) return;
                     
-                    // 1. 判定該卡片的「總花費 (totalEntryTW)」
-                    let boxSumTW = 0;
+                    // 1. 計算該卡片的「實際支付總額 (actualTotalTW)」
+                    let manualTotalTW = 0;
+                    let hasManualFill = false;
                     members.forEach(m => {
-                        const m_amt = parseFloat(m.amount) || 0;
-                        const m_fee = parseFloat(m.fee) || 0;
-                        boxSumTW += m.method === 'card' ? (m_amt + m_fee) : (m_amt * rateVal);
+                        const amt = parseFloat(m.amount) || 0;
+                        const fee = parseFloat(m.fee) || 0;
+                        if (amt > 0) {
+                            hasManualFill = true;
+                            // 刷卡 = 台幣(含手續費)；現金 = 換匯
+                            manualTotalTW += m.method === 'card' ? (amt + fee) : (amt * rateVal);
+                        }
                     });
 
-                    // 邏輯：優先加總成員輸入框。若全部為空，則採用主金額欄位
-                    let totalEntryTW = boxSumTW > 0 ? boxSumTW : (parseFloat(da.Amount) || 0) * rateVal;
-                    if (isNaN(totalEntryTW) || totalEntryTW <= 0) return;
+                    // 狀況一：若成員金額皆沒填，使用 da.Amount 作為總額
+                    let actualTotalTW = hasManualFill ? manualTotalTW : (parseFloat(da.Amount) || 0) * rateVal;
+                    if (isNaN(actualTotalTW) || actualTotalTW <= 0) return;
 
-                    total += totalEntryTW;
-                    types[da.Type] = (types[da.Type] || 0) + totalEntryTW;
+                    total += actualTotalTW;
+                    types[da.Type] = (types[da.Type] || 0) + actualTotalTW;
 
-                    // 2. 判定每個人應負擔的份額 (Shares)
+                    // 2. 判定每個人應負擔的個人開銷份額 (memberShares)
                     let memberShares = {};
-                    if (boxSumTW > 0) {
-                        // 【手動分帳模式】：根據每個人的輸入框計算
+                    if (hasManualFill) {
+                        // 【手動/代墊模式】：依據個別輸入框金額（狀況二 & 三）
                         members.forEach(m => {
-                            const m_amt = parseFloat(m.amount) || 0;
-                            const m_fee = parseFloat(m.fee) || 0;
-                            memberShares[m.name] = m.method === 'card' ? (m_amt + m_fee) : (m_amt * rateVal);
+                            const amt = parseFloat(m.amount) || 0;
+                            const fee = parseFloat(m.fee) || 0;
+                            memberShares[m.name] = m.method === 'card' ? (amt + fee) : (amt * rateVal);
                         });
                     } else {
-                        // 【平均分配模式】：由所有成員平分總金額
-                        let avg = totalEntryTW / members.length;
+                        // 【平分模式】：全員平分總額（狀況一）
+                        let avg = actualTotalTW / members.length;
                         members.forEach(m => memberShares[m.name] = avg);
                     }
 
-                    // 3. 更新各成員分類明細 (與先付無關)
+                    // 3. 記錄到成員分類明細
                     for (let name in memberShares) {
                         const s = memberShares[name];
                         if(!mems[name]) mems[name] = { total: 0, cats: {} };
@@ -890,19 +903,19 @@
                         mems[name].cats[da.Type] = (mems[name].cats[da.Type] || 0) + s;
                     }
 
-                    // 4. 判定代墊債權 (Credit)
+                    // 4. 代墊與轉帳建議運算
                     let payers = members.filter(m => m.isPayer);
                     if (payers.length > 0) {
-                        // 若有人勾選先付：他支付了該筆項目的全部總額
-                        let creditPerPayer = totalEntryTW / payers.length;
+                        // 若有人勾選先付（狀況二 & 三）
+                        let creditPerPayer = actualTotalTW / payers.length;
                         payers.forEach(p => balances[p.name] = (balances[p.name] || 0) + creditPerPayer);
                         
-                        // 所有人（包括先付者自己）應從餘額扣除自己的份額
+                        // 所有人扣除自己的個人應負擔份額
                         for (let name in memberShares) {
                             balances[name] = (balances[name] || 0) - memberShares[name];
                         }
                     }
-                    // 若無人勾選先付，視為各自已支付各自份額，互不相欠。
+                    // 若無人勾選先付，則視為各自已付帳，不產生債務。
                 });
 
                 const modal = document.getElementById('split-expense-modal');
