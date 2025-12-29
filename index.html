@@ -931,7 +931,6 @@
                     }
                 });
                 const modal = document.getElementById('split-expense-modal');
-                // 加大圖表與分類文字
                 modal.innerHTML = `
                     <div class="bg-white rounded-xl shadow-2xl p-4 w-11/12 max-w-sm flex flex-col max-h-[90vh]">
                         <div class="flex justify-between items-center mb-3"><h3 class="font-bold text-[#4A4B4D]">花費</h3><button id="exp-close" class="text-2xl text-gray-400">×</button></div>
@@ -964,7 +963,7 @@
                 const mList = document.getElementById('exp-mem-list');
                 Object.keys(mems).sort().forEach(n => {
                     let cats = Object.keys(mems[n].cats).map(c => `<div class="flex justify-between py-0.5"><span class="${(CATEGORY_COLORS[c]||CATEGORY_COLORS.default).text}">${CATEGORY_NAMES[c]}</span><span>TW$${mems[n].cats[c].toFixed(0)}</span></div>`).join('');
-                    mList.innerHTML += `<div class="border-b pb-1 mb-1"><div class="font-bold text-gray-600 mb-1">${n} (共 TW$${mems[n].total.toFixed(0)})</div>${cats}</div>`;
+                    mList.innerHTML += `<div class="border-b pb-1 mb-1"><div class="font-bold text-gray-600 mb-1">${n}</div>${cats}</div>`;
                 });
                 let debtors = [], creditors = [];
                 for(let n in balances) { if(balances[n] < -1) debtors.push({n, a: Math.abs(balances[n])}); else if(balances[n] > 1) creditors.push({n, a: balances[n]}); }
