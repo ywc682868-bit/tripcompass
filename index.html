@@ -445,12 +445,15 @@
                 const members = schedule.members || [];
                 
                 let amountTWD = 0;
+                let totalFeesTWD = 0;
                 let hasMemberAmounts = false;
 
-                // 檢查是否已有個別成員輸入金額並計算總額
+                // 統計成員手續費與判斷是否已輸入個人金額
                 members.forEach(m => {
                     const mAmt = m.amount || 0;
                     const mFee = m.fee || 0;
+                    totalFeesTWD += (m.method === 'card' ? mFee : 0);
+
                     if (mAmt > 0) {
                         hasMemberAmounts = true;
                         if (m.method === 'card') {
@@ -461,15 +464,22 @@
                     }
                 });
 
-                // 若成員皆未輸入個別金額，則以主欄位的 Amount (外幣) 計算
+                // 若成員皆未輸入個別金額，則以主欄位的 Amount 加總總計
                 if (!hasMemberAmounts && schedule.Amount > 0) {
-                    amountTWD = schedule.Amount * rate;
-                    // 若是刷卡類型但成員沒填分帳，檢查是否要加手續費 (這邊通常發生在分帳完畢前)
+                    amountTWD = (schedule.Amount * rate) + totalFeesTWD;
                 }
 
-                // 計算每人平均
+                // 決定平分金額的顯示數值
+                let perPersonTWD = 0;
                 const participantCount = members.length || 1;
-                const perPersonTWD = amountTWD / participantCount;
+
+                if (hasMemberAmounts) {
+                    // 已分帳：改顯示為 0
+                    perPersonTWD = 0;
+                } else {
+                    // 未分帳：顯示連同手續費平分後的金額
+                    perPersonTWD = amountTWD / participantCount;
+                }
                 
                 let memberHtml = '';
                 if (members.length > 0) {
