@@ -972,9 +972,14 @@
 
                 const mList = document.getElementById('exp-mem-list');
                 Object.keys(mems).sort().forEach(n => {
+                    // 修改：使用 flex 佈局配合固定寬度欄位，確保 TW$ 完美對齊且住宿項目不歪斜
                     let cats = Object.keys(mems[n].cats).map(c => {
                         const catStyle = CATEGORY_COLORS[c] || CATEGORY_COLORS.default;
-                        return `<div class="flex justify-between py-0.5 items-center"><span class="${catStyle.text} font-medium">${CATEGORY_NAMES[c]}</span><span class="${catStyle.text} font-bold">TW$${mems[n].cats[c].toFixed(0)}</span></div>`;
+                        return `<div class="flex items-center py-0.5 text-[10px] h-6">
+                            <span class="${catStyle.text} font-medium flex-1 truncate">${CATEGORY_NAMES[c]}</span>
+                            <span class="${catStyle.text} font-bold w-[30px] text-right">TW$</span>
+                            <span class="${catStyle.text} font-bold text-right flex-none">${mems[n].cats[c].toFixed(0)}</span>
+                        </div>`;
                     }).join('');
                     mList.innerHTML += `<div><div class="font-bold text-gray-600 mb-1 border-b pb-0.5">${n}</div>${cats}</div>`;
                 });
@@ -987,7 +992,6 @@
                     let i=0, j=0;
                     while(i < debtors.length && j < creditors.length){
                         let amt = Math.min(debtors[i].a, creditors[j].a);
-                        // 修改：結算建議顯示為成員1 → 成員2 的形式
                         setCont.innerHTML += `<div class="flex justify-between bg-gray-50 p-2 rounded text-[11px]"><span><b>${debtors[i].n}</b> → <b>${creditors[j].n}</b></span><span class="font-bold">TW$${amt.toFixed(0)}</span></div>`;
                         debtors[i].a -= amt; creditors[j].a -= amt;
                         if(debtors[i].a < 1) i++; if(creditors[j].a < 1) j++;
