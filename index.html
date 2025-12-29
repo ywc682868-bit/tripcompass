@@ -942,7 +942,10 @@
                                 <div id="leg-R" class="flex flex-col gap-2 items-end text-[10px] overflow-hidden"></div>
                             </div>
                         </div>
-                        <div class="overflow-y-auto flex-grow space-y-2"><div id="exp-mem-list" class="text-[11px]"></div><div class="mt-4 pt-2 border-t"><h4 class="font-bold text-[#7E92A1] text-xs mb-2">結算建議</h4><div id="settlement" class="space-y-1"></div></div></div>
+                        <div class="overflow-y-auto flex-grow space-y-2">
+                            <div id="exp-mem-list" class="grid grid-cols-2 gap-x-2 gap-y-4 text-[11px]"></div>
+                            <div id="settlement" class="mt-4 space-y-1"></div>
+                        </div>
                     </div>`;
                 
                 document.getElementById('exp-close').onclick = () => modal.style.display = 'none';
@@ -963,12 +966,12 @@
                 const mList = document.getElementById('exp-mem-list');
                 Object.keys(mems).sort().forEach(n => {
                     let cats = Object.keys(mems[n].cats).map(c => `<div class="flex justify-between py-0.5"><span class="${(CATEGORY_COLORS[c]||CATEGORY_COLORS.default).text}">${CATEGORY_NAMES[c]}</span><span>TW$${mems[n].cats[c].toFixed(0)}</span></div>`).join('');
-                    mList.innerHTML += `<div class="border-b pb-1 mb-1"><div class="font-bold text-gray-600 mb-1">${n}</div>${cats}</div>`;
+                    mList.innerHTML += `<div><div class="font-bold text-gray-600 mb-1 border-b pb-0.5">${n}</div>${cats}</div>`;
                 });
                 let debtors = [], creditors = [];
                 for(let n in balances) { if(balances[n] < -1) debtors.push({n, a: Math.abs(balances[n])}); else if(balances[n] > 1) creditors.push({n, a: balances[n]}); }
                 const setCont = document.getElementById('settlement');
-                if(!debtors.length) setCont.innerHTML = '<div class="text-[10px] text-gray-400">已結清</div>';
+                if(!debtors.length) setCont.innerHTML = '<div class="text-[10px] text-gray-400 text-center">已結清</div>';
                 else {
                     let i=0, j=0;
                     while(i < debtors.length && j < creditors.length){
