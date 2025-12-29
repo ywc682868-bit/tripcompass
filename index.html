@@ -68,8 +68,8 @@
         content: '';
         position: absolute;
         left: 28px; 
-        top: -6px;          
-        bottom: -6px;          
+        top: -6px;           
+        bottom: -6px;           
         width: 2px;
         background-color: #9C8B74; 
         z-index: -1; 
@@ -269,7 +269,7 @@
     </div>
 
     <div id="add-schedule-modal" class="modal-overlay hidden">
-        <div class="bg-white rounded-xl shadow-2xl p-3 w-11/12 max-sm max-h-[90vh] overflow-y-auto relative"></div>
+        <div class="bg-white rounded-xl shadow-2xl p-3 w-11/12 max-w-sm max-h-[90vh] overflow-y-auto relative"></div>
     </div>
     <div id="lists-modal" class="modal-overlay hidden"><div class="bg-white rounded-xl shadow-2xl p-4 w-11/12 max-w-sm max-h-[80vh] flex flex-col relative"><h3 class="text-base font-bold mb-2 flex justify-between items-center flex-shrink-0 text-[#4A4B4D]">清單<button id="lists-modal-close-btn" class="text-[#A9A9A9] hover:text-[#5F6368] text-xl leading-none">×</button></h3><div id="list-tabs" class="flex gap-1 border-b border-gray-100 mb-2 overflow-x-auto no-scrollbar flex-shrink-0"></div><div id="list-content" class="flex-grow overflow-y-auto flex flex-col relative"></div></div></div>
     <div id="image-zoom-modal" class="modal-overlay hidden z-[150] bg-black/80"><img id="zoom-img" class="max-w-[95%] max-h-[90%] rounded shadow-lg object-contain"></div>
@@ -412,15 +412,14 @@
                 checkAndCreateDefaultLists(tripId); 
             }
 
-            // --- 核心加總邏輯修正 ---
+            // --- 彈窗總額加總邏輯 ---
             function updateModalTotalTWD() {
                 const rows = document.getElementById('form-members-container').children;
                 let totalTWD = 0;
-                let totalCashForeign = 0;
+                let totalForeign = 0;
 
                 for (let row of rows) {
                     const isPayer = row.querySelector('.payer-check').checked;
-                    // 只有勾選「先付」的人才算入總支出權益
                     if (!isPayer) continue;
 
                     const amt = parseFloat(row.querySelector('input[name="schedule-member-amount"]').value) || 0;
@@ -428,20 +427,18 @@
                     const method = row.querySelector('.payment-method').value;
 
                     if (method === 'card') {
-                        // 刷卡：直接加台幣金額與手續費
+                        // 刷卡：總台幣 = 刷卡金額 + 手續費
                         totalTWD += (amt + fee);
                     } else {
-                        // 現金：金額先加總原幣，再換算台幣
+                        // 現金：總台幣 = 現金外幣 * 匯率
                         totalTWD += (amt * currentTripRate);
-                        totalCashForeign += amt;
+                        totalForeign += amt;
                     }
                 }
 
                 const foreignInp = document.getElementById('form-amount');
                 const twdInp = document.getElementById('form-amount-twd');
-                
-                // 更新底部顯示
-                if (foreignInp) foreignInp.value = totalCashForeign > 0 ? totalCashForeign.toFixed(0) : '';
+                if (foreignInp) foreignInp.value = totalForeign > 0 ? totalForeign.toFixed(0) : '';
                 if (twdInp) twdInp.value = totalTWD > 0 ? totalTWD.toFixed(0) : '';
             }
 
@@ -557,7 +554,7 @@
                     if (trip && trip.startDate) { const d = getDateFromDayId(trip, dayId); updateHeaderDateWithDDay(d); }
                     if (snapshot.empty) container.innerHTML = `<div class="p-4 text-center text-[#A9A9A9] text-xs">此日暫無行程。</div>`;
                     else snapshot.forEach(doc => container.appendChild(createTripCard({ id: doc.id, ...doc.data() })));
-                });
+                }, (error) => { console.error("Load schedules error", error); container.innerHTML = `<div class="p-4 text-center text-red-400 text-xs">載入失敗</div>`; });
             };
 
             const loadTripList = async function() {
@@ -636,7 +633,6 @@
                     }); 
                 } else { addMemberInput(); addMemberInput(); }
                 
-                // 開啟時立即計算一次總額
                 updateModalTotalTWD();
                 document.getElementById('add-schedule-modal').style.display = 'flex';
             }
@@ -647,9 +643,13 @@
                 const mainRow = document.createElement('div');
                 mainRow.className = 'flex items-center w-full gap-1.5';
 
+                // 處理預設值 0 不顯示：若數值為 0，則轉為空白字串
+                const displayAmt = (amt === 0 || amt === '0') ? '' : amt;
+                const displayFee = (fee === 0 || fee === '0') ? '' : fee;
+
                 const nameInput = document.createElement('input'); nameInput.type = 'text'; nameInput.name = 'schedule-member-name'; nameInput.value = name; nameInput.placeholder = '名字'; nameInput.className = 'compact-input w-14 rounded-md font-bold text-[10px] flex-shrink-0';
-                const amtInput = document.createElement('input'); amtInput.type = 'number'; amtInput.name = 'schedule-member-amount'; amtInput.value = amt; amtInput.placeholder = method === 'card' ? 'TWD' : '金額'; amtInput.className = 'compact-input w-16 rounded-md text-[10px] flex-shrink-0';
-                const feeInput = document.createElement('input'); feeInput.type = 'number'; feeInput.name = 'schedule-member-fee'; feeInput.value = fee; feeInput.placeholder = '手續'; feeInput.className = `compact-input w-12 rounded-md text-[10px] flex-shrink-0 ${method === 'card' ? '' : 'hidden'}`;
+                const amtInput = document.createElement('input'); amtInput.type = 'number'; amtInput.name = 'schedule-member-amount'; amtInput.value = displayAmt; amtInput.placeholder = method === 'card' ? 'TWD' : '金額'; amtInput.className = 'compact-input w-16 rounded-md text-[10px] flex-shrink-0';
+                const feeInput = document.createElement('input'); feeInput.type = 'number'; feeInput.name = 'schedule-member-fee'; feeInput.value = displayFee; feeInput.placeholder = '手續'; feeInput.className = `compact-input w-12 rounded-md text-[10px] flex-shrink-0 ${method === 'card' ? '' : 'hidden'}`;
 
                 const select = document.createElement('select'); select.className = 'payment-method text-[10px] border border-gray-200 rounded px-1 py-0 text-[#5F6368] bg-white h-6 flex-shrink-0';
                 const op1 = document.createElement('option'); op1.value='cash'; op1.text='現金'; const op2 = document.createElement('option'); op2.value='card'; op2.text='刷卡';
@@ -665,7 +665,6 @@
                 const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.className = 'payer-check mr-1 h-3.5 w-3.5'; checkbox.checked = isPayer;
                 label.appendChild(checkbox); label.appendChild(document.createTextNode('先付'));
                 
-                // 綁定監聽：任何變動都重算總額
                 checkbox.onchange = updateModalTotalTWD;
                 amtInput.oninput = updateModalTotalTWD;
                 feeInput.oninput = updateModalTotalTWD;
@@ -692,10 +691,11 @@
                         if (name) members.push({ name: name, amount: amountStr ? parseFloat(amountStr) : null, fee: feeStr ? parseFloat(feeStr) : null, isPayer: isPayer, method: method });
                     }
                     const uid = auth.currentUser ? auth.currentUser.uid : null; 
+                    let rawAmount = parseFloat(document.getElementById('form-amount').value); if (isNaN(rawAmount)) rawAmount = 0;
                     const data = { 
                         dayId, Date: dateVal, Time: document.getElementById('form-time').value, Location: document.getElementById('form-location').value, 
                         Type: document.getElementById('form-type').value, 說明: document.getElementById('form-details').value, 
-                        Address: document.getElementById('form-address').value, Amount: parseFloat(document.getElementById('form-amount').value) || 0, Rate: currentTripRate || 1, 
+                        Address: document.getElementById('form-address').value, Amount: rawAmount, Rate: currentTripRate || 1, 
                         members, uid: uid, MustGo: document.getElementById('form-must-go').checked || false, SetAlarm: document.getElementById('form-set-alarm').checked || false 
                     };
                     const col = collection(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`);
@@ -778,6 +778,7 @@
 
                     members.forEach(m => {
                         const amt = m.amount || 0, fee = m.fee || 0;
+                        // 更新：判斷刷卡與現金的台幣價值
                         let valTWD = (m.method === 'card') ? amt : (amt * rate);
                         let mFeeTWD = (m.method === 'card') ? fee : 0;
                         if (m.isPayer) {
