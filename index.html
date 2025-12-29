@@ -355,28 +355,23 @@
                 const rate = schedule.Rate || 1;
                 const members = schedule.members || [];
                 
-                // 重新定義金額計算邏輯
                 let calculatedTotalTWD = 0;
                 members.forEach(m => {
                     if (typeof m !== 'string' && m.isPayer) {
                         const amt = parseFloat(m.amount) || 0;
                         const fee = parseFloat(m.fee) || 0;
                         if (m.method === 'card') {
-                            // 刷卡：金額是台幣，直接加手續費
                             calculatedTotalTWD += (amt + fee);
                         } else {
-                            // 現金：金額是該國貨幣，乘匯率
                             calculatedTotalTWD += (amt * rate);
                         }
                     }
                 });
 
-                // 如果沒人先付，退回顯示原本輸入的總額
                 if (calculatedTotalTWD === 0 && schedule.Amount > 0) {
                     calculatedTotalTWD = schedule.Amount * rate;
                 }
 
-                // 參與成員數計算（排除不計入分帳的人員，目前預設全部參與）
                 const participants = members.filter(m => !(typeof m !== 'string' && m.amount > 0 && !m.isPayer));
                 const perPersonTWD = participants.length > 0 ? calculatedTotalTWD / participants.length : 0;
                 
@@ -404,7 +399,7 @@
                             <h3 class="text-xs font-bold text-[#4A4B4D] truncate"><a href="#" class="location-link hover:underline">${schedule.Location}</a></h3>
                             ${memberHtml}
                         </div>
-                        <p class="text-[#888888] text-[10px] line-clamp-4 whitespace-pre-wrap mt-0.5">${schedule.說明 || ''}</p>
+                        <p class="text-[#888888] text-[10px] line-clamp-4 whitespace-pre-wrap mt-0.5" style="line-height: 1.2;">${schedule.說明 || ''}</p>
                     </div>
                     <div class="card-right-col h-full flex flex-col">
                         <div class="card-static-actions"></div>
@@ -577,7 +572,7 @@
                             </div>
                         </div>
                         <div><label class="compact-label">地址</label><input type="text" id="form-address" class="compact-input w-full rounded border" value="${s.Address||''}"></div>
-                        <div><textarea id="form-details" rows="3" class="compact-input w-full rounded border h-auto" placeholder="備註內容...">${s.說明||''}</textarea></div>
+                        <div><textarea id="form-details" rows="3" class="compact-input w-full rounded border h-auto" style="line-height: 1.2;" placeholder="備註內容...">${s.說明||''}</textarea></div>
                         <div class="bg-gray-50 p-2 rounded border">
                             <div class="flex items-center mb-1 gap-2"><label class="compact-label">成員</label><button type="button" id="add-member-btn" class="text-[#7E92A1] text-xs font-bold">＋</button></div>
                             <div id="form-members-container" class="space-y-1 mb-2"></div>
@@ -602,7 +597,6 @@
                 document.getElementById('modal-delete-btn').onclick = () => deleteSchedule(s.id);
                 document.getElementById('add-member-btn').onclick = () => addMemberInput();
 
-                // 初始計算一次
                 refreshModalTotals();
                 modal.style.display = 'flex';
             }
@@ -625,7 +619,6 @@
                 const amtInp = d.querySelector('input[name="schedule-member-amount"]');
                 const payerCheck = d.querySelector('.payer-check');
 
-                // 監聽變動以即時計算總額
                 const triggerRefresh = () => refreshModalTotals();
                 sel.onchange = (e) => {
                     if (e.target.value === 'card') {
@@ -680,7 +673,7 @@
                 document.getElementById('add-schedule-modal').style.display = 'none'; loadSchedules(currentTripId, dayId);
             }
 
-            // --- 清單與花費邏輯 ---
+            // --- 清單與花費邏輯 (不變) ---
             async function checkAndCreateDefaultLists(tripId) {
                 const col = collection(db, `artifacts/${appId}/public/data/Trips/${tripId}/Lists`);
                 const snap = await getDocs(col);
@@ -779,31 +772,18 @@
                 snap.forEach(d => {
                     const da = d.data(); const rate = da.Rate || 1; const members = da.members || [];
                     if (!members.length) return;
-                    
-                    let effectiveTotal = 0;
-                    let currentCreditors = [];
-
+                    let effectiveTotal = 0; let currentCreditors = [];
                     members.forEach(m => {
                         if (typeof m !== 'string' && m.isPayer) {
-                            const amt = parseFloat(m.amount) || 0;
-                            const fee = parseFloat(m.fee) || 0;
-                            let m_twd = 0;
-                            if (m.method === 'card') {
-                                m_twd = amt + fee;
-                            } else {
-                                m_twd = amt * rate;
-                            }
-                            effectiveTotal += m_twd;
-                            currentCreditors.push({ name: m.name, lent: m_twd });
+                            const amt = parseFloat(m.amount) || 0; const fee = parseFloat(m.fee) || 0;
+                            let m_twd = m.method === 'card' ? (amt + fee) : (amt * rate);
+                            effectiveTotal += m_twd; currentCreditors.push({ name: m.name, lent: m_twd });
                         }
                     });
-
                     if (effectiveTotal === 0 && da.Amount > 0) effectiveTotal = da.Amount * rate;
                     if (effectiveTotal <= 0) return;
-
                     total += effectiveTotal;
                     types[da.Type] = (types[da.Type] || 0) + effectiveTotal;
-
                     const activeParticipants = members.filter(m => !(typeof m !== 'string' && m.amount > 0 && !m.isPayer));
                     if (activeParticipants.length) {
                         const debtPer = effectiveTotal / activeParticipants.length;
