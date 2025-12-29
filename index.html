@@ -419,16 +419,16 @@
                 let totalCashForeign = 0;
 
                 for (let row of rows) {
-                    const isPayer = row.querySelector('.payer-check').checked;
-                    if (!isPayer) continue;
-
+                    // 移除了 isPayer 的判斷，讓所有成員輸入的金額都會加總到總計中
                     const amt = parseFloat(row.querySelector('input[name="schedule-member-amount"]').value) || 0;
                     const fee = parseFloat(row.querySelector('input[name="schedule-member-fee"]').value) || 0;
                     const method = row.querySelector('.payment-method').value;
 
                     if (method === 'card') {
+                        // 刷卡：直接加台幣金額與手續費
                         totalTWD += (amt + fee);
                     } else {
+                        // 現金：外幣換算成台幣後加總
                         totalTWD += (amt * currentTripRate);
                         totalCashForeign += amt;
                     }
@@ -646,7 +646,7 @@
                 
                 const amtInput = document.createElement('input'); amtInput.type = 'number'; amtInput.name = 'schedule-member-amount'; amtInput.value = amt; amtInput.placeholder = method === 'card' ? 'TWD' : '金額'; amtInput.className = 'compact-input w-16 rounded-md text-[10px] flex-shrink-0';
 
-                const label = document.createElement('label'); label.className = 'flex items-center text-[10px] text-[#7E92A1] cursor-pointer';
+                const label = document.createElement('label'); label.className = 'flex items-center text-[10px] text-[#7E92A1] cursor-pointer flex-shrink-0';
                 const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.className = 'payer-check mr-1 h-3.5 w-3.5'; checkbox.checked = isPayer;
                 label.appendChild(checkbox); label.appendChild(document.createTextNode('先付'));
 
@@ -669,7 +669,7 @@
                 const delBtn = document.createElement('button'); delBtn.type = 'button'; delBtn.className = 'text-[#CB8572] font-bold p-1 text-lg leading-none w-5 flex justify-center items-center ml-auto'; delBtn.textContent = '×';
                 delBtn.onclick = () => { d.remove(); updateModalTotalTWD(); };
 
-                // 成員名稱 -> 金額 -> 先付核取方塊 -> 付款方式 -> 手續費
+                // 依序由左至右：成員名稱 -> 金額 -> 先付核取方塊 -> 付款方式 -> 手續費
                 mainRow.appendChild(nameInput); 
                 mainRow.appendChild(amtInput); 
                 mainRow.appendChild(label); 
