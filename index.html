@@ -229,6 +229,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, getDocs, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, getDocs, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         window.App = (function() {
@@ -369,19 +370,18 @@
                     }
                 });
 
-                // 若完全沒填小框，回退到主金額欄位
+                // 若欄位中有任何人填寫金額，則採取手動分配模式
                 if (manualFillCount === 0 && (parseFloat(schedule.Amount) || 0) > 0) {
                     calculatedTotalTW = parseFloat(schedule.Amount) * rate;
                 }
 
-                // 修正份額判定：如果非全員填寫金額，則視為「平分給所有成員」
                 let perPersonTW = 0;
                 if (members.length > 0) {
-                    if (manualFillCount === members.length) {
-                        // 所有人都有填，不顯示平分金額 (或各別顯示，此處為簡化邏輯)
+                    if (manualFillCount > 0) {
+                        // 如果是手動模式，卡片下方暫不顯示平均，由各成員對應自己欄位
                         perPersonTW = 0; 
                     } else {
-                        // 包含有人沒填的情況，一律平分總額
+                        // 平分模式
                         perPersonTW = calculatedTotalTW / members.length;
                     }
                 }
@@ -865,7 +865,6 @@
                     const members = da.members || [];
                     if (!members.length) return;
                     
-                    // 1. 判定該行程的「總額」
                     let manualTotalTW = 0;
                     let manualFilledCount = 0;
                     members.forEach(m => {
@@ -875,31 +874,28 @@
                         manualTotalTW += m.method === 'card' ? (amt + fee) : (amt * rateVal);
                     });
 
+                    // 總額判定：若有人填寫個人金額，總額以此為準
                     let actualTotalTW = (manualFilledCount > 0) ? manualTotalTW : (parseFloat(da.Amount) || 0) * rateVal;
                     if (isNaN(actualTotalTW) || actualTotalTW <= 0) return;
 
-                    // 2. 核心修正：判定各成員應負擔的份額 (finalMemberShares)
                     let finalMemberShares = {};
-                    // 只有當「名單內所有人」都有輸入明確大於 0 的金額時，才視為手動分帳
-                    const isFullyManual = manualFilledCount === members.length && members.length > 0;
-
-                    if (isFullyManual) {
+                    // 重要修正：只要有人填寫金額(>0)，就採取手動分帳模式
+                    // 沒填的人(amount為null或0)，個人份額(share)就是0
+                    if (manualFilledCount > 0) {
                         members.forEach(m => {
                             const amt = parseFloat(m.amount) || 0;
                             const fee = parseFloat(m.fee) || 0;
                             finalMemberShares[m.name] = m.method === 'card' ? (amt + fee) : (amt * rateVal);
                         });
                     } else {
-                        // 若非全員填寫（包含只填一人），一律視為總額平分給名單內所有人
+                        // 全員都沒填個人金額時，才啟動平均分配模式
                         const avg = actualTotalTW / members.length;
                         members.forEach(m => finalMemberShares[m.name] = avg);
                     }
 
-                    // 3. 統計總支出與分類
                     total += actualTotalTW;
                     types[da.Type] = (types[da.Type] || 0) + actualTotalTW;
 
-                    // 4. 更新各成員個人的總花費明細 (此處會確保成員 2 得到加總)
                     for (let name in finalMemberShares) {
                         const share = finalMemberShares[name];
                         if(!mems[name]) mems[name] = { total: 0, cats: {} };
@@ -907,12 +903,13 @@
                         mems[name].cats[da.Type] = (mems[name].cats[da.Type] || 0) + share;
                     }
 
-                    // 5. 計算代墊 (Balances)
                     let payers = members.filter(m => m.isPayer);
                     if (payers.length > 0) {
+                        // 代墊者獲得整個行程總額的 credit
                         let creditPerPayer = actualTotalTW / payers.length;
                         payers.forEach(p => balances[p.name] = (balances[p.name] || 0) + creditPerPayer);
                         
+                        // 每個人根據自己的 share 扣除 debit
                         for (let name in finalMemberShares) {
                             balances[name] = (balances[name] || 0) - finalMemberShares[name];
                         }
