@@ -208,7 +208,7 @@
                 </select>
                 <input type="number" id="bar-calc-amount" class="w-20 h-6 text-[10px] p-0.5 border border-[#E0E0E0] rounded text-center font-medium">
                 <span class="text-[1.1rem] font-bold text-[#A9A9A9]">=</span>
-                <span class="text-[0.7rem] font-bold text-[#7E92A1] leading-[26px]">TWD</span>
+                <span class="text-[0.7rem] font-bold text-[#7E92A1] leading-[26px]">TW</span>
                 <input type="text" id="bar-calc-result" readonly class="w-12 h-6 p-0 border-none bg-transparent text-[#7E92A1] font-extrabold text-left truncate pl-1">
             </div>
         </div>
@@ -247,7 +247,7 @@
                 'JP': { name: '日本', currency: 'JPY', localName: '東京', lat: 35.68, lon: 139.76 }, 
                 'KR': { name: '韓國', currency: 'KRW', localName: '서울', lat: 37.56, lon: 126.97 }, 
                 'UK': { name: '英國', currency: 'GBP', localName: 'London', lat: 51.50, lon: -0.12 }, 
-                'TW': { name: '台灣', currency: 'TWD', localName: '台北', lat: 25.03, lon: 121.56 } 
+                'TW': { name: '台灣', currency: 'TW', localName: '台北', lat: 25.03, lon: 121.56 } 
             };
             
             const CATEGORY_COLORS = { 'coffee': { bg: 'bg-[#9C8B74]', hex: '#9C8B74', text: 'text-[#9C8B74]' }, 'restaurant': { bg: 'bg-[#CB8572]', hex: '#CB8572', text: 'text-[#CB8572]' }, 'location': { bg: 'bg-[#8F9E8B]', hex: '#8F9E8B', text: 'text-[#8F9E8B]' }, '交通': { bg: 'bg-[#7E92A1]', hex: '#7E92A1', text: 'text-[#7E92A1]' }, 'shopping': { bg: 'bg-[#9E869C]', hex: '#9E869C', text: 'text-[#9E869C]' }, 'accommodation': { bg: 'bg-[#A9A9A9]', hex: '#A9A9A9', text: 'text-[#A9A9A9]' }, 'default': { bg: 'bg-[#A9A9A9]', hex: '#A9A9A9', text: 'text-[#A9A9A9]' } };
@@ -266,7 +266,7 @@
             function getDateFromDayId(trip, dayId) { if (!trip || !trip.startDate) return null; const d = new Date(trip.startDate); d.setDate(d.getDate() + (parseInt(dayId.replace('Day ', '')) - 1)); return d; }
             function getCardStyle(type) { const c = CATEGORY_COLORS[type] || CATEGORY_COLORS['default']; const icons = {'coffee':'☕','restaurant':'🍽️','location':'📍','交通':'🚗','shopping':'🛍️','accommodation':'🛏️'}; return { color: c.bg, icon: icons[type] || '❓', hex: c.hex, text: c.text }; }
             function formatCurrency(value) { if (typeof value !== 'number') value = parseFloat(value); if (isNaN(value) || value === 0) return '0'; return value.toFixed(2).replace(/\.00$/, '').replace(/(\.\d)0$/, '$1'); }
-            async function fetchExchangeRate(baseCurrency) { const fallback = { 'USD': 32.5, 'JPY': 0.215, 'KRW': 0.023, 'GBP': 41.2, 'CNY': 4.5, 'TWD': 1 }; if (!baseCurrency || baseCurrency === 'TWD') return 1; try { const r = await fetch(`https://open.er-api.com/v6/latest/${baseCurrency}`); const d = await r.json(); if (d && d.rates && d.rates.TWD) return d.rates.TWD; } catch (e) {} return fallback[baseCurrency] || 1; }
+            async function fetchExchangeRate(baseCurrency) { const fallback = { 'USD': 32.5, 'JPY': 0.215, 'KRW': 0.023, 'GBP': 41.2, 'CNY': 4.5, 'TW': 1 }; if (!baseCurrency || baseCurrency === 'TW') return 1; try { const r = await fetch(`https://open.er-api.com/v6/latest/${baseCurrency === 'TW' ? 'TWD' : baseCurrency}`); const d = await r.json(); if (d && d.rates && d.rates.TWD) return d.rates.TWD; } catch (e) {} return fallback[baseCurrency] || 1; }
 
             // --- 更新 Header ---
             function updateHeaderDateWithDDay(d) {
@@ -355,7 +355,7 @@
                 const rate = schedule.Rate || 1;
                 const members = schedule.members || [];
                 
-                let calculatedTotalTWD = 0;
+                let calculatedTotalTW = 0;
                 let anyPayer = members.some(m => typeof m !== 'string' && m.isPayer);
                 let allAmountsEntered = members.length > 0 && members.every(m => typeof m !== 'string' && m.amount !== null && m.amount !== undefined && !isNaN(m.amount));
 
@@ -363,24 +363,24 @@
                     members.forEach(m => {
                         const amt = parseFloat(m.amount) || 0;
                         const fee = parseFloat(m.fee) || 0;
-                        calculatedTotalTWD += (m.method === 'card' ? (amt + fee) : (amt * rate));
+                        calculatedTotalTW += (m.method === 'card' ? (amt + fee) : (amt * rate));
                     });
                 } else {
                     members.forEach(m => {
                         if (typeof m !== 'string' && m.isPayer) {
                             const amt = parseFloat(m.amount) || 0;
                             const fee = parseFloat(m.fee) || 0;
-                            calculatedTotalTWD += (m.method === 'card' ? (amt + fee) : (amt * rate));
+                            calculatedTotalTW += (m.method === 'card' ? (amt + fee) : (amt * rate));
                         }
                     });
                 }
 
-                if (calculatedTotalTWD === 0 && schedule.Amount > 0) {
-                    calculatedTotalTWD = schedule.Amount * rate;
+                if (calculatedTotalTW === 0 && schedule.Amount > 0) {
+                    calculatedTotalTW = schedule.Amount * rate;
                 }
 
                 const participants = members.filter(m => !(typeof m !== 'string' && m.amount > 0 && !m.isPayer));
-                const perPersonTWD = participants.length > 0 ? calculatedTotalTWD / participants.length : 0;
+                const perPersonTW = participants.length > 0 ? calculatedTotalTW / participants.length : 0;
                 
                 let memberHtml = members.length > 0 ? `<div class="flex flex-nowrap overflow-hidden justify-end gap-x-1.5 ml-2 max-w-[120px]">` + members.map((m, i) => `<span class="${MEMBER_COLORS[i % MEMBER_COLORS.length]} text-[10px] font-bold whitespace-nowrap">${typeof m === 'string' ? m : m.name}</span>`).join('') + `</div>` : '';
                 const mustGoHtml = schedule.MustGo ? `<div class="mt-auto w-full flex justify-start mb-3"><span class="text-[9px] text-[#CB8572] border border-[#CB8572] px-1 py-0.5 rounded-[2px] leading-none bg-white">必去</span></div>` : '';
@@ -411,8 +411,8 @@
                     <div class="card-right-col h-full flex flex-col">
                         <div class="card-static-actions"></div>
                         <div class="flex flex-col gap-1 mt-1">
-                            <span class="text-[#8F9E8B] font-bold text-[10px]">💰 TWD$${calculatedTotalTWD.toFixed(0)}</span>
-                            <span class="text-[#888888] font-bold text-[10px]">👫 TWD$${formatCurrency(perPersonTWD)}</span>
+                            <span class="text-[#8F9E8B] font-bold text-[10px]">💰 TW$${calculatedTotalTW.toFixed(0)}</span>
+                            <span class="text-[#888888] font-bold text-[10px]">👫 TW$${formatCurrency(perPersonTW)}</span>
                         </div>
                         ${mustGoHtml}
                     </div>`;
@@ -540,7 +540,7 @@
             // --- 行程編輯視窗內的即時加總邏輯 ---
             function refreshModalTotals() {
                 const trip = tripData[currentTripId];
-                let sumTWD = 0;
+                let sumTW = 0;
                 let sumLocal = 0;
                 let anyPayerChecked = false;
                 let allAmountsEntered = true;
@@ -561,31 +561,31 @@
 
                     if (isPayer) {
                         if (method === 'card') {
-                            sumTWD += (amount + fee);
+                            sumTW += (amount + fee);
                         } else {
                             sumLocal += amount;
-                            sumTWD += (amount * currentTripRate);
+                            sumTW += (amount * currentTripRate);
                         }
                     }
                 });
 
                 if (!anyPayerChecked && allAmountsEntered) {
-                    let totalManualTWD = 0;
+                    let totalManualTW = 0;
                     memberRows.forEach(row => {
                         const amount = parseFloat(row.querySelector('input[name="schedule-member-amount"]').value) || 0;
                         const fee = parseFloat(row.querySelector('.member-fee-input').value) || 0;
                         const method = row.querySelector('.payment-method').value;
                         if (method === 'card') {
-                            totalManualTWD += (amount + fee);
+                            totalManualTW += (amount + fee);
                         } else {
-                            totalManualTWD += (amount * currentTripRate);
+                            totalManualTW += (amount * currentTripRate);
                         }
                     });
-                    document.getElementById('form-amount-twd').value = totalManualTWD.toFixed(0);
+                    document.getElementById('form-amount-twd').value = totalManualTW.toFixed(0);
                     document.getElementById('form-amount').value = ''; 
                 } else {
                     document.getElementById('form-amount').value = sumLocal > 0 ? sumLocal.toFixed(2).replace(/\.00$/, '') : '';
-                    document.getElementById('form-amount-twd').value = sumTWD > 0 ? sumTWD.toFixed(0) : '';
+                    document.getElementById('form-amount-twd').value = sumTW > 0 ? sumTW.toFixed(0) : '';
                 }
             }
 
@@ -628,7 +628,7 @@
                             <div class="grid grid-cols-[1fr_20px_1fr] gap-2 items-center mt-2 border-t pt-2">
                                 <div class="flex items-center gap-1"><label id="form-currency-label" class="text-[10px] font-bold text-[#7E92A1] w-8 text-right">${config.currency}</label><input type="number" id="form-amount" placeholder="" class="w-full p-1 border rounded text-right text-[11px] bg-gray-100" value="${s.Amount||''}"></div>
                                 <div class="text-center text-gray-400 text-xs font-bold">=</div>
-                                <div class="flex items-center gap-1"><span class="text-[10px] font-bold text-[#A9A9A9] w-8 text-right">TWD</span><input type="number" id="form-amount-twd" placeholder="" class="w-full p-1 border rounded text-right text-[11px] bg-gray-100" value="${s.Amount ? (s.Amount * currentTripRate).toFixed(0) : ''}"></div>
+                                <div class="flex items-center gap-1"><span class="text-[10px] font-bold text-[#A9A9A9] w-8 text-right">TW</span><input type="number" id="form-amount-twd" placeholder="" class="w-full p-1 border rounded text-right text-[11px] bg-gray-100" value="${s.Amount ? (s.Amount * currentTripRate).toFixed(0) : ''}"></div>
                             </div>
                         </div>
                         <div class="flex justify-between items-center pt-2 border-t">
@@ -886,14 +886,14 @@
 
                     if (!anyPayer && allAmountsSet) {
                         members.forEach(m => {
-                            const m_twd = m.method === 'card' ? (parseFloat(m.amount) + parseFloat(m.fee||0)) : (parseFloat(m.amount) * rate);
-                            effectiveTotal += m_twd; currentCreditors.push({ name: m.name, lent: m_twd });
+                            const m_tw = m.method === 'card' ? (parseFloat(m.amount) + parseFloat(m.fee||0)) : (parseFloat(m.amount) * rate);
+                            effectiveTotal += m_tw; currentCreditors.push({ name: m.name, lent: m_tw });
                         });
                     } else {
                         members.forEach(m => {
                             if (typeof m !== 'string' && m.isPayer) {
-                                let m_twd = m.method === 'card' ? (parseFloat(m.amount) + parseFloat(m.fee||0)) : (parseFloat(m.amount) * rate);
-                                effectiveTotal += m_twd; currentCreditors.push({ name: m.name, lent: m_twd });
+                                let m_tw = m.method === 'card' ? (parseFloat(m.amount) + parseFloat(m.fee||0)) : (parseFloat(m.amount) * rate);
+                                effectiveTotal += m_tw; currentCreditors.push({ name: m.name, lent: m_tw });
                             }
                         });
                     }
@@ -919,7 +919,7 @@
                 modal.innerHTML = `
                     <div class="flex justify-between items-center mb-3"><h3 class="font-bold text-[#4A4B4D]">花費</h3><button id="exp-close" class="text-2xl text-gray-400">×</button></div>
                     <div class="bg-[#F9F9F9] p-3 rounded-xl border mb-3">
-                        <div class="flex justify-between items-end border-b pb-1 mb-2"><span class="text-xs text-gray-500">總支出</span><span class="font-extrabold text-sm text-[#4A4B4D]">TWD$ ${total.toFixed(0)}</span></div>
+                        <div class="flex justify-between items-end border-b pb-1 mb-2"><span class="text-xs text-gray-500">總支出</span><span class="font-extrabold text-sm text-[#4A4B4D]">TW$ ${total.toFixed(0)}</span></div>
                         <div class="grid grid-cols-[30%_40%_30%] items-center h-32"><div id="leg-L" class="flex flex-col gap-1 text-[9px]"></div><canvas id="exp-chart"></canvas><div id="leg-R" class="flex flex-col gap-1 items-end text-[9px]"></div></div>
                     </div>
                     <div class="overflow-y-auto flex-grow space-y-2"><div id="exp-mem-list" class="text-[10px]"></div><div class="mt-4 pt-2 border-t"><h4 class="font-bold text-[#7E92A1] text-xs mb-2">結算建議</h4><div id="settlement" class="space-y-1"></div></div></div>`;
