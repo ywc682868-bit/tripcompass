@@ -419,16 +419,13 @@
                 let totalCashForeign = 0;
 
                 for (let row of rows) {
-                    // 移除了 isPayer 的判斷，讓所有成員輸入的金額都會加總到總計中
                     const amt = parseFloat(row.querySelector('input[name="schedule-member-amount"]').value) || 0;
                     const fee = parseFloat(row.querySelector('input[name="schedule-member-fee"]').value) || 0;
                     const method = row.querySelector('.payment-method').value;
 
                     if (method === 'card') {
-                        // 刷卡：直接加台幣金額與手續費
                         totalTWD += (amt + fee);
                     } else {
-                        // 現金：外幣換算成台幣後加總
                         totalTWD += (amt * currentTripRate);
                         totalCashForeign += amt;
                     }
@@ -448,24 +445,31 @@
                 const members = schedule.members || [];
                 
                 let amountTWD = 0;
+                let hasMemberAmounts = false;
+
+                // 檢查是否已有個別成員輸入金額並計算總額
                 members.forEach(m => {
                     const mAmt = m.amount || 0;
                     const mFee = m.fee || 0;
-                    if (m.isPayer) {
-                        if (m.method === 'card') amountTWD += (mAmt + mFee);
-                        else amountTWD += (mAmt * rate);
+                    if (mAmt > 0) {
+                        hasMemberAmounts = true;
+                        if (m.method === 'card') {
+                            amountTWD += (mAmt + mFee);
+                        } else {
+                            amountTWD += (mAmt * rate);
+                        }
                     }
                 });
 
-                if (amountTWD === 0 && schedule.Amount > 0) amountTWD = schedule.Amount * rate;
+                // 若成員皆未輸入個別金額，則以主欄位的 Amount (外幣) 計算
+                if (!hasMemberAmounts && schedule.Amount > 0) {
+                    amountTWD = schedule.Amount * rate;
+                    // 若是刷卡類型但成員沒填分帳，檢查是否要加手續費 (這邊通常發生在分帳完畢前)
+                }
 
-                const participants = members.filter(m => {
-                    if (typeof m === 'string') return true;
-                    if (m.amount > 0 && !m.isPayer) return false;
-                    return true;
-                });
-                
-                const perPersonTWD = participants.length > 0 ? amountTWD / participants.length : 0;
+                // 計算每人平均
+                const participantCount = members.length || 1;
+                const perPersonTWD = amountTWD / participantCount;
                 
                 let memberHtml = '';
                 if (members.length > 0) {
@@ -669,7 +673,6 @@
                 const delBtn = document.createElement('button'); delBtn.type = 'button'; delBtn.className = 'text-[#CB8572] font-bold p-1 text-lg leading-none w-5 flex justify-center items-center ml-auto'; delBtn.textContent = '×';
                 delBtn.onclick = () => { d.remove(); updateModalTotalTWD(); };
 
-                // 依序由左至右：成員名稱 -> 金額 -> 先付核取方塊 -> 付款方式 -> 手續費
                 mainRow.appendChild(nameInput); 
                 mainRow.appendChild(amtInput); 
                 mainRow.appendChild(label); 
