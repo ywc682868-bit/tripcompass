@@ -357,17 +357,14 @@
                 const members = schedule.members || [];
                 
                 let calculatedTotalTW = 0;
-                let anyPayer = members.some(m => typeof m !== 'string' && m.isPayer);
-
-                // 修改：主頁面行程卡片總金額計算邏輯
-                // 無論是否勾選先付，都加總所有成員已輸入的數值
+                
+                // 加總所有成員已輸入的數值 (無論是否勾選先付，這是該項目的總花費)
                 members.forEach(m => {
                     const amt = parseFloat(m.amount) || 0;
                     const fee = parseFloat(m.fee) || 0;
                     calculatedTotalTW += (m.method === 'card' ? (amt + fee) : (amt * rate));
                 });
 
-                // 若成員金額皆未填，則回退到單一 Amount 欄位
                 if (calculatedTotalTW === 0 && (parseFloat(schedule.Amount) || 0) > 0) {
                     calculatedTotalTW = parseFloat(schedule.Amount) * rate;
                 }
@@ -537,8 +534,7 @@
                 let sumLocal = 0;
                 
                 const memberRows = document.getElementById('form-members-container').querySelectorAll('.member-row');
-                // 修改：無論成員是否填寫，只要有成員勾選先付，加總邏輯應反映債務。
-                // 為了編輯視窗的預覽，我們加總所有輸入的金額作為總計。
+
                 memberRows.forEach(row => {
                     const amountInput = row.querySelector('input[name="schedule-member-amount"]');
                     const amountStr = amountInput.value.trim();
@@ -857,42 +853,42 @@
                     const members = da.members || [];
                     if (!members.length) return;
                     
-                    let cardTotalTW = 0;
-                    // 先計算該行程卡片的總支出 (Sum of all amount boxes)
+                    let entryTotalTW = 0;
                     members.forEach(m => {
                         const m_amt = parseFloat(m.amount) || 0;
                         const m_fee = parseFloat(m.fee) || 0;
-                        cardTotalTW += m.method === 'card' ? (m_amt + m_fee) : (m_amt * rateVal);
+                        entryTotalTW += m.method === 'card' ? (m_amt + m_fee) : (m_amt * rateVal);
                     });
 
-                    if (cardTotalTW === 0 && (parseFloat(da.Amount)||0) > 0) cardTotalTW = parseFloat(da.Amount) * rateVal;
-                    if (isNaN(cardTotalTW) || cardTotalTW <= 0) return;
+                    if (entryTotalTW === 0 && (parseFloat(da.Amount)||0) > 0) entryTotalTW = parseFloat(da.Amount) * rateVal;
+                    if (isNaN(entryTotalTW) || entryTotalTW <= 0) return;
 
-                    total += cardTotalTW;
-                    types[da.Type] = (types[da.Type] || 0) + cardTotalTW;
+                    total += entryTotalTW;
+                    types[da.Type] = (types[da.Type] || 0) + entryTotalTW;
 
                     let payers = members.filter(m => typeof m !== 'string' && m.isPayer);
                     
                     if (payers.length > 0) {
-                        // 【邏輯核心】：勾選「先付」的人獲得全額信用 (Credit)
-                        let creditPerPayer = cardTotalTW / payers.length;
+                        // 有勾選先付的情況：
+                        // 先付者獲得該筆行程「全額」信用，其餘填寫金額者負擔債務
+                        let creditPerPayer = entryTotalTW / payers.length;
                         payers.forEach(p => {
                             balances[p.name] = (balances[p.name] || 0) + creditPerPayer;
                         });
-                        // 每個成員根據自己的 box amount 產生債務 (Debit)
+                        // 所有人根據填寫金額產生債務 (包含先付者自己的部分)
                         members.forEach(m => {
                             const m_amt = parseFloat(m.amount) || 0;
                             const m_fee = parseFloat(m.fee) || 0;
-                            const m_val = m.method === 'card' ? (m_amt + m_fee) : (m_amt * rateVal);
+                            const m_consumed = m.method === 'card' ? (m_amt + m_fee) : (m_amt * rateVal);
                             
-                            balances[m.name] = (balances[m.name] || 0) - m_val;
+                            balances[m.name] = (balances[m.name] || 0) - m_consumed;
                             
                             if(!mems[m.name]) mems[m.name] = { total: 0, cats: {} };
-                            mems[m.name].total += m_val;
-                            mems[m.name].cats[da.Type] = (mems[m.name].cats[da.Type] || 0) + m_val;
+                            mems[m.name].total += m_consumed;
+                            mems[m.name].cats[da.Type] = (mems[m.name].cats[da.Type] || 0) + m_consumed;
                         });
                     } else {
-                        // 沒人勾先付：假設各自付帳，Balance 互不相欠，但仍計入支出統計
+                        // 沒人勾先付：各自負擔，餘額不變
                         members.forEach(m => {
                             const m_amt = parseFloat(m.amount) || 0;
                             const m_fee = parseFloat(m.fee) || 0;
@@ -947,12 +943,10 @@
                 Object.keys(mems).sort().forEach(n => {
                     let cats = Object.keys(mems[n].cats).map(c => {
                         const catStyle = CATEGORY_COLORS[c] || CATEGORY_COLORS.default;
-                        return `<div class="flex items-center py-0.5 text-[10px] h-6">
-                            <span class="${catStyle.text} font-medium flex-1 text-left truncate">${CATEGORY_NAMES[c]}</span>
-                            <div class="flex items-center gap-0.5 flex-none">
-                                <span class="${catStyle.text} font-bold">TW$</span>
-                                <span class="${catStyle.text} font-bold text-right min-w-[35px]">${mems[n].cats[c].toFixed(0)}</span>
-                            </div>
+                        return `<div class="flex items-center py-0.5 text-[10px] h-6 justify-end">
+                            <span class="${catStyle.text} font-medium w-16 text-left truncate">${CATEGORY_NAMES[c]}</span>
+                            <span class="${catStyle.text} font-bold w-[30px] text-right">TW$</span>
+                            <span class="${catStyle.text} font-bold text-right min-w-[35px]">${mems[n].cats[c].toFixed(0)}</span>
                         </div>`;
                     }).join('');
                     mList.innerHTML += `<div><div class="font-bold text-gray-600 mb-1 border-b pb-0.5">${n}</div>${cats}</div>`;
