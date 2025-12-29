@@ -354,10 +354,31 @@
                 const config = CATEGORY_COLORS[schedule.Type] || CATEGORY_COLORS['default'];
                 const rate = schedule.Rate || 1;
                 const members = schedule.members || [];
-                const specificPayers = members.filter(m => typeof m !== 'string' && m.isPayer && m.amount > 0);
-                let amountTWD = specificPayers.length > 0 ? specificPayers.reduce((sum, m) => sum + (m.amount * rate), 0) : (schedule.Amount || 0) * rate;
+                
+                // 重新定義金額計算邏輯
+                let calculatedTotalTWD = 0;
+                members.forEach(m => {
+                    if (typeof m !== 'string' && m.isPayer) {
+                        const amt = parseFloat(m.amount) || 0;
+                        const fee = parseFloat(m.fee) || 0;
+                        if (m.method === 'card') {
+                            // 刷卡：金額是台幣，直接加手續費
+                            calculatedTotalTWD += (amt + fee);
+                        } else {
+                            // 現金：金額是該國貨幣，乘匯率
+                            calculatedTotalTWD += (amt * rate);
+                        }
+                    }
+                });
+
+                // 如果沒人先付，退回顯示原本輸入的總額
+                if (calculatedTotalTWD === 0 && schedule.Amount > 0) {
+                    calculatedTotalTWD = schedule.Amount * rate;
+                }
+
+                // 參與成員數計算（排除不計入分帳的人員，目前預設全部參與）
                 const participants = members.filter(m => !(typeof m !== 'string' && m.amount > 0 && !m.isPayer));
-                const perPersonTWD = participants.length > 0 ? amountTWD / participants.length : 0;
+                const perPersonTWD = participants.length > 0 ? calculatedTotalTWD / participants.length : 0;
                 
                 let memberHtml = members.length > 0 ? `<div class="flex flex-nowrap overflow-hidden justify-end gap-x-1.5 ml-2 max-w-[120px]">` + members.map((m, i) => `<span class="${MEMBER_COLORS[i % MEMBER_COLORS.length]} text-[10px] font-bold whitespace-nowrap">${typeof m === 'string' ? m : m.name}</span>`).join('') + `</div>` : '';
                 const mustGoHtml = schedule.MustGo ? `<div class="mt-auto w-full flex justify-start mb-3"><span class="text-[9px] text-[#CB8572] border border-[#CB8572] px-1 py-0.5 rounded-[2px] leading-none bg-white">必去</span></div>` : '';
@@ -388,7 +409,7 @@
                     <div class="card-right-col h-full flex flex-col">
                         <div class="card-static-actions"></div>
                         <div class="flex flex-col gap-1 mt-1">
-                            <span class="text-[#8F9E8B] font-bold text-[10px]">💰 TWD$${amountTWD.toFixed(0)}</span>
+                            <span class="text-[#8F9E8B] font-bold text-[10px]">💰 TWD$${calculatedTotalTWD.toFixed(0)}</span>
                             <span class="text-[#888888] font-bold text-[10px]">👫 TWD$${formatCurrency(perPersonTWD)}</span>
                         </div>
                         ${mustGoHtml}
@@ -496,11 +517,42 @@
                 URL.revokeObjectURL(url);
             }
 
+            // --- 行程編輯視窗內的即時加總邏輯 ---
+            function refreshModalTotals() {
+                const trip = tripData[currentTripId];
+                const config = COUNTRY_CONFIG[trip.country || 'TW'] || COUNTRY_CONFIG['TW'];
+                let sumTWD = 0;
+                let sumLocal = 0;
+
+                const memberRows = document.getElementById('form-members-container').querySelectorAll('.member-row');
+                memberRows.forEach(row => {
+                    const isPayer = row.querySelector('.payer-check').checked;
+                    const amount = parseFloat(row.querySelector('input[name="schedule-member-amount"]').value) || 0;
+                    const fee = parseFloat(row.querySelector('.member-fee-input').value) || 0;
+                    const method = row.querySelector('.payment-method').value;
+
+                    if (isPayer) {
+                        if (method === 'card') {
+                            sumTWD += (amount + fee);
+                        } else {
+                            sumLocal += amount;
+                            sumTWD += (amount * currentTripRate);
+                        }
+                    }
+                });
+
+                document.getElementById('form-amount').value = sumLocal > 0 ? sumLocal.toFixed(2).replace(/\.00$/, '') : '';
+                document.getElementById('form-amount-twd').value = sumTWD > 0 ? sumTWD.toFixed(0) : '0';
+            }
+
             // --- 行程編輯視窗 ---
             function openEditScheduleModal(s) {
                 editingScheduleId = s.id;
                 const modal = document.getElementById('add-schedule-modal');
                 const content = modal.querySelector('div');
+                const trip = tripData[currentTripId];
+                const config = COUNTRY_CONFIG[trip.country || 'TW'] || COUNTRY_CONFIG['TW'];
+                
                 content.innerHTML = `
                     <h3 class="text-base font-bold mb-2 text-[#4A4B4D] pr-8 truncate"><span id="add-schedule-modal-title">${s.Location || '編輯行程'}</span></h3>
                     <button id="modal-close-btn" class="absolute top-3 right-3 text-[#A9A9A9] text-2xl leading-none">×</button>
@@ -530,9 +582,9 @@
                             <div class="flex items-center mb-1 gap-2"><label class="compact-label">成員</label><button type="button" id="add-member-btn" class="text-[#7E92A1] text-xs font-bold">＋</button></div>
                             <div id="form-members-container" class="space-y-1 mb-2"></div>
                             <div class="grid grid-cols-[1fr_20px_1fr] gap-2 items-center mt-2 border-t pt-2">
-                                <div class="flex items-center gap-1"><label id="form-currency-label" class="text-[10px] font-bold text-[#7E92A1] w-8 text-right">USD</label><input type="number" id="form-amount" class="w-full p-1 border rounded text-right text-[11px]" value="${s.Amount||''}"></div>
+                                <div class="flex items-center gap-1"><label id="form-currency-label" class="text-[10px] font-bold text-[#7E92A1] w-8 text-right">${config.currency}</label><input type="number" id="form-amount" readonly class="w-full p-1 border rounded text-right text-[11px] bg-gray-100" value="${s.Amount||''}"></div>
                                 <div class="text-center text-gray-400 text-xs font-bold">=</div>
-                                <div class="flex items-center gap-1"><span class="text-[10px] font-bold text-[#A9A9A9] w-8 text-right">TWD</span><input type="number" id="form-amount-twd" class="w-full p-1 border rounded text-right text-[11px]" value="${(s.Amount * currentTripRate).toFixed(0)}"></div>
+                                <div class="flex items-center gap-1"><span class="text-[10px] font-bold text-[#A9A9A9] w-8 text-right">TWD</span><input type="number" id="form-amount-twd" readonly class="w-full p-1 border rounded text-right text-[11px] bg-gray-100" value="${(s.Amount * currentTripRate).toFixed(0)}"></div>
                             </div>
                         </div>
                         <div class="flex justify-between items-center pt-2 border-t">
@@ -550,29 +602,31 @@
                 document.getElementById('modal-delete-btn').onclick = () => deleteSchedule(s.id);
                 document.getElementById('add-member-btn').onclick = () => addMemberInput();
 
-                document.getElementById('form-amount').oninput = (e) => {
-                    const total = parseFloat(e.target.value);
-                    document.getElementById('form-amount-twd').value = isNaN(total) ? '' : (total * currentTripRate).toFixed(0);
-                    const memInputs = document.querySelectorAll('input[name="schedule-member-amount"]');
-                    if(memInputs.length && !isNaN(total)) memInputs.forEach(inp => inp.value = (total / memInputs.length).toFixed(2));
-                };
+                // 初始計算一次
+                refreshModalTotals();
                 modal.style.display = 'flex';
             }
 
             function addMemberInput(name='', amt='', isPayer=false, method='cash', fee='') {
-                const d = document.createElement('div'); d.className = 'flex items-center w-full gap-2 border-b pb-1 last:border-0';
+                const d = document.createElement('div'); 
+                d.className = 'member-row flex items-center w-full gap-2 border-b pb-1 last:border-0';
                 d.innerHTML = `
                     <input type="text" name="schedule-member-name" value="${name}" placeholder="名字" class="compact-input w-16 rounded-md font-bold text-[10px]">
                     <input type="number" name="schedule-member-amount" value="${amt}" placeholder="金額" class="compact-input w-14 rounded-md text-[10px]">
                     <div class="flex items-center gap-1">
                         <label class="flex items-center text-xs text-[#7E92A1] cursor-pointer whitespace-nowrap"><input type="checkbox" class="payer-check mr-1 h-4 w-4" ${isPayer?'checked':''}>先付</label>
                         <select class="payment-method text-xs border rounded px-1 h-6 text-center"><option value="cash" ${method==='cash'?'selected':''}>現金</option><option value="card" ${method==='card'?'selected':''}>刷卡</option></select>
-                        <input type="number" name="schedule-member-fee" value="${fee}" placeholder="手續費" class="member-fee-input compact-input w-12 rounded-md text-[10px] ${method==='card'?'':'hidden'}">
+                        <input type="number" name="schedule-member-fee" value="${fee}" placeholder="手續" class="member-fee-input compact-input w-10 rounded-md text-[10px] ${method==='card'?'':'hidden'}">
                     </div>
                     <button type="button" class="text-[#CB8572] font-bold p-1 ml-auto text-lg">×</button>`;
                 
                 const sel = d.querySelector('.payment-method');
                 const feeInp = d.querySelector('.member-fee-input');
+                const amtInp = d.querySelector('input[name="schedule-member-amount"]');
+                const payerCheck = d.querySelector('.payer-check');
+
+                // 監聽變動以即時計算總額
+                const triggerRefresh = () => refreshModalTotals();
                 sel.onchange = (e) => {
                     if (e.target.value === 'card') {
                         feeInp.classList.remove('hidden');
@@ -580,9 +634,13 @@
                         feeInp.classList.add('hidden');
                         feeInp.value = '';
                     }
+                    triggerRefresh();
                 };
+                amtInp.oninput = triggerRefresh;
+                feeInp.oninput = triggerRefresh;
+                payerCheck.onchange = triggerRefresh;
                 
-                d.querySelector('button').onclick = () => d.remove();
+                d.querySelector('button').onclick = () => { d.remove(); triggerRefresh(); };
                 document.getElementById('form-members-container').appendChild(d);
             }
 
@@ -591,7 +649,7 @@
                 const trip = tripData[currentTripId];
                 const dayId = `Day ${dateDiffInDays(new Date(dateVal), new Date(trip.startDate)) + 1}`;
                 const members = [];
-                document.getElementById('form-members-container').querySelectorAll('div').forEach(row => {
+                document.getElementById('form-members-container').querySelectorAll('.member-row').forEach(row => {
                     const name = row.querySelector('input[name="schedule-member-name"]').value.trim();
                     const amt = row.querySelector('input[name="schedule-member-amount"]').value;
                     const fee = row.querySelector('.member-fee-input').value;
@@ -721,18 +779,31 @@
                 snap.forEach(d => {
                     const da = d.data(); const rate = da.Rate || 1; const members = da.members || [];
                     if (!members.length) return;
-                    const specificPayers = members.filter(m => typeof m !== 'string' && m.isPayer && m.amount > 0);
-                    let effectiveTotal = 0, currentCreditors = [];
-                    if (specificPayers.length > 0) {
-                        specificPayers.forEach(p => { const t = p.amount * rate; effectiveTotal += t; currentCreditors.push({ name: p.name, lent: t }); });
-                    } else {
-                        effectiveTotal = (da.Amount || 0) * rate;
-                        const checkPayers = members.filter(m => typeof m !== 'string' && m.isPayer);
-                        if (checkPayers.length) { const per = effectiveTotal / checkPayers.length; checkPayers.forEach(p => currentCreditors.push({ name: p.name, lent: per })); }
-                    }
+                    
+                    let effectiveTotal = 0;
+                    let currentCreditors = [];
+
+                    members.forEach(m => {
+                        if (typeof m !== 'string' && m.isPayer) {
+                            const amt = parseFloat(m.amount) || 0;
+                            const fee = parseFloat(m.fee) || 0;
+                            let m_twd = 0;
+                            if (m.method === 'card') {
+                                m_twd = amt + fee;
+                            } else {
+                                m_twd = amt * rate;
+                            }
+                            effectiveTotal += m_twd;
+                            currentCreditors.push({ name: m.name, lent: m_twd });
+                        }
+                    });
+
+                    if (effectiveTotal === 0 && da.Amount > 0) effectiveTotal = da.Amount * rate;
                     if (effectiveTotal <= 0) return;
+
                     total += effectiveTotal;
                     types[da.Type] = (types[da.Type] || 0) + effectiveTotal;
+
                     const activeParticipants = members.filter(m => !(typeof m !== 'string' && m.amount > 0 && !m.isPayer));
                     if (activeParticipants.length) {
                         const debtPer = effectiveTotal / activeParticipants.length;
