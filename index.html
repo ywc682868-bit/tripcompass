@@ -293,13 +293,11 @@
                 const trip = tripData[currentTripId]; if (!trip) return;
                 const config = COUNTRY_CONFIG[trip.country || 'TW'] || COUNTRY_CONFIG['TW'];
                 
-                // 更新匯率與成員清單 (非天氣部分)
                 currentTripRate = await fetchExchangeRate(config.currency);
                 const barSelect = document.getElementById('bar-calc-currency'); 
                 if(barSelect) { barSelect.value = config.currency; calculateCurrency(); }
                 document.getElementById('header-members-list').innerHTML = (trip.members && trip.members.length) ? trip.members.map((m, i) => `<span class="${MEMBER_COLORS[i % MEMBER_COLORS.length]} mr-1">${m}</span>`).join('') : '尚未設定';
 
-                // 天氣抓取共用邏輯
                 const fetchWeather = async (lat, lon, displayName) => {
                     document.getElementById('header-location-name').textContent = displayName;
                     try { 
@@ -315,37 +313,23 @@
                     } catch (e) { }
                 };
 
-                // 優先嘗試取得目前的定位
                 if (navigator.geolocation) {
                     navigator.geolocation.getCurrentPosition(
                         async (position) => {
                             const lat = position.coords.latitude;
                             const lon = position.coords.longitude;
                             let localizedName = "目前位置";
-                            
                             try {
-                                // 呼叫反向地理編碼 API 取得具體地名 (繁體中文)
                                 const geoRes = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=zh-tw`);
                                 const geoData = await geoRes.json();
-                                // 優先取城市名，若無則取行政區或國家名
                                 localizedName = geoData.city || geoData.locality || geoData.countryName || "目前位置";
-                            } catch (e) {
-                                console.error("Reverse Geocoding Error:", e);
-                            }
-                            
-                            // 使用取得的地名更新天氣
+                            } catch (e) { console.error(e); }
                             fetchWeather(lat, lon, localizedName);
                         },
-                        () => {
-                            // 定位失敗 (如拒絕權限)：使用行程預設位置
-                            fetchWeather(config.lat, config.lon, config.localName);
-                        },
-                        { timeout: 5000 } // 設定超時
+                        () => { fetchWeather(config.lat, config.lon, config.localName); },
+                        { timeout: 5000 }
                     );
-                } else {
-                    // 瀏覽器不支援：直接使用行程預設位置
-                    fetchWeather(config.lat, config.lon, config.localName);
-                }
+                } else { fetchWeather(config.lat, config.lon, config.localName); }
             }
 
             function changeTrip(tripId) { 
@@ -486,9 +470,9 @@
                     <button id="modal-close-btn" class="absolute top-3 right-3 text-[#A9A9A9] text-2xl leading-none">×</button>
                     <form id="add-schedule-form" class="space-y-2">
                         <div class="grid grid-cols-3 gap-1.5"> 
-                            <div><label class="compact-label block text-center">日期</label><input type="date" id="form-date" class="compact-input w-full rounded border" value="${s.Date||''}"></div> 
-                            <div><label class="compact-label block text-center">時間</label><input type="time" id="form-time" class="compact-input w-full rounded border" value="${s.Time||''}"></div>
-                            <div><label class="compact-label block text-center">類型</label><select id="form-type" class="compact-input w-full rounded border">
+                            <div><label class="compact-label block text-left">日期</label><input type="date" id="form-date" class="compact-input w-full rounded border" value="${s.Date||''}"></div> 
+                            <div><label class="compact-label block text-left">時間</label><input type="time" id="form-time" class="compact-input w-full rounded border" value="${s.Time||''}"></div>
+                            <div><label class="compact-label block text-left">類型</label><select id="form-type" class="compact-input w-full rounded border">
                                 <option value="location" ${s.Type==='location'?'selected':''}>📍 景點</option>
                                 <option value="restaurant" ${s.Type==='restaurant'?'selected':''}>🍽️ 餐廳</option>
                                 <option value="coffee" ${s.Type==='coffee'?'selected':''}>☕ 咖啡</option>
@@ -529,14 +513,12 @@
                 document.getElementById('modal-delete-btn').onclick = () => deleteSchedule(s.id);
                 document.getElementById('add-member-btn').onclick = () => addMemberInput();
 
-                // 總額輸入自動分配邏輯
                 document.getElementById('form-amount').oninput = (e) => {
                     const total = parseFloat(e.target.value);
                     document.getElementById('form-amount-twd').value = isNaN(total) ? '' : (total * currentTripRate).toFixed(0);
                     const memInputs = document.querySelectorAll('input[name="schedule-member-amount"]');
                     if(memInputs.length && !isNaN(total)) memInputs.forEach(inp => inp.value = (total / memInputs.length).toFixed(2));
                 };
-
                 modal.style.display = 'flex';
             }
 
@@ -575,7 +557,7 @@
                 document.getElementById('add-schedule-modal').style.display = 'none'; loadSchedules(currentTripId, dayId);
             }
 
-            // --- 清單邏輯 ---
+            // --- 清單與花費邏輯 (保持不變) ---
             async function checkAndCreateDefaultLists(tripId) {
                 const col = collection(db, `artifacts/${appId}/public/data/Trips/${tripId}/Lists`);
                 const snap = await getDocs(col);
@@ -622,7 +604,6 @@
                     bg.querySelector('button').onclick = () => deleteListItem(listData, idx);
                     const c = document.createElement('div'); c.className = 'swipe-item-content bg-white p-2 border border-gray-100 rounded-lg flex items-center gap-2';
                     const star = `<button class="${item.isImportant?'text-yellow-400':'text-gray-200'} text-lg">${item.isImportant?'★':'☆'}</button>`;
-                    
                     if(listData.type==='check') {
                         c.innerHTML = `${star}<div class="flex gap-1"><input type="checkbox" ${item.checkedLeft?'checked':''} class="checkL"><input type="checkbox" ${item.checkedRight?'checked':''} class="checkR"></div><input type="text" value="${item.text||''}" class="txt flex-grow border-none text-xs focus:ring-0">`;
                         c.querySelector('button').onclick = () => updateListItem(listData, idx, {isImportant: !item.isImportant});
@@ -668,36 +649,25 @@
                 }
             }
 
-            // --- 花費邏輯 ---
             async function loadExpenseSummary() {
                 if(!currentTripId) return;
                 const snap = await getDocs(collection(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`));
                 let total=0, types={}, mems={}, balances={};
-                
                 snap.forEach(d => {
                     const da = d.data(); const rate = da.Rate || 1; const members = da.members || [];
                     if (!members.length) return;
-
                     const specificPayers = members.filter(m => typeof m !== 'string' && m.isPayer && m.amount > 0);
                     let effectiveTotal = 0, currentCreditors = [];
-
                     if (specificPayers.length > 0) {
-                        specificPayers.forEach(p => { 
-                            const t = p.amount * rate; effectiveTotal += t; currentCreditors.push({ name: p.name, lent: t }); 
-                        });
+                        specificPayers.forEach(p => { const t = p.amount * rate; effectiveTotal += t; currentCreditors.push({ name: p.name, lent: t }); });
                     } else {
                         effectiveTotal = (da.Amount || 0) * rate;
                         const checkPayers = members.filter(m => typeof m !== 'string' && m.isPayer);
-                        if (checkPayers.length) {
-                            const per = effectiveTotal / checkPayers.length;
-                            checkPayers.forEach(p => currentCreditors.push({ name: p.name, lent: per }));
-                        }
+                        if (checkPayers.length) { const per = effectiveTotal / checkPayers.length; checkPayers.forEach(p => currentCreditors.push({ name: p.name, lent: per })); }
                     }
-
                     if (effectiveTotal <= 0) return;
                     total += effectiveTotal;
                     types[da.Type] = (types[da.Type] || 0) + effectiveTotal;
-
                     const activeParticipants = members.filter(m => !(typeof m !== 'string' && m.amount > 0 && !m.isPayer));
                     if (activeParticipants.length) {
                         const debtPer = effectiveTotal / activeParticipants.length;
@@ -711,54 +681,32 @@
                         });
                     }
                 });
-
                 const modal = document.getElementById('split-expense-modal');
                 modal.innerHTML = `
                     <div class="flex justify-between items-center mb-3"><h3 class="font-bold text-[#4A4B4D]">花費</h3><button id="exp-close" class="text-2xl text-gray-400">×</button></div>
                     <div class="bg-[#F9F9F9] p-3 rounded-xl border mb-3">
-                        <div class="flex justify-between items-end border-b pb-1 mb-2">
-                            <span class="text-xs text-gray-500">總支出</span>
-                            <span class="font-extrabold text-sm text-[#4A4B4D]">TWD$ ${total.toFixed(0)}</span>
-                        </div>
-                        <div class="grid grid-cols-[30%_40%_30%] items-center h-32">
-                            <div id="leg-L" class="flex flex-col gap-1 text-[9px]"></div>
-                            <canvas id="exp-chart"></canvas>
-                            <div id="leg-R" class="flex flex-col gap-1 items-end text-[9px]"></div>
-                        </div>
+                        <div class="flex justify-between items-end border-b pb-1 mb-2"><span class="text-xs text-gray-500">總支出</span><span class="font-extrabold text-sm text-[#4A4B4D]">TWD$ ${total.toFixed(0)}</span></div>
+                        <div class="grid grid-cols-[30%_40%_30%] items-center h-32"><div id="leg-L" class="flex flex-col gap-1 text-[9px]"></div><canvas id="exp-chart"></canvas><div id="leg-R" class="flex flex-col gap-1 items-end text-[9px]"></div></div>
                     </div>
-                    <div class="overflow-y-auto flex-grow space-y-2">
-                        <div id="exp-mem-list" class="text-[10px]"></div>
-                        <div class="mt-4 pt-2 border-t"><h4 class="font-bold text-[#7E92A1] text-xs mb-2">結算建議</h4><div id="settlement" class="space-y-1"></div></div>
-                    </div>`;
-                
+                    <div class="overflow-y-auto flex-grow space-y-2"><div id="exp-mem-list" class="text-[10px]"></div><div class="mt-4 pt-2 border-t"><h4 class="font-bold text-[#7E92A1] text-xs mb-2">結算建議</h4><div id="settlement" class="space-y-1"></div></div></div>`;
                 document.getElementById('exp-close').onclick = () => modal.style.display = 'none';
-
                 const sortedKeys = Object.keys(types).sort((a,b)=>types[b]-types[a]);
                 expenseChart = new Chart(document.getElementById('exp-chart'), {
                     type: 'doughnut',
-                    data: {
-                        datasets: [{ data: sortedKeys.map(k=>types[k]), backgroundColor: sortedKeys.map(k=>(CATEGORY_COLORS[k]||CATEGORY_COLORS.default).hex), borderWidth: 0 }]
-                    },
+                    data: { datasets: [{ data: sortedKeys.map(k=>types[k]), backgroundColor: sortedKeys.map(k=>(CATEGORY_COLORS[k]||CATEGORY_COLORS.default).hex), borderWidth: 0 }] },
                     options: { maintainAspectRatio: false, cutout: '50%', plugins: { legend: { display: false } } }
                 });
-
                 sortedKeys.forEach((k, i) => {
                     const html = `<div class="flex flex-col"><span class="font-bold truncate">${CATEGORY_NAMES[k]||k}</span><span class="text-gray-400">$${types[k].toFixed(0)}</span></div>`;
-                    if(i < 3) document.getElementById('leg-L').innerHTML += html;
-                    else document.getElementById('leg-R').innerHTML += html;
+                    if(i < 3) document.getElementById('leg-L').innerHTML += html; else document.getElementById('leg-R').innerHTML += html;
                 });
-
                 const mList = document.getElementById('exp-mem-list');
                 Object.keys(mems).sort().forEach(n => {
                     let cats = Object.keys(mems[n].cats).map(c => `<div class="flex justify-between py-0.5"><span class="${(CATEGORY_COLORS[c]||CATEGORY_COLORS.default).text}">${CATEGORY_NAMES[c]}</span><span>$${mems[n].cats[c].toFixed(0)}</span></div>`).join('');
                     mList.innerHTML += `<div class="border-b pb-1 mb-1"><div class="font-bold text-gray-600 mb-1">${n} (共 $${mems[n].total.toFixed(0)})</div>${cats}</div>`;
                 });
-
                 let debtors = [], creditors = [];
-                for(let n in balances) {
-                    if(balances[n] < -1) debtors.push({n, a: Math.abs(balances[n])});
-                    else if(balances[n] > 1) creditors.push({n, a: balances[n]});
-                }
+                for(let n in balances) { if(balances[n] < -1) debtors.push({n, a: Math.abs(balances[n])}); else if(balances[n] > 1) creditors.push({n, a: balances[n]}); }
                 const setCont = document.getElementById('settlement');
                 if(!debtors.length) setCont.innerHTML = '<div class="text-[10px] text-gray-400">已結清</div>';
                 else {
