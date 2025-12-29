@@ -823,14 +823,15 @@
                     c.className = 'swipe-item-content bg-white py-1 px-2 border border-gray-100 rounded-lg flex items-center gap-2';
                     const star = `<button class="${item.isImportant?'text-yellow-400':'text-gray-200'} text-lg">${item.isImportant?'★':'☆'}</button>`;
                     if(listData.type==='check') {
+                        // 物品清單版面：修正輸入框寬度（flex-1 min-w-0）避免擠壓刪除鈕
                         c.innerHTML = `
                             ${star}
-                            <div class="flex gap-1">
+                            <div class="flex gap-1 flex-none">
                                 <input type="checkbox" ${item.checkedLeft?'checked':''} class="checkL">
                                 <input type="checkbox" ${item.checkedRight?'checked':''} class="checkR">
                             </div>
-                            <input type="text" value="${item.text||''}" class="txt flex-grow border-none text-xs focus:ring-0">
-                            <button class="del text-gray-300 ml-1 desktop-del-btn font-bold text-lg">×</button>`;
+                            <input type="text" value="${item.text||''}" class="txt border-none text-xs focus:ring-0 flex-1 min-w-0">
+                            <button class="del text-gray-300 ml-1 desktop-del-btn font-bold text-lg flex-none">×</button>`;
                         
                         c.querySelector('button').onclick = () => updateListItem(listData, idx, {isImportant: !item.isImportant});
                         c.querySelector('.checkL').onchange = (e) => updateListItem(listData, idx, {checkedLeft: e.target.checked});
@@ -925,7 +926,6 @@
                     }
                 });
                 const modal = document.getElementById('split-expense-modal');
-                // 加入限制寬度的容器，確保與清單頁面寬度一致
                 modal.innerHTML = `
                     <div class="bg-white rounded-xl shadow-2xl p-4 w-11/12 max-w-sm flex flex-col max-h-[90vh]">
                         <div class="flex justify-between items-center mb-3"><h3 class="font-bold text-[#4A4B4D]">花費</h3><button id="exp-close" class="text-2xl text-gray-400">×</button></div>
