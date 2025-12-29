@@ -945,7 +945,7 @@
                             </div>
                         </div>
                         <div class="overflow-y-auto flex-grow space-y-2">
-                            <div id="exp-mem-list" class="grid grid-cols-2 gap-x-2 gap-y-4 text-[11px]"></div>
+                            <div id="exp-mem-list" class="grid grid-cols-2 gap-x-10 gap-y-4 text-[11px]"></div>
                             <div id="settlement" class="mt-4 space-y-1"></div>
                         </div>
                     </div>`;
@@ -972,7 +972,6 @@
 
                 const mList = document.getElementById('exp-mem-list');
                 Object.keys(mems).sort().forEach(n => {
-                    // 修改：各類型金額套用與類型標誌一致的顏色，並優化 flex 佈局確保 TW$ 對齊靠右
                     let cats = Object.keys(mems[n].cats).map(c => {
                         const catStyle = CATEGORY_COLORS[c] || CATEGORY_COLORS.default;
                         return `<div class="flex justify-between py-0.5 items-center"><span class="${catStyle.text} font-medium">${CATEGORY_NAMES[c]}</span><span class="${catStyle.text} font-bold">TW$${mems[n].cats[c].toFixed(0)}</span></div>`;
