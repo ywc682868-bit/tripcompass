@@ -319,11 +319,13 @@
             function formatCurrency(value) { if (typeof value !== 'number') value = parseFloat(value); if (isNaN(value) || value === 0) return '0'; return value.toFixed(2).replace(/\.00$/, '').replace(/(\.\d)0$/, '$1'); }
             async function fetchExchangeRate(baseCurrency) { const fallback = { 'USD': 32.5, 'JPY': 0.215, 'KRW': 0.023, 'GBP': 41.2, 'CNY': 4.5, 'TWD': 1 }; if (!baseCurrency || baseCurrency === 'TWD') return 1; try { const r = await fetch(`https://open.er-api.com/v6/latest/${baseCurrency}`); const d = await r.json(); if (d && d.rates && d.rates.TWD) return d.rates.TWD; } catch (e) {} return fallback[baseCurrency] || 1; }
 
+            // --- 統一更新 Header 日期與 D-Day ---
             function updateHeaderDateWithDDay(d) {
                 if (!d) return;
                 const dateStr = formatDateForHeader(d);
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
+
                 let tripCountdownHtml = '';
                 const trip = tripData[currentTripId];
                 if (trip && trip.startDate) {
@@ -334,10 +336,12 @@
                     let dString = diffDaysTrip === 0 ? 'D-0' : (diffDaysTrip > 0 ? `D+${diffDaysTrip + 1}` : `D${diffDaysTrip}`);
                     tripCountdownHtml = `<span class="ml-2 text-[#7E92A1] text-xs font-bold tracking-wide">🛫 ${dString}</span>`;
                 }
+
                 const anniversary = new Date('2025-08-01T00:00:00');
                 const diffTimeLove = today.getTime() - anniversary.getTime();
                 const diffDaysLove = Math.floor(diffTimeLove / (1000 * 60 * 60 * 24)) + 1;
                 let loveHtml = !isNaN(diffDaysLove) ? `<span class="ml-2 text-[#D4A5A5] text-xs font-extrabold tracking-wide">❤️ ${diffDaysLove}天</span>` : '';
+                
                 const el = document.getElementById('header-day-date-display');
                 if(el) el.innerHTML = `${dateStr}${tripCountdownHtml}${loveHtml}`;
             }
@@ -346,6 +350,7 @@
                 const trip = tripData[currentTripId]; if (!trip) return;
                 const config = COUNTRY_CONFIG[trip.country || 'TW'] || COUNTRY_CONFIG['TW'];
                 let lat = config.lat, lon = config.lon, displayName = config.localName;
+
                 if (navigator.geolocation) {
                     try {
                         const position = await new Promise((resolve, reject) => {
@@ -362,11 +367,14 @@
                         } catch (geoErr) { console.log("地名轉換失敗", geoErr); }
                     } catch (e) { console.log("無法獲取定位，使用預設地點"); }
                 }
+
                 document.getElementById('header-location-name').textContent = displayName;
                 currentTripRate = await fetchExchangeRate(config.currency);
                 const barSelect = document.getElementById('bar-calc-currency'); 
                 if(barSelect) { barSelect.value = config.currency; calculateCurrency(); }
+                
                 document.getElementById('header-members-list').innerHTML = (trip.members && trip.members.length) ? trip.members.map((m, i) => `<span class="${MEMBER_COLORS[i % MEMBER_COLORS.length]} mr-1">${m}</span>`).join('') : '尚未設定';
+                
                 try { 
                     const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&timezone=auto`); 
                     const data = await res.json(); 
@@ -409,10 +417,12 @@
                 const rows = document.getElementById('form-members-container').children;
                 let totalTWD = 0;
                 let totalCashForeign = 0;
+
                 for (let row of rows) {
                     const amt = parseFloat(row.querySelector('input[name="schedule-member-amount"]').value) || 0;
                     const fee = parseFloat(row.querySelector('input[name="schedule-member-fee"]').value) || 0;
                     const method = row.querySelector('.payment-method').value;
+
                     if (method === 'card') {
                         totalTWD += (amt + fee);
                     } else {
@@ -420,8 +430,10 @@
                         totalCashForeign += amt;
                     }
                 }
+
                 const foreignInp = document.getElementById('form-amount');
                 const twdInp = document.getElementById('form-amount-twd');
+                
                 if (foreignInp) foreignInp.value = totalCashForeign > 0 ? totalCashForeign.toFixed(0) : '';
                 if (twdInp) twdInp.value = totalTWD > 0 ? totalTWD.toFixed(0) : '';
             }
@@ -431,6 +443,7 @@
                 const config = CATEGORY_COLORS[schedule.Type] || CATEGORY_COLORS['default'];
                 const rate = schedule.Rate || 1;
                 const members = schedule.members || [];
+                
                 let amountTWD = 0;
                 let advancedPayerTotalTWD = 0;
                 let totalFeesTWD = 0;
@@ -442,28 +455,41 @@
                     const mFee = m.fee || 0;
                     const mMethod = m.method || 'cash';
                     const isPayer = m.isPayer || false;
+
                     totalFeesTWD += (mMethod === 'card' ? mFee : 0);
+
+                    // 1. 如果有勾選先付
                     if (isPayer) {
                         hasAdvancedPayer = true;
                         if (mMethod === 'card') advancedPayerTotalTWD += (mAmt + mFee);
                         else advancedPayerTotalTWD += (mAmt * rate);
                     }
+
+                    // 2. 判斷是否有人手動填入金額（用於判斷是否已分帳）
                     if (mAmt > 0) hasMemberAmounts = true;
+
+                    // 3. 計算整個行程的總支出台幣
                     if (mMethod === 'card') amountTWD += (mAmt + mFee);
                     else amountTWD += (mAmt * rate);
                 });
 
+                // 若成員皆未輸入個別金額，則以主欄位的 Amount 加總
                 if (!hasMemberAmounts && schedule.Amount > 0) {
                     amountTWD = (schedule.Amount * rate) + totalFeesTWD;
                 }
 
                 const participantCount = members.length || 1;
                 let perPersonTWD = 0;
+
+                // 核心顯示邏輯
                 if (hasAdvancedPayer) {
+                    // 若有勾選先付，顯示 (代墊金額 / 人數)
                     perPersonTWD = advancedPayerTotalTWD / participantCount;
                 } else if (hasMemberAmounts) {
+                    // 若已分帳（有人填錢）但沒人勾先付，顯示 0
                     perPersonTWD = 0;
                 } else {
+                    // 未分帳，顯示 (總金額 + 手續費) / 人數
                     perPersonTWD = amountTWD / participantCount;
                 }
                 
@@ -476,13 +502,13 @@
                     memberHtml += `</div>`;
                 }
 
-                const mustGoHtml = schedule.MustGo ? `<div class="mt-auto w-full flex justify-start mb-3"><span class="text-[9px] text-[#CB8572] border border-[#CB8572] px-1 py-0.5 rounded-[2px] leading-none font-normal bg-white">必去</span></div>` : '';
-
                 const card = document.createElement('div');
                 card.className = 'trip-card flex w-full mb-3 relative'; 
                 card.style.height = '100px'; 
+                
                 const visualWrapper = document.createElement('div');
                 visualWrapper.className = 'trip-card-visual-wrapper';
+
                 const content = document.createElement('div');
                 content.className = 'swipe-item-content flex w-full bg-white relative items-stretch h-full z-10';
                 content.innerHTML = `
@@ -506,7 +532,6 @@
                             <div class="flex items-center justify-start w-full"><span class="text-[#8F9E8B] font-bold text-[10px]">💰 TW$${amountTWD.toFixed(0)}</span></div>
                             <div class="flex items-center justify-start w-full"><span class="text-[#888888] font-bold text-[10px]">👫 TW$${formatCurrency(perPersonTWD)}</span></div>
                         </div>
-                        ${mustGoHtml}
                     </div>`;
                 
                 const staticActions = content.querySelector('.card-static-actions');
@@ -519,6 +544,7 @@
                 staticDel.textContent = "刪除";
                 staticDel.onclick = (e) => { e.stopPropagation(); deleteSchedule(schedule.id); };
                 staticActions.appendChild(staticMod); staticActions.appendChild(staticDel);
+
                 visualWrapper.appendChild(content);
                 card.appendChild(visualWrapper);
                 card.querySelector('.map-link').onclick = (e) => { e.preventDefault(); navigateToMap(schedule.Address || schedule.Location); };
@@ -615,6 +641,7 @@
                         addMemberInput(typeof m === 'string' ? m : m.name, (typeof m === 'string' || !m.amount) ? '' : m.amount, m.isPayer || false, m.method || 'cash', (typeof m === 'string' || !m.fee) ? '' : m.fee);
                     }); 
                 } else { addMemberInput(); addMemberInput(); }
+                
                 updateModalTotalTWD();
                 document.getElementById('add-schedule-modal').style.display = 'flex';
             }
@@ -624,33 +651,41 @@
                 d.className = 'flex flex-col w-full border-b border-gray-100 pb-2 mb-2 last:border-0 last:mb-0'; 
                 const mainRow = document.createElement('div');
                 mainRow.className = 'flex items-center w-full gap-1.5';
+
                 const nameInput = document.createElement('input'); nameInput.type = 'text'; nameInput.name = 'schedule-member-name'; nameInput.value = name; nameInput.placeholder = '名字'; nameInput.className = 'compact-input w-14 rounded-md font-bold text-[10px] flex-shrink-0';
+                
                 const amtInput = document.createElement('input'); amtInput.type = 'number'; amtInput.name = 'schedule-member-amount'; amtInput.value = amt; amtInput.placeholder = method === 'card' ? 'TW' : '金額'; amtInput.className = 'compact-input w-16 rounded-md text-[10px] flex-shrink-0';
+
                 const label = document.createElement('label'); label.className = 'flex items-center text-[10px] text-[#7E92A1] cursor-pointer flex-shrink-0';
                 const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.className = 'payer-check mr-1 h-3.5 w-3.5'; checkbox.checked = isPayer;
                 label.appendChild(checkbox); label.appendChild(document.createTextNode('先付'));
+
                 const select = document.createElement('select'); select.className = 'payment-method text-[10px] border border-gray-200 rounded px-1 py-0 text-[#5F6368] bg-white h-6 flex-shrink-0';
                 const op1 = document.createElement('option'); op1.value='cash'; op1.text='現金'; const op2 = document.createElement('option'); op2.value='card'; op2.text='刷卡';
                 select.add(op1); select.add(op2); select.value = method;
+
                 const feeInput = document.createElement('input'); feeInput.type = 'number'; feeInput.name = 'schedule-member-fee'; feeInput.value = fee; feeInput.placeholder = '手續'; feeInput.className = `compact-input w-12 rounded-md text-[10px] flex-shrink-0 ${method === 'card' ? '' : 'hidden'}`;
+
                 select.onchange = (e) => {
                     if (e.target.value === 'card') { feeInput.classList.remove('hidden'); amtInput.placeholder = 'TW'; }
                     else { feeInput.classList.add('hidden'); amtInput.placeholder = '金額'; feeInput.value = ''; }
                     updateModalTotalTWD();
                 };
+
                 checkbox.onchange = updateModalTotalTWD;
                 amtInput.oninput = updateModalTotalTWD;
                 feeInput.oninput = updateModalTotalTWD;
+
                 const delBtn = document.createElement('button'); delBtn.type = 'button'; delBtn.className = 'text-[#CB8572] font-bold p-1 text-lg leading-none w-5 flex justify-center items-center ml-auto'; delBtn.textContent = '×';
                 delBtn.onclick = () => { d.remove(); updateModalTotalTWD(); };
 
-                // 順序：成員名稱 -> 金額 -> 先付核取方塊 -> 付款方式 -> 手續費
                 mainRow.appendChild(nameInput); 
                 mainRow.appendChild(amtInput); 
                 mainRow.appendChild(label); 
                 mainRow.appendChild(select); 
                 mainRow.appendChild(feeInput); 
                 mainRow.appendChild(delBtn);
+                
                 d.appendChild(mainRow);
                 document.getElementById('form-members-container').appendChild(d); 
             }
@@ -730,7 +765,7 @@
                 };
                 modalBody.appendChild(fab);
                 const inner = document.createElement('div'); 
-                if(listData.type === 'check') inner.className = 'grid grid-cols-2 gap-2 pb-16 px-1 mt-2'; else inner.className = 'space-y-2 pb-16 px-1 mt-2';
+                inner.className = 'space-y-2 pb-16 px-1 mt-2';
                 listData.items.forEach((item, idx) => {
                     const wrap = document.createElement('div'); wrap.className = 'p-2 border rounded-lg bg-white flex items-center gap-2';
                     if (listData.type === 'check') {
@@ -747,24 +782,29 @@
                 if(!currentTripId) return; 
                 const snap = await getDocs(collection(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`));
                 let total=0, types={}, mems={}, balances={};
+                
                 snap.forEach(d => {
                     const da = d.data(); const rate = da.Rate || 1; const members = da.members || [];
                     if (members.length === 0) return;
                     let effectiveTotal = 0, feeTotal = 0, currentCreditors = [];
+
                     members.forEach(m => {
                         const amt = m.amount || 0, fee = m.fee || 0;
-                        let valTW = (m.method === 'card') ? amt : (amt * rate);
-                        let mFeeTW = (m.method === 'card') ? fee : 0;
+                        let valTWD = (m.method === 'card') ? amt : (amt * rate);
+                        let mFeeTWD = (m.method === 'card') ? fee : 0;
                         if (m.isPayer) {
-                            effectiveTotal += valTW; feeTotal += mFeeTW;
-                            currentCreditors.push({ name: m.name, lent: valTW + mFeeTW });
+                            effectiveTotal += valTWD; feeTotal += mFeeTWD;
+                            currentCreditors.push({ name: m.name, lent: valTWD + mFeeTWD });
                         }
                     });
+
                     if (effectiveTotal === 0 && da.Amount > 0) effectiveTotal = da.Amount * rate;
                     if (effectiveTotal <= 0 && feeTotal <= 0) return;
+
                     total += (effectiveTotal + feeTotal);
                     types[da.Type] = (types[da.Type] || 0) + effectiveTotal;
                     if (feeTotal > 0) types['fee'] = (types['fee'] || 0) + feeTotal;
+
                     const activeParticipants = members.filter(m => !(typeof m !== 'string' && m.amount > 0 && !m.isPayer));
                     if (activeParticipants.length > 0) {
                         const debtPerPerson = (effectiveTotal + feeTotal) / activeParticipants.length;
@@ -780,6 +820,7 @@
                         });
                     }
                 });
+
                 document.getElementById('expense-total-amount').textContent = total.toFixed(0);
                 const ctx = document.getElementById('expense-chart').getContext('2d'); 
                 if(expenseChart) expenseChart.destroy();
@@ -789,6 +830,7 @@
                     data: { labels: sortedKeys.map(k => CATEGORY_NAMES[k]||k), datasets: [{ data: sortedKeys.map(k => types[k]), backgroundColor: sortedKeys.map(k => (CATEGORY_COLORS[k]||CATEGORY_COLORS.default).hex), borderWidth: 0 }] }, 
                     options: { responsive: true, maintainAspectRatio: false, cutout: '45%', plugins: { legend: { display: false } } } 
                 });
+
                 const l = document.getElementById('expense-member-list'); 
                 l.innerHTML = `<div class="grid grid-cols-[40%_20%_40%] border-b pb-1 mb-2 font-bold text-[10px]"><span>成員</span><span class="text-center">類別</span><span class="text-right">分攤金額</span></div>`;
                 Object.keys(mems).sort().forEach(n => { 
@@ -806,6 +848,7 @@
                 document.addEventListener('DOMContentLoaded', async () => {
                     const app = initializeApp(firebaseConfig); db = getFirestore(app); auth = getAuth(app); 
                     const userCred = await signInAnonymously(auth); currentUser = userCred.user;
+                    
                     const addScheduleModalContent = document.querySelector('#add-schedule-modal > div');
                     if(addScheduleModalContent) {
                         addScheduleModalContent.innerHTML = `
@@ -824,6 +867,15 @@
                                 <div class="flex justify-between items-center pt-2 mt-2 border-t border-[#E0E0E0]"><button type="button" id="modal-delete-btn" class="px-3 py-1 h-7 text-white bg-[#CB8572] rounded text-xs font-bold hidden">刪除</button><div class="flex-grow flex justify-end"><button type="button" id="modal-save-btn" class="px-3 py-1 h-7 text-white bg-[#7E92A1] rounded text-xs font-bold shadow-sm">儲存</button></div></div>
                             </form>`;
                     }
+
+                    const splitExpenseModalContent = document.querySelector('#split-expense-modal > div');
+                    if (splitExpenseModalContent) {
+                        splitExpenseModalContent.innerHTML = `
+                            <h3 class="text-sm font-bold mb-2 flex justify-between items-center text-[#4A4B4D]">花費<button id="split-expense-close-btn" class="text-[#A9A9A9] text-xl">×</button></h3>
+                            <div class="flex-shrink-0 mb-2 bg-[#F9F9F9] p-2 rounded border border-[#E0E0E0]"><div class="flex justify-between items-end mb-2 border-b border-[#E0E0E0] pb-0.5"><span class="text-[#5F6368] font-medium text-xs">總花費</span><span class="text-sm font-extrabold text-[#4A4B4D]">TW$ <span id="expense-total-amount">0</span></span></div><div class="grid grid-cols-[28%_44%_28%] h-32 w-full items-center"><div id="expense-legend-left" class="flex flex-col justify-center gap-1.5 pl-1 h-full overflow-hidden"></div><div id="expense-chart-container" class="relative h-full w-full flex justify-center items-center"><canvas id="expense-chart"></canvas></div><div id="expense-legend-right" class="flex flex-col justify-center gap-1.5 pr-1 items-end h-full overflow-hidden"></div></div></div>
+                            <div class="overflow-y-auto flex-grow mb-1 pr-1"><div id="expense-member-list" class="space-y-0.5"></div></div>`;
+                    }
+
                     loadTripList();
                     safeBind('trip-select', 'onchange', (e) => changeTrip(e.target.value));
                     safeBind('bar-calc-currency', 'onchange', calculateCurrency);
@@ -844,6 +896,16 @@
                     safeBind('lists-modal-close-btn', 'onclick', () => document.getElementById('lists-modal').style.display='none');
                     safeBind('split-expense-btn', 'onclick', loadExpenseSummary);
                     safeBind('split-expense-close-btn', 'onclick', () => document.getElementById('split-expense-modal').style.display='none');
+                    safeBind('settings-btn', 'onclick', () => { 
+                        const trip = tripData[currentTripId]; if (!trip) return;
+                        document.getElementById('settings-trip-name').value = trip.name; 
+                        document.getElementById('settings-trip-country').value = trip.country || 'TW';
+                        document.getElementById('settings-start-date').value = trip.startDate;
+                        document.getElementById('settings-num-days').value = trip.numDays;
+                        document.getElementById('settings-modal').style.display = 'flex'; 
+                        document.getElementById('settings-members-container').innerHTML = ''; 
+                        (trip.members||[]).forEach(m => addSettingsMemberInput(m));
+                    });
                     safeBind('add-member-btn', 'onclick', () => addMemberInput());
                 });
             }
