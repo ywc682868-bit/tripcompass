@@ -127,7 +127,6 @@
 
     .swipe-item-container { position: relative; overflow: hidden; border-radius: 0.375rem; margin-bottom: 0.5rem; touch-action: pan-y; }
     
-    /* 滑動按鈕層：加上 overflow hidden 確保圓角 */
     .swipe-item-delete-bg { 
         position: absolute; top: 0; bottom: 0; right: 0; width: 140px; 
         display: flex; align-items: center; justify-content: flex-end; 
@@ -136,7 +135,6 @@
         overflow: hidden;
     }
     
-    /* 內容層：加上 overflow hidden 確保圓角 */
     .swipe-item-content { 
         position: relative; z-index: 10; background-color: white; 
         transition: transform 0.2s ease-out; transform: translateX(0); 
@@ -329,7 +327,7 @@
             function getDateFromDayId(trip, dayId) { if (!trip || !trip.startDate) return null; const d = new Date(trip.startDate); d.setDate(d.getDate() + (parseInt(dayId.replace('Day ', '')) - 1)); return d; }
             function getCardStyle(type) { const c = CATEGORY_COLORS[type] || CATEGORY_COLORS['default']; const icons = {'coffee':'☕','restaurant':'🍽️','location':'📍','交通':'🚗','shopping':'🛍️','accommodation':'🛏️','fee':'🪙'}; return { color: c.bg, icon: icons[type] || '❓', hex: c.hex, text: c.text }; }
             function navigateToMap(input) { if (!input) return; const url = (input.includes('http') || input.includes('maps.')) ? input : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(input)}`; window.open(url, '_blank'); }
-            function formatCurrency(value) { if (typeof value !== 'number') value = parseFloat(value); if (isNaN(value) || value === 0) return '0'; return value.toFixed(2).replace(/\.00$/, '').replace(/(\.\d)0$/, '$1'); }
+            function formatCurrency(value) { if (typeof value !== 'number') value = parseFloat(value); if (isNaN(value) || value === 0) return ''; return value.toFixed(2).replace(/\.00$/, '').replace(/(\.\d)0$/, '$1'); }
             async function fetchExchangeRate(baseCurrency) { const fallback = { 'USD': 32.5, 'JPY': 0.215, 'KRW': 0.023, 'GBP': 41.2, 'CNY': 4.5, 'TWD': 1 }; if (!baseCurrency || baseCurrency === 'TWD') return 1; try { const r = await fetch(`https://open.er-api.com/v6/latest/${baseCurrency}`); const d = await r.json(); if (d && d.rates && d.rates.TWD) return d.rates.TWD; } catch (e) {} return fallback[baseCurrency] || 1; }
 
             // --- 統一更新 Header 日期與 D-Day ---
@@ -438,7 +436,6 @@
                 const members = schedule.members || [];
                 const scheduleFee = parseFloat(schedule.Fee) || 0;
 
-                // 修改：個別計算 TWD。如果是刷卡則 Rate = 1，現金則使用 schedule.Rate
                 let amountTWD = 0;
                 members.forEach(m => {
                     if (m.isPayer && m.amount > 0) {
@@ -447,10 +444,7 @@
                     }
                 });
 
-                // 如果沒人勾先付，預設抓主欄位金額
                 if (amountTWD === 0) amountTWD = (schedule.Amount || 0) * rate;
-                
-                // 加入手續費
                 amountTWD += scheduleFee;
 
                 const participants = members.filter(m => {
@@ -579,7 +573,7 @@
                 }
                 const addBtn = document.createElement('button'); addBtn.className = 'px-3 py-1.5 text-xs font-bold rounded-lg bg-[#7E92A1] text-white ml-2 flex-shrink-0'; addBtn.textContent = '+';
                 addBtn.onclick = async () => { try { await updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}`), { numDays: (trip.numDays || 1) + 1 }, { merge: true }); } catch(e) { } };
-                container.appendChild(addBtn);
+                container.appendChild(btn);
                 const d = getDateFromDayId(trip, currentDayId); if (d) updateHeaderDateWithDDay(d);
             }
 
@@ -617,7 +611,6 @@
                 });
                 document.getElementById('form-currency-label').textContent = tripData[currentTripId].currency || 'TWD';
                 
-                // 計算顯示 TWD 總額
                 const amtVal = s.Amount || 0;
                 document.getElementById('form-amount-twd').value = amtVal > 0 ? (amtVal * currentTripRate).toFixed(0) : '';
                 
@@ -654,7 +647,6 @@
                 const op1 = document.createElement('option'); op1.value='cash'; op1.text='現金'; const op2 = document.createElement('option'); op2.value='card'; op2.text='刷卡';
                 select.add(op1); select.add(op2); select.value = method;
 
-                // 幣別提示
                 const currencyHint = document.createElement('span'); currencyHint.className = 'text-[9px] font-bold text-gray-400'; 
                 const updateHint = () => { currencyHint.textContent = select.value === 'card' ? 'TWD' : (tripData[currentTripId]?.currency || 'TWD'); };
                 select.onchange = updateHint;
@@ -667,7 +659,6 @@
                         const mMethod = row.querySelector('.payment-method').value;
                         const val = parseFloat(mInp.value);
                         if (!isNaN(val)) {
-                            // 這裡只計算主欄位連動用的總和（主要呈現給外幣欄位）
                             if (mMethod === 'cash') totalForeign += val;
                             else totalForeign += (val / currentTripRate);
                         }
@@ -865,7 +856,6 @@
             async function updateListItem(l, i, chg) { try { const ni = [...l.items]; if (!ni[i]) ni[i] = {}; ni[i] = {...ni[i], ...chg}; await updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Lists/${l.id}`), {items:ni}); } catch(e) { } }
             async function deleteListItem(l, i) { const ni=l.items.filter((_,x)=>x!==i); await updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Lists/${l.id}`), {items:ni}); }
 
-            // --- 修改後的分帳核心邏輯 ---
             async function loadExpenseSummary() {
                 if(!currentTripId) return; 
                 const snap = await getDocs(collection(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`));
@@ -880,12 +870,10 @@
 
                     let effectiveTotal = 0;
                     let currentCreditors = []; 
-
                     const specificPayers = members.filter(m => typeof m !== 'string' && m.isPayer && m.amount > 0);
                     
                     if (specificPayers.length > 0) {
                         specificPayers.forEach(p => {
-                            // 判斷該成員付款方式決定匯率
                             const mRate = p.method === 'card' ? 1 : rate;
                             const amtTWD = p.amount * mRate;
                             effectiveTotal += amtTWD;
@@ -900,19 +888,16 @@
                         }
                     }
 
-                    // 處理手續費：將手續費平分給所有代墊者
                     if (scheduleFee > 0 && currentCreditors.length > 0) {
                         const feePerLent = scheduleFee / currentCreditors.length;
                         currentCreditors.forEach(c => c.lent += feePerLent);
                         effectiveTotal += scheduleFee;
-                        // 獨立手續費分類
                         types['fee'] = (types['fee'] || 0) + scheduleFee;
                     }
 
                     if (effectiveTotal <= 0) return;
 
                     total += effectiveTotal;
-                    // 行程主要類別（不含手續費的部分）
                     const mainTypeAmt = effectiveTotal - scheduleFee;
                     types[da.Type] = (types[da.Type] || 0) + mainTypeAmt;
 
@@ -924,22 +909,14 @@
 
                     if (activeParticipants.length > 0) {
                         const debtPerPerson = effectiveTotal / activeParticipants.length;
-
-                        currentCreditors.forEach(c => {
-                            balances[c.name] = (balances[c.name] || 0) + c.lent;
-                        });
-
+                        currentCreditors.forEach(c => { balances[c.name] = (balances[c.name] || 0) + c.lent; });
                         activeParticipants.forEach(p => {
                             const pName = typeof p === 'string' ? p : p.name;
                             balances[pName] = (balances[pName] || 0) - debtPerPerson;
-                            
                             if(!mems[pName]) mems[pName] = { total: 0, cats: {} };
                             mems[pName].total += debtPerPerson;
-                            
-                            // 分類統計
                             const pMainDebt = (effectiveTotal - scheduleFee) / activeParticipants.length;
                             const pFeeDebt = scheduleFee / activeParticipants.length;
-                            
                             mems[pName].cats[da.Type] = (mems[pName].cats[da.Type] || 0) + pMainDebt;
                             if (pFeeDebt > 0) mems[pName].cats['fee'] = (mems[pName].cats['fee'] || 0) + pFeeDebt;
                         });
@@ -959,7 +936,6 @@
                     options: { responsive: true, maintainAspectRatio: false, cutout: '45%', plugins: { legend: { display: false } } } 
                 });
 
-                // ... (其餘統計 UI 程式碼)
                 const l = document.getElementById('expense-member-list'); 
                 l.innerHTML = `<div class="grid grid-cols-[40%_20%_40%] border-b border-[#E0E0E0] pb-1 mb-2 font-bold text-[#5F6368] text-[10px]"><span>成員</span><span class="text-center">類別</span><span class="text-right">分攤金額</span></div>`;
                 Object.keys(mems).sort().forEach(n => { 
@@ -1016,17 +992,15 @@
                                 <div class="bg-gray-50 p-2 rounded border border-gray-100 mt-1">
                                     <div class="flex items-center mb-1 gap-2"><label class="block compact-label">成員與花費</label><button type="button" id="add-member-btn" class="text-[#7E92A1] text-xs font-bold px-1">＋</button></div>
                                     <div id="form-members-container" class="space-y-1 mb-2"></div>
-                                    <div class="grid grid-cols-2 gap-2 border-t border-gray-200 pt-2 mb-1">
-                                        <div class="flex items-center gap-1"><label id="form-currency-label" class="text-[10px] font-bold text-[#7E92A1] w-8 text-right">USD</label><input type="number" id="form-amount" placeholder="外幣" class="w-full p-1 border rounded text-right text-[11px] bg-white"></div>
-                                        <div class="flex items-center gap-1"><span class="text-[10px] font-bold text-[#A9A9A9] w-8 text-right">TWD</span><input type="number" id="form-amount-twd" placeholder="台幣" class="w-full p-1 border bg-white rounded text-right text-[11px]"></div>
+                                    <div class="grid grid-cols-3 gap-1.5 border-t border-gray-200 pt-2 mb-1">
+                                        <div class="flex flex-col items-center"><label id="form-currency-label" class="text-[9px] font-bold text-[#7E92A1] mb-0.5">KRW</label><input type="number" id="form-amount" placeholder="" class="w-full p-1 border rounded text-right text-[10px] bg-white h-7"></div>
+                                        <div class="flex flex-col items-center"><span class="text-[9px] font-bold text-[#A9A9A9] mb-0.5">TWD</span><input type="number" id="form-amount-twd" placeholder="" class="w-full p-1 border bg-white rounded text-right text-[10px] h-7"></div>
+                                        <div class="flex flex-col items-center"><span class="text-[9px] font-bold text-[#D4A5A5] mb-0.5">手續費</span><input type="number" id="form-fee" placeholder="" class="w-full p-1 border rounded text-right text-[10px] bg-white h-7"></div>
                                     </div>
-                                    <div class="flex items-center gap-1"><label class="text-[10px] font-bold text-[#D4A5A5] w-20 text-right">手續費 TWD</label><input type="number" id="form-fee" placeholder="0" class="w-full p-1 border rounded text-right text-[11px] bg-white"></div>
                                 </div>
                                 <div class="flex justify-between items-center pt-2 mt-2 border-t border-[#E0E0E0]"><button type="button" id="modal-delete-btn" class="px-3 py-1 h-7 text-white bg-[#CB8572] rounded text-xs font-bold hidden">刪除</button><div class="flex-grow flex justify-end"><button type="button" id="modal-save-btn" class="px-3 py-1 h-7 text-white bg-[#7E92A1] rounded text-xs font-bold shadow-sm">儲存</button></div></div>
                             </form>`;
                     }
-
-                    // ...其餘 Modal 內容初始化維持不變
 
                     loadTripList();
                     safeBind('trip-select', 'onchange', (e) => changeTrip(e.target.value));
