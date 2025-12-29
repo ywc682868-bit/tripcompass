@@ -509,7 +509,7 @@
                 const startDateStr = event.Date.replace(/-/g, '');
                 const startTimeStr = event.Time.replace(/:/g, '') + '00';
                 
-                const icsContent = [
+                const iContent = [
                     'BEGIN:VCALENDAR',
                     'VERSION:2.0',
                     'PRODID:-//Trip Compass//Calendar Event//EN',
@@ -528,7 +528,7 @@
                     'END:VCALENDAR'
                 ].join('\n');
 
-                const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+                const blob = new Blob([iContent], { type: 'text/calendar;charset=utf-8' });
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
                 link.href = url;
@@ -972,7 +972,6 @@
 
                 const mList = document.getElementById('exp-mem-list');
                 Object.keys(mems).sort().forEach(n => {
-                    // 修改：各類型名稱靠左對齊金額欄位。使用 justify-end 並將名稱寬度固定且 text-left
                     let cats = Object.keys(mems[n].cats).map(c => {
                         const catStyle = CATEGORY_COLORS[c] || CATEGORY_COLORS.default;
                         return `<div class="flex items-center py-0.5 text-[10px] h-6 justify-end">
@@ -992,9 +991,15 @@
                     let i=0, j=0;
                     while(i < debtors.length && j < creditors.length){
                         let amt = Math.min(debtors[i].a, creditors[j].a);
-                        setCont.innerHTML += `<div class="flex justify-around items-center bg-gray-50 p-2.5 rounded-xl text-[11px]">
-                            <span class="text-gray-600"><b>${debtors[i].n}</b> → <b>${creditors[j].n}</b></span>
-                            <span class="font-bold text-[#7E92A1]">TW$${amt.toFixed(0)}</span>
+                        // 修改：結算建議改為分散置中佈局，且金額靠右對齊
+                        setCont.innerHTML += `
+                        <div class="flex justify-between items-center bg-gray-50 p-2.5 rounded-xl text-[11px]">
+                            <div class="flex justify-between items-center flex-grow mr-10 text-gray-600">
+                                <span class="font-bold">${debtors[i].n}</span>
+                                <span class="px-2">→</span>
+                                <span class="font-bold">${creditors[j].n}</span>
+                            </div>
+                            <div class="font-bold text-[#7E92A1] flex-none text-right">TW$${amt.toFixed(0)}</div>
                         </div>`;
                         debtors[i].a -= amt; creditors[j].a -= amt;
                         if(debtors[i].a < 1) i++; if(creditors[j].a < 1) j++;
