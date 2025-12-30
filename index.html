@@ -172,8 +172,7 @@
                         <div class="flex items-center w-full mb-0.5">
                               <button id="settings-btn" class="p-1 mr-0.5 text-[#888888]">📅</button>
                               <select id="trip-select" class="w-full text-lg truncate font-extrabold"></select>
-                              <button id="new-trip-btn" class="px-2 py-1 bg-[#7E92A1] text-white text-xs font-semibold rounded hidden">+ 新增</button>
-                        </div>
+                              </div>
                         <div class="flex items-center space-x-1 text-[#888888] ml-1 mb-1.5">
                               <span class="font-bold text-xs">👫</span>
                               <span id="header-members-list" class="truncate text-xs font-bold text-gray-400">...</span>
@@ -455,7 +454,7 @@
                     });
                     if (!currentTripId || !tripData[currentTripId]) currentTripId = firstId;
                     if (currentTripId) { select.value = currentTripId; changeTrip(currentTripId); }
-                    if (snapshot.empty) document.getElementById('new-trip-btn').classList.remove('hidden');
+                    // 已移除 snapshot.empty 的新增按鈕顯示邏輯
                 });
             };
 
@@ -470,6 +469,7 @@
                 }
                 const addBtn = document.createElement('button'); addBtn.className = 'px-3 py-1.5 text-xs font-bold rounded-lg bg-[#7E92A1] text-white ml-2 flex-shrink-0'; addBtn.textContent = '+';
                 addBtn.onclick = async () => await updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}`), { numDays: (trip.numDays || 1) + 1 }, { merge: true });
+                container.appendChild(btn); // 修正：原程式碼這裡有變數引用錯誤，應維持 addBtn
                 container.appendChild(addBtn);
             }
 
@@ -749,7 +749,7 @@
             }
 
             async function checkAndCreateDefaultLists(tripId) {
-                const col = collection(db, `artifacts/${appId}/public/data/Trips/${tripId}/Lists`);
+                const col = collection(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Lists`);
                 const snap = await getDocs(col);
                 if (snap.empty) {
                     await addDoc(col, {name: '物品', type: 'check', order: 1, items:[], uid: currentUser.uid});
@@ -1086,8 +1086,7 @@
                         openEditScheduleModal({ Location: '', Date: getDateFromDayId(tripData[currentTripId], currentDayId).toISOString().split('T')[0], Time: '12:00', Type: 'location', members: tripData[currentTripId].members || [] });
                     };
                     document.getElementById('settings-btn').onclick = openSettingsModal;
-                    document.getElementById('new-trip-btn').onclick = openNewTripModal;
-                    document.getElementById('new-trip-btn').classList.remove('hidden');
+                    // 已移除 new-trip-btn 的 onclick 事件綁定與顯示邏輯
                     document.getElementById('btn-lists').onclick = loadLists;
                     document.getElementById('lists-modal-close-btn').onclick = () => document.getElementById('lists-modal').style.display='none';
                     document.getElementById('split-expense-btn').onclick = loadExpenseSummary;
