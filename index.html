@@ -357,29 +357,28 @@
                 const members = schedule.members || [];
                 
                 let calculatedTotalTW = 0;
-                let teamSplitTotalTW = 0; // 用於計算代墊平分金額的部分
+                let hasPayer = false;
+                let allHaveAmount = members.length > 0;
 
                 members.forEach(m => {
                     const amt = parseFloat(m.amount) || 0;
                     const fee = parseFloat(m.fee) || 0;
                     const mValueTW = (m.method === 'card' ? (amt + fee) : (amt * rate));
-                    if (amt > 0) {
-                        calculatedTotalTW += mValueTW;
-                        // 若該花費人也是代墊人，則該筆金額納入「團隊平分」顯示邏輯
-                        if (m.isPayer) teamSplitTotalTW += mValueTW;
-                    }
+                    if (amt > 0) calculatedTotalTW += mValueTW;
+                    if (m.isPayer) hasPayer = true;
+                    if (amt <= 0) allHaveAmount = false;
                 });
 
                 if (calculatedTotalTW === 0 && (parseFloat(schedule.Amount) || 0) > 0) {
                     calculatedTotalTW = parseFloat(schedule.Amount) * rate;
-                    teamSplitTotalTW = calculatedTotalTW; // 預設平分
                 }
 
-                // 核心顯示修正：👫 圖示永遠顯示。
-                // 若有代墊公帳(teamSplitTotalTW > 0)，顯示平分值；否則顯示 －
+                // 修改顯示邏輯：若皆輸入金額且無勾選先付，顯示👫-；其餘顯示平分額
                 let splitDisplay = '－';
-                if (teamSplitTotalTW > 0 && members.length > 0) {
-                    splitDisplay = `TW$${formatCurrency(teamSplitTotalTW / members.length)}`;
+                if (hasPayer || !allHaveAmount) {
+                    if (calculatedTotalTW > 0 && members.length > 0) {
+                        splitDisplay = `TW$${formatCurrency(calculatedTotalTW / members.length)}`;
+                    }
                 }
                 
                 let memberHtml = members.length > 0 ? `<div class="flex flex-nowrap overflow-hidden justify-end gap-x-1.5 ml-2 max-w-[120px]">` + members.map((m, i) => `<span class="${MEMBER_COLORS[i % MEMBER_COLORS.length]} text-[10px] font-bold whitespace-nowrap">${typeof m === 'string' ? m : m.name}</span>`).join('') + `</div>` : '';
@@ -851,6 +850,16 @@
                 container.appendChild(inner);
             }
 
+            async function updateListItem(listData, idx, updates) {
+                const newItems = [...listData.items];
+                newItems[idx] = { ...newItems[idx], ...updates };
+                await updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Lists/${listData.id}`), { items: newItems });
+            }
+            async function deleteListItem(listData, idx) {
+                const newItems = [...listData.items]; newItems.splice(idx, 1);
+                await updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Lists/${listData.id}`), { items: newItems });
+            }
+
             async function loadExpenseSummary() {
                 if(!currentTripId) return;
                 const snap = await getDocs(collection(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`));
@@ -875,48 +884,59 @@
                     total += actualTotalTW;
                     types[da.Type] = (types[da.Type] || 0) + actualTotalTW;
 
-                    let payers = members.filter(m => m.isPayer);
-                    
-                    // --- 核心邏輯：區分個人支出與團隊支出 ---
-                    if (payers.length > 0) {
+                    const payers = members.filter(m => m.isPayer);
+                    const allHaveAmount = members.every(m => (parseFloat(m.amount) || 0) > 0);
+
+                    if (payers.length === 0) {
+                        // 無先付模式：每個成員負擔自己輸入的金額，若未輸入則視為平均分配
                         members.forEach(m => {
+                            if(!mems[m.name]) mems[m.name] = { total: 0, cats: {} };
                             const amt = parseFloat(m.amount) || 0;
                             const fee = parseFloat(m.fee) || 0;
-                            const mSpentTW = m.method === 'card' ? (amt + fee) : (amt * rateVal);
+                            const mSpentTW = allHaveAmount ? (m.method === 'card' ? (amt + fee) : (amt * rateVal)) : (actualTotalTW / members.length);
                             
-                            if (mSpentTW <= 0) return;
-
-                            if(!mems[m.name]) mems[m.name] = { total: 0, cats: {} };
-
-                            if (m.isPayer) {
-                                // 團隊支出模式：由代墊人自己發起的金額視為公帳
-                                let splitAmt = mSpentTW / members.length;
-                                members.forEach(member => {
-                                    balances[member.name] = (balances[member.name] || 0) - splitAmt;
-                                    if(!mems[member.name]) mems[member.name] = { total: 0, cats: {} };
-                                    mems[member.name].total += splitAmt;
-                                    mems[member.name].cats[da.Type] = (mems[member.name].cats[da.Type] || 0) + splitAmt;
-                                });
-                                balances[m.name] = (balances[m.name] || 0) + mSpentTW;
-                            } else {
-                                // 個人支出模式：成員有花費但沒勾先付 -> 需償還全額給先付者
-                                balances[m.name] = (balances[m.name] || 0) - mSpentTW;
-                                mems[m.name].total += mSpentTW;
-                                mems[m.name].cats[da.Type] = (mems[m.name].cats[da.Type] || 0) + mSpentTW;
-                                
-                                let creditPerPayer = mSpentTW / payers.length;
-                                payers.forEach(p => {
-                                    balances[p.name] = (balances[p.name] || 0) + creditPerPayer;
-                                });
-                            }
+                            mems[m.name].total += mSpentTW;
+                            mems[m.name].cats[da.Type] = (mems[m.name].cats[da.Type] || 0) + mSpentTW;
+                            // balances 保持不變，因為無代墊關係
                         });
                     } else {
-                        // 無先付，按平均統計
-                        const avgPerPerson = actualTotalTW / members.length;
+                        // 有先付模式：計算代墊金額與應償還額度
+                        let totalExplicitNonPayerTW = 0;
+                        let zeroAmountNonPayers = [];
+                        
                         members.forEach(m => {
                             if(!mems[m.name]) mems[m.name] = { total: 0, cats: {} };
-                            mems[m.name].total += avgPerPerson;
-                            mems[m.name].cats[da.Type] = (mems[m.name].cats[da.Type] || 0) + avgPerPerson;
+                            if (!m.isPayer) {
+                                const amt = parseFloat(m.amount) || 0;
+                                const fee = parseFloat(m.fee) || 0;
+                                const mTW = (m.method === 'card' ? (amt + fee) : (amt * rateVal));
+                                if (mTW > 0) totalExplicitNonPayerTW += mTW;
+                                else zeroAmountNonPayers.push(m.name);
+                            }
+                        });
+
+                        // 賸餘未明確指定的金額，由代墊者與輸入金額為0的成員平分
+                        let remainderTW = actualTotalTW - totalExplicitNonPayerTW;
+                        let sharersCount = payers.length + zeroAmountNonPayers.length;
+                        let sharedRemainderTW = remainderTW / sharersCount;
+
+                        members.forEach(m => {
+                            let spent = 0;
+                            let paid = 0;
+                            const amt = parseFloat(m.amount) || 0;
+                            const fee = parseFloat(m.fee) || 0;
+                            const mPaidTW = (m.method === 'card' ? (amt + fee) : (amt * rateVal));
+
+                            if (m.isPayer) {
+                                paid = mPaidTW;
+                                spent = sharedRemainderTW;
+                            } else {
+                                spent = (amt > 0) ? mPaidTW : sharedRemainderTW;
+                            }
+
+                            mems[m.name].total += spent;
+                            mems[m.name].cats[da.Type] = (mems[m.name].cats[da.Type] || 0) + spent;
+                            balances[m.name] = (balances[m.name] || 0) + (paid - spent);
                         });
                     }
                 });
