@@ -665,15 +665,15 @@
                         <div class="bg-gray-50 p-2 rounded border">
                             <div class="flex items-center mb-1 gap-2"><label class="compact-label">成員</label><button type="button" id="add-member-btn" class="text-[#7E92A1] text-xs font-bold">＋</button></div>
                             <div id="form-members-container" class="space-y-1 mb-2"></div>
-                            <div class="flex items-center justify-center gap-1 mt-2 border-t pt-2 w-full">
-                                <div class="flex items-center gap-1 text-[11px] font-bold text-[#7E92A1]">
-                                    <span>${config.currency}</span>
-                                    <input type="text" id="form-amount-local" readonly class="w-16 bg-transparent border-none p-0 text-right focus:ring-0 font-bold" value="0">
-                                    <span class="mx-0.5 text-gray-400">=</span>
-                                    <span class="text-[#A9A9A9]">TW$</span>
-                                    <input type="text" id="form-amount-twd-display" readonly class="w-16 bg-transparent border-none p-0 text-left focus:ring-0 font-bold text-[#7E92A1]" value="0">
-                                    <input type="hidden" id="form-amount-twd-hidden" value="0">
+                            <div class="flex items-center justify-between mt-2 border-t pt-2 w-full px-2">
+                                <div class="text-[11px] font-bold text-[#7E92A1] flex-none">${config.currency}</div>
+                                <input type="text" id="form-amount-local" readonly class="w-20 bg-transparent border-none p-0 text-center focus:ring-0 font-bold text-[#7E92A1] flex-none" value="0">
+                                <div class="text-gray-400 font-bold flex-none">=</div>
+                                <div class="flex items-center gap-1 flex-none">
+                                    <span class="text-[#A9A9A9] text-[11px] font-bold">TW$</span>
+                                    <input type="text" id="form-amount-twd-display" readonly class="w-20 bg-transparent border-none p-0 text-right focus:ring-0 font-bold text-[#7E92A1]" value="0">
                                 </div>
+                                <input type="hidden" id="form-amount-twd-hidden" value="0">
                             </div>
                         </div>
                         <div class="flex justify-between items-center pt-2 border-t">
