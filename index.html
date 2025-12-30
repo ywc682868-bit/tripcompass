@@ -372,14 +372,7 @@
                     calculatedTotalTW = parseFloat(schedule.Amount) * rate;
                 }
 
-                let perPersonTW = 0;
-                if (members.length > 0) {
-                    if (manualFillCount > 0) {
-                        perPersonTW = 0; 
-                    } else {
-                        perPersonTW = calculatedTotalTW / members.length;
-                    }
-                }
+                let perPersonTW = members.length > 0 ? calculatedTotalTW / members.length : 0;
                 
                 let memberHtml = members.length > 0 ? `<div class="flex flex-nowrap overflow-hidden justify-end gap-x-1.5 ml-2 max-w-[120px]">` + members.map((m, i) => `<span class="${MEMBER_COLORS[i % MEMBER_COLORS.length]} text-[10px] font-bold whitespace-nowrap">${typeof m === 'string' ? m : m.name}</span>`).join('') + `</div>` : '';
                 const mustGoHtml = schedule.MustGo ? `<div class="mt-auto w-full flex justify-start mb-3"><span class="text-[9px] text-[#CB8572] border border-[#CB8572] px-1 py-0.5 rounded-[2px] leading-none bg-white">必去</span></div>` : '';
@@ -551,8 +544,12 @@
                     const fee = parseFloat(row.querySelector('.member-fee-input').value) || 0;
                     const method = row.querySelector('.payment-method').value;
 
-                    if (method === 'card') sumTW += (amount + fee);
-                    else { sumLocal += amount; sumTW += (amount * currentTripRate); }
+                    if (method === 'card') {
+                        sumTW += (amount + fee);
+                    } else {
+                        sumLocal += amount;
+                        sumTW += (amount * currentTripRate);
+                    }
                 });
 
                 document.getElementById('form-amount').value = sumLocal > 0 ? sumLocal.toFixed(2).replace(/\.00$/, '') : '';
@@ -596,9 +593,9 @@
                             <div class="flex items-center mb-1 gap-2"><label class="compact-label">成員</label><button type="button" id="add-member-btn" class="text-[#7E92A1] text-xs font-bold">＋</button></div>
                             <div id="form-members-container" class="space-y-1 mb-2"></div>
                             <div class="grid grid-cols-[1fr_20px_1fr] gap-2 items-center mt-2 border-t pt-2">
-                                <div class="flex items-center gap-1"><label id="form-currency-label" class="text-[10px] font-bold text-[#7E92A1] w-8 text-right">${config.currency}</label><input type="number" id="form-amount" placeholder="" class="w-full p-1 border rounded text-right text-[11px] bg-gray-100" value="${s.Amount||''}"></div>
+                                <div class="flex items-center gap-1"><label id="form-currency-label" class="text-[10px] font-bold text-[#7E92A1] w-8 text-right">${config.currency}</label><input type="number" id="form-amount" readonly class="w-full p-1 border rounded text-right text-[11px] bg-gray-100" value="${s.Amount||''}"></div>
                                 <div class="text-center text-gray-400 text-xs font-bold">=</div>
-                                <div class="flex items-center gap-1"><span class="text-[10px] font-bold text-[#A9A9A9] w-8 text-right">TW</span><input type="number" id="form-amount-twd" placeholder="" class="w-full p-1 border rounded text-right text-[11px] bg-gray-100" value="${s.Amount ? (s.Amount * currentTripRate).toFixed(0) : ''}"></div>
+                                <div class="flex items-center gap-1"><span class="text-[10px] font-bold text-[#A9A9A9] w-8 text-right">TW</span><input type="number" id="form-amount-twd" readonly class="w-full p-1 border rounded text-right text-[11px] bg-gray-100" value="${s.Amount ? (s.Amount * currentTripRate).toFixed(0) : ''}"></div>
                             </div>
                         </div>
                         <div class="flex justify-between items-center pt-2 border-t">
@@ -861,48 +858,63 @@
                     if (!members.length) return;
                     
                     let manualTotalTW = 0;
-                    let manualFilledCount = 0;
                     members.forEach(m => {
                         const amt = parseFloat(m.amount) || 0;
                         const fee = parseFloat(m.fee) || 0;
-                        if (amt > 0) manualFilledCount++;
                         manualTotalTW += m.method === 'card' ? (amt + fee) : (amt * rateVal);
                     });
 
-                    let actualTotalTW = (manualFilledCount > 0) ? manualTotalTW : (parseFloat(da.Amount) || 0) * rateVal;
+                    let actualTotalTW = (manualTotalTW > 0) ? manualTotalTW : (parseFloat(da.Amount) || 0) * rateVal;
                     if (isNaN(actualTotalTW) || actualTotalTW <= 0) return;
-
-                    let finalMemberShares = {};
-                    if (manualFilledCount > 0) {
-                        members.forEach(m => {
-                            const amt = parseFloat(m.amount) || 0;
-                            const fee = parseFloat(m.fee) || 0;
-                            finalMemberShares[m.name] = m.method === 'card' ? (amt + fee) : (amt * rateVal);
-                        });
-                    } else {
-                        const avg = actualTotalTW / members.length;
-                        members.forEach(m => finalMemberShares[m.name] = avg);
-                    }
 
                     total += actualTotalTW;
                     types[da.Type] = (types[da.Type] || 0) + actualTotalTW;
 
-                    for (let name in finalMemberShares) {
-                        const share = finalMemberShares[name];
-                        if(!mems[name]) mems[name] = { total: 0, cats: {} };
-                        mems[name].total += share;
-                        mems[name].cats[da.Type] = (mems[name].cats[da.Type] || 0) + share;
-                    }
-
                     let payers = members.filter(m => m.isPayer);
+                    
+                    // --- 核心分帳邏輯 ---
                     if (payers.length > 0) {
-                        let creditPerPayer = actualTotalTW / payers.length;
-                        payers.forEach(p => {
-                            balances[p.name] = (balances[p.name] || 0) + creditPerPayer;
+                        members.forEach(m => {
+                            const amt = parseFloat(m.amount) || 0;
+                            const fee = parseFloat(m.fee) || 0;
+                            const mShareTW = m.method === 'card' ? (amt + fee) : (amt * rateVal);
+                            
+                            if (mShareTW <= 0) return;
+
+                            if(!mems[m.name]) mems[m.name] = { total: 0, cats: {} };
+
+                            if (m.isPayer) {
+                                // 規則：若代墊人自己有金額 -> 視為團隊支出，平分給所有人
+                                let splitAmt = mShareTW / members.length;
+                                members.forEach(member => {
+                                    balances[member.name] = (balances[member.name] || 0) - splitAmt;
+                                    if(!mems[member.name]) mems[member.name] = { total: 0, cats: {} };
+                                    mems[member.name].total += splitAmt;
+                                    mems[member.name].cats[da.Type] = (mems[member.name].cats[da.Type] || 0) + splitAmt;
+                                });
+                                // 代墊人獲得 Credit
+                                balances[m.name] = (balances[m.name] || 0) + mShareTW;
+                            } else {
+                                // 規則：若花費人不是代墊人 -> 視為個人支出，全額償還給代墊人
+                                balances[m.name] = (balances[m.name] || 0) - mShareTW;
+                                mems[m.name].total += mShareTW;
+                                mems[m.name].cats[da.Type] = (mems[m.name].cats[da.Type] || 0) + mShareTW;
+                                
+                                // Credit 給代墊人（若多位代墊人則平分信用）
+                                let creditPerPayer = mShareTW / payers.length;
+                                payers.forEach(p => {
+                                    balances[p.name] = (balances[p.name] || 0) + creditPerPayer;
+                                });
+                            }
                         });
-                    }
-                    for (let name in finalMemberShares) {
-                        balances[name] = (balances[name] || 0) - finalMemberShares[name];
+                    } else {
+                        // 無代墊人則純統計，不計入債務 balances
+                        const avgPerPerson = actualTotalTW / members.length;
+                        members.forEach(m => {
+                            if(!mems[m.name]) mems[m.name] = { total: 0, cats: {} };
+                            mems[m.name].total += avgPerPerson;
+                            mems[m.name].cats[da.Type] = (mems[m.name].cats[da.Type] || 0) + avgPerPerson;
+                        });
                     }
                 });
 
