@@ -354,8 +354,6 @@
                 const members = schedule.members || [];
                 
                 let calculatedTotalTW = 0;
-                let hasPayer = members.some(m => m.isPayer);
-
                 members.forEach(m => {
                     const amt = parseFloat(m.amount) || 0;
                     const fee = parseFloat(m.fee) || 0;
@@ -363,8 +361,7 @@
                     calculatedTotalTW += mValueTW;
                 });
 
-                // --- 修改分帳顯示邏輯 ---
-                // 不論代墊或已分帳，一律顯示 －
+                // --- 修改分帳顯示邏輯：一律顯示 － ---
                 let splitDisplay = "－";
                 
                 let memberHtml = members.length > 0 ? `<div class="flex flex-nowrap overflow-hidden justify-end gap-x-1.5 ml-2 max-w-[120px]">` + members.map((m, i) => `<span class="${MEMBER_COLORS[i % MEMBER_COLORS.length]} text-[10px] font-bold whitespace-nowrap">${typeof m === 'string' ? m : m.name}</span>`).join('') + `</div>` : '';
