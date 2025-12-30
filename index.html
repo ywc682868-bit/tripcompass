@@ -172,7 +172,7 @@
                         <div class="flex items-center w-full mb-0.5">
                               <button id="settings-btn" class="p-1 mr-0.5 text-[#888888]">📅</button>
                               <select id="trip-select" class="w-full text-lg truncate font-extrabold"></select>
-                              <button id="new-trip-btn" class="px-2 py-1 bg-[#7E92A1] text-white text-xs font-semibold rounded">+ 新增</button>
+                              <button id="new-trip-btn" class="px-2 py-1 bg-[#7E92A1] text-white text-xs font-semibold rounded hidden">+ 新增</button>
                         </div>
                         <div class="flex items-center space-x-1 text-[#888888] ml-1 mb-1.5">
                               <span class="font-bold text-xs">👫</span>
@@ -357,7 +357,6 @@
                 const members = schedule.members || [];
                 
                 let calculatedTotalTW = 0;
-                let hasPayer = false;
                 let allHaveAmount = members.length > 0;
 
                 members.forEach(m => {
@@ -365,20 +364,17 @@
                     const fee = parseFloat(m.fee) || 0;
                     const mValueTW = (m.method === 'card' ? (amt + fee) : (amt * rate));
                     if (amt > 0) calculatedTotalTW += mValueTW;
-                    if (m.isPayer) hasPayer = true;
-                    if (amt <= 0) allHaveAmount = false;
+                    if (amt <= 0) allHaveAmount = false; // 只要有一個人沒填金額，就視為尚未個別分帳完畢
                 });
 
                 if (calculatedTotalTW === 0 && (parseFloat(schedule.Amount) || 0) > 0) {
                     calculatedTotalTW = parseFloat(schedule.Amount) * rate;
                 }
 
-                // 修改顯示邏輯：若皆輸入金額且無勾選先付，顯示👫-；其餘顯示平分額
+                // 修改核心邏輯：只要所有人都已經有個別金額（allHaveAmount），就不顯示平分值
                 let splitDisplay = '－';
-                if (hasPayer || !allHaveAmount) {
-                    if (calculatedTotalTW > 0 && members.length > 0) {
-                        splitDisplay = `TW$${formatCurrency(calculatedTotalTW / members.length)}`;
-                    }
+                if (!allHaveAmount && calculatedTotalTW > 0 && members.length > 0) {
+                    splitDisplay = `TW$${formatCurrency(calculatedTotalTW / members.length)}`;
                 }
                 
                 let memberHtml = members.length > 0 ? `<div class="flex flex-nowrap overflow-hidden justify-end gap-x-1.5 ml-2 max-w-[120px]">` + members.map((m, i) => `<span class="${MEMBER_COLORS[i % MEMBER_COLORS.length]} text-[10px] font-bold whitespace-nowrap">${typeof m === 'string' ? m : m.name}</span>`).join('') + `</div>` : '';
@@ -558,7 +554,7 @@
                 content.innerHTML = `
                     <h3 class="text-base font-bold mb-3 text-[#4A4B4D]">建立新行程</h3>
                     <div class="space-y-3">
-                        <div><label class="compact-label block">行程名稱</label><input type="text" id="new-trip-name" class="compact-input w-full rounded border" placeholder="例：2025冬季濟州之旅"></div>
+                        <div><label class="compact-label block">行程名稱</label><input type="text" id="new-trip-name" class="compact-input w-full rounded border" placeholder="例：2025冬季濟州肉肉之旅"></div>
                         <div><label class="compact-label block">開始日期</label><input type="date" id="new-trip-start" class="compact-input w-full rounded border"></div>
                         <div><label class="compact-label block">成員 (以逗號分隔)</label><input type="text" id="new-trip-mems" class="compact-input w-full rounded border" placeholder="Ashley, 古天樂"></div>
                         <div class="flex justify-end gap-2 pt-3 border-t">
