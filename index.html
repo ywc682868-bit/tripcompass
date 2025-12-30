@@ -357,28 +357,33 @@
                 const members = schedule.members || [];
                 
                 let calculatedTotalTW = 0;
-                let manualFillCount = 0;
+                let teamSplitTotalTW = 0; // 用於計算代墊平分金額的部分
 
                 members.forEach(m => {
                     const amt = parseFloat(m.amount) || 0;
                     const fee = parseFloat(m.fee) || 0;
+                    const mValueTW = (m.method === 'card' ? (amt + fee) : (amt * rate));
                     if (amt > 0) {
-                        manualFillCount++;
-                        calculatedTotalTW += (m.method === 'card' ? (amt + fee) : (amt * rate));
+                        calculatedTotalTW += mValueTW;
+                        // 若該花費人也是代墊人，則該筆金額納入「團隊平分」顯示邏輯
+                        if (m.isPayer) teamSplitTotalTW += mValueTW;
                     }
                 });
 
-                if (manualFillCount === 0 && (parseFloat(schedule.Amount) || 0) > 0) {
+                if (calculatedTotalTW === 0 && (parseFloat(schedule.Amount) || 0) > 0) {
                     calculatedTotalTW = parseFloat(schedule.Amount) * rate;
+                    teamSplitTotalTW = calculatedTotalTW; // 預設平分
                 }
 
-                let perPersonTW = members.length > 0 ? calculatedTotalTW / members.length : 0;
+                // 核心顯示修正：👫 圖示永遠顯示。
+                // 若有代墊公帳(teamSplitTotalTW > 0)，顯示平分值；否則顯示 －
+                let splitDisplay = '－';
+                if (teamSplitTotalTW > 0 && members.length > 0) {
+                    splitDisplay = `TW$${formatCurrency(teamSplitTotalTW / members.length)}`;
+                }
                 
                 let memberHtml = members.length > 0 ? `<div class="flex flex-nowrap overflow-hidden justify-end gap-x-1.5 ml-2 max-w-[120px]">` + members.map((m, i) => `<span class="${MEMBER_COLORS[i % MEMBER_COLORS.length]} text-[10px] font-bold whitespace-nowrap">${typeof m === 'string' ? m : m.name}</span>`).join('') + `</div>` : '';
                 const mustGoHtml = schedule.MustGo ? `<div class="mt-auto w-full flex justify-start mb-3"><span class="text-[9px] text-[#CB8572] border border-[#CB8572] px-1 py-0.5 rounded-[2px] leading-none bg-white">必去</span></div>` : '';
-
-                // 修改顯示部分：若有手動填寫金額 (個別分帳)，則不顯示平分金額
-                const splitLineHtml = (manualFillCount > 0) ? '' : `<span class="text-[#888888] font-bold text-[10px]">👫 TW$${formatCurrency(perPersonTW)}</span>`;
 
                 const card = document.createElement('div');
                 card.className = 'trip-card flex w-full mb-3 relative'; card.style.height = '100px'; 
@@ -407,7 +412,7 @@
                         <div class="card-static-actions"></div>
                         <div class="flex flex-col gap-1 mt-1">
                             <span class="text-[#8F9E8B] font-bold text-[10px]">💰 TW$${calculatedTotalTW.toFixed(0)}</span>
-                            ${splitLineHtml}
+                            <span class="text-[#888888] font-bold text-[10px]">👫 ${splitDisplay}</span>
                         </div>
                         ${mustGoHtml}
                     </div>`;
@@ -872,6 +877,7 @@
 
                     let payers = members.filter(m => m.isPayer);
                     
+                    // --- 核心邏輯：區分個人支出與團隊支出 ---
                     if (payers.length > 0) {
                         members.forEach(m => {
                             const amt = parseFloat(m.amount) || 0;
@@ -883,7 +889,7 @@
                             if(!mems[m.name]) mems[m.name] = { total: 0, cats: {} };
 
                             if (m.isPayer) {
-                                // 代墊人自己花費 -> 團隊支出模式：由全體平分
+                                // 團隊支出模式：由代墊人自己發起的金額視為公帳
                                 let splitAmt = mSpentTW / members.length;
                                 members.forEach(member => {
                                     balances[member.name] = (balances[member.name] || 0) - splitAmt;
@@ -893,7 +899,7 @@
                                 });
                                 balances[m.name] = (balances[m.name] || 0) + mSpentTW;
                             } else {
-                                // 非代墊人花費 -> 個人支出模式：全額償還給先付者
+                                // 個人支出模式：成員有花費但沒勾先付 -> 需償還全額給先付者
                                 balances[m.name] = (balances[m.name] || 0) - mSpentTW;
                                 mems[m.name].total += mSpentTW;
                                 mems[m.name].cats[da.Type] = (mems[m.name].cats[da.Type] || 0) + mSpentTW;
@@ -905,7 +911,7 @@
                             }
                         });
                     } else {
-                        // 若無勾選先付，按平均統計
+                        // 無先付，按平均統計
                         const avgPerPerson = actualTotalTW / members.length;
                         members.forEach(m => {
                             if(!mems[m.name]) mems[m.name] = { total: 0, cats: {} };
