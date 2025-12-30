@@ -218,7 +218,7 @@
         </div>
     </div>
 
-    <div id="add-schedule-modal" class="modal-overlay hidden"><div class="bg-white rounded-xl shadow-2xl p-3 w-11/12 max-sm max-h-[90vh] overflow-y-auto relative"></div></div>
+    <div id="add-schedule-modal" class="modal-overlay hidden"><div class="bg-white rounded-xl shadow-2xl p-3 w-11/12 max-w-sm max-h-[90vh] overflow-y-auto relative"></div></div>
     <div id="lists-modal" class="modal-overlay hidden"><div class="bg-white rounded-xl shadow-2xl p-4 w-11/12 max-w-sm max-h-[80vh] flex flex-col relative"><h3 class="text-base font-bold mb-2 flex justify-between items-center flex-shrink-0 text-[#4A4B4D]">清單<button id="lists-modal-close-btn" class="text-[#A9A9A9] text-xl leading-none">×</button></h3><div id="list-tabs" class="flex items-center gap-1 border-b border-gray-100 mb-2 overflow-x-auto no-scrollbar flex-shrink-0"></div><div id="list-content" class="flex-grow overflow-y-auto flex flex-col relative"></div></div></div>
     <div id="split-expense-modal" class="modal-overlay hidden"></div>
     <div id="image-zoom-modal" class="modal-overlay hidden z-[150] bg-black/80"><img id="zoom-img" class="max-w-[95%] max-h-[90%] rounded shadow-lg object-contain"></div>
@@ -611,20 +611,23 @@
                     const method = row.querySelector('.payment-method').value;
 
                     if (method === 'card') {
-                        // 刷卡：輸入為台幣，轉當地 = (金額+手續費) / 匯率
                         sumTW += (amount + fee);
                         sumLocal += (amount + fee) / currentTripRate;
                     } else {
-                        // 現金：輸入為當地貨幣，轉台幣 = 金額 * 匯率
                         sumTW += (amount * currentTripRate);
                         sumLocal += amount;
                     }
                 });
 
-                // 更新顯示用的當地貨幣欄位
-                document.getElementById('form-amount-local').value = sumLocal > 0 ? sumLocal.toFixed(0) : '';
+                // 更新顯示用的當地貨幣欄位與台幣顯示欄位
+                const localField = document.getElementById('form-amount-local');
+                const twdFieldDisplay = document.getElementById('form-amount-twd-display');
+                if(localField) localField.value = sumLocal > 0 ? sumLocal.toFixed(0) : '0';
+                if(twdFieldDisplay) twdFieldDisplay.value = sumTW > 0 ? sumTW.toFixed(0) : '0';
+                
                 // 更新隱藏的台幣總額，用於儲存至資料庫
-                document.getElementById('form-amount-twd-hidden').value = sumTW;
+                const twdFieldHidden = document.getElementById('form-amount-twd-hidden');
+                if(twdFieldHidden) twdFieldHidden.value = sumTW;
             }
 
             function openEditScheduleModal(s) {
@@ -662,13 +665,14 @@
                         <div class="bg-gray-50 p-2 rounded border">
                             <div class="flex items-center mb-1 gap-2"><label class="compact-label">成員</label><button type="button" id="add-member-btn" class="text-[#7E92A1] text-xs font-bold">＋</button></div>
                             <div id="form-members-container" class="space-y-1 mb-2"></div>
-                            <div class="grid grid-cols-[1fr_20px_1fr] gap-2 items-center mt-2 border-t pt-2">
-                                <div class="text-[10px] font-bold text-[#7E92A1] w-full text-center">行程總消費額加總</div>
-                                <div class="text-center text-gray-400 text-xs font-bold">=</div>
-                                <div class="flex items-center gap-1">
-                                    <span class="text-[10px] font-bold text-[#A9A9A9] w-10 text-right">${config.currency}</span>
-                                    <input type="number" id="form-amount-local" readonly class="w-full p-1 border rounded text-right text-[11px] bg-gray-100" value="">
-                                    <input type="hidden" id="form-amount-twd-hidden" value="">
+                            <div class="flex items-center justify-center gap-1 mt-2 border-t pt-2 w-full">
+                                <div class="flex items-center gap-1 text-[11px] font-bold text-[#7E92A1]">
+                                    <span>${config.currency}</span>
+                                    <input type="text" id="form-amount-local" readonly class="w-16 bg-transparent border-none p-0 text-right focus:ring-0 font-bold" value="0">
+                                    <span class="mx-0.5 text-gray-400">=</span>
+                                    <span class="text-[#A9A9A9]">TW$</span>
+                                    <input type="text" id="form-amount-twd-display" readonly class="w-16 bg-transparent border-none p-0 text-left focus:ring-0 font-bold text-[#7E92A1]" value="0">
+                                    <input type="hidden" id="form-amount-twd-hidden" value="0">
                                 </div>
                             </div>
                         </div>
@@ -752,7 +756,7 @@
                     dayId, Date: dateVal, Time: document.getElementById('form-time').value, Location: document.getElementById('form-location').value,
                     Type: document.getElementById('form-type').value, 說明: document.getElementById('form-details').value,
                     Address: document.getElementById('form-address').value, 
-                    Amount: parseFloat(document.getElementById('form-amount-twd-hidden').value) || 0, // 儲存台幣總額以供統計
+                    Amount: parseFloat(document.getElementById('form-amount-twd-hidden').value) || 0, 
                     Rate: currentTripRate,
                     members, MustGo: document.getElementById('form-must-go').checked, uid: currentUser.uid
                 };
@@ -921,7 +925,6 @@
                     const members = da.members || [];
                     if (!members.length) return;
 
-                    // 1. 計算該行程總支出（台幣）
                     let scheduleTotalTW = members.reduce((sum, m) => {
                         const amt = parseFloat(m.amount) || 0;
                         const fee = parseFloat(m.fee) || 0;
@@ -932,7 +935,6 @@
                     total += scheduleTotalTW;
                     types[da.Type] = (types[da.Type] || 0) + scheduleTotalTW;
 
-                    // 2. 判斷代墊邏輯
                     let amountEnteredCount = members.filter(m => parseFloat(m.amount) > 0).length;
                     let payerCount = members.filter(m => m.isPayer).length;
 
