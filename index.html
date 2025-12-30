@@ -218,7 +218,7 @@
         </div>
     </div>
 
-    <div id="add-schedule-modal" class="modal-overlay hidden"><div class="bg-white rounded-xl shadow-2xl p-3 w-11/12 max-w-sm max-h-[90vh] overflow-y-auto relative"></div></div>
+    <div id="add-schedule-modal" class="modal-overlay hidden"><div class="bg-white rounded-xl shadow-2xl p-3 w-11/12 max-sm max-h-[90vh] overflow-y-auto relative"></div></div>
     <div id="lists-modal" class="modal-overlay hidden"><div class="bg-white rounded-xl shadow-2xl p-4 w-11/12 max-w-sm max-h-[80vh] flex flex-col relative"><h3 class="text-base font-bold mb-2 flex justify-between items-center flex-shrink-0 text-[#4A4B4D]">清單<button id="lists-modal-close-btn" class="text-[#A9A9A9] text-xl leading-none">×</button></h3><div id="list-tabs" class="flex items-center gap-1 border-b border-gray-100 mb-2 overflow-x-auto no-scrollbar flex-shrink-0"></div><div id="list-content" class="flex-grow overflow-y-auto flex flex-col relative"></div></div></div>
     <div id="split-expense-modal" class="modal-overlay hidden"></div>
     <div id="image-zoom-modal" class="modal-overlay hidden z-[150] bg-black/80"><img id="zoom-img" class="max-w-[95%] max-h-[90%] rounded shadow-lg object-contain"></div>
@@ -365,15 +365,13 @@
                     calculatedTotalTW += mValueTW;
                 });
 
-                // --- 修正分帳顯示邏輯 ---
+                // --- 分帳顯示邏輯 ---
                 let splitDisplay = "－";
                 if (hasPayer) {
-                    // 邏輯：若僅有一位成員有輸入金額且勾選先付，且其他人未輸入，則顯示平均金額
                     if (amountEnteredCount === 1 && payerCount === 1) {
                         const onlyPayer = members.find(m => m.isPayer && parseFloat(m.amount) > 0);
                         if (onlyPayer && members.length > 0) {
                             const perPerson = calculatedTotalTW / members.length;
-                            // 修正顯示格式：不需要「/人」
                             splitDisplay = `TW$${perPerson.toFixed(0)}`;
                         } else {
                             splitDisplay = "代墊";
@@ -603,6 +601,7 @@
             // --- 即時計帳刷新邏輯 ---
             function refreshModalTotals() {
                 let sumTW = 0;
+                let sumLocal = 0;
                 const memberRows = document.getElementById('form-members-container').querySelectorAll('.member-row');
 
                 memberRows.forEach(row => {
@@ -612,15 +611,20 @@
                     const method = row.querySelector('.payment-method').value;
 
                     if (method === 'card') {
-                        // 刷卡：直接加總台幣金額與手續費
+                        // 刷卡：輸入為台幣，轉當地 = (金額+手續費) / 匯率
                         sumTW += (amount + fee);
+                        sumLocal += (amount + fee) / currentTripRate;
                     } else {
-                        // 現金：當地貨幣 * 匯率
+                        // 現金：輸入為當地貨幣，轉台幣 = 金額 * 匯率
                         sumTW += (amount * currentTripRate);
+                        sumLocal += amount;
                     }
                 });
 
-                document.getElementById('form-amount-twd').value = sumTW > 0 ? sumTW.toFixed(0) : '';
+                // 更新顯示用的當地貨幣欄位
+                document.getElementById('form-amount-local').value = sumLocal > 0 ? sumLocal.toFixed(0) : '';
+                // 更新隱藏的台幣總額，用於儲存至資料庫
+                document.getElementById('form-amount-twd-hidden').value = sumTW;
             }
 
             function openEditScheduleModal(s) {
@@ -661,7 +665,11 @@
                             <div class="grid grid-cols-[1fr_20px_1fr] gap-2 items-center mt-2 border-t pt-2">
                                 <div class="text-[10px] font-bold text-[#7E92A1] w-full text-center">行程總消費額加總</div>
                                 <div class="text-center text-gray-400 text-xs font-bold">=</div>
-                                <div class="flex items-center gap-1"><span class="text-[10px] font-bold text-[#A9A9A9] w-8 text-right">TW</span><input type="number" id="form-amount-twd" readonly class="w-full p-1 border rounded text-right text-[11px] bg-gray-100" value=""></div>
+                                <div class="flex items-center gap-1">
+                                    <span class="text-[10px] font-bold text-[#A9A9A9] w-10 text-right">${config.currency}</span>
+                                    <input type="number" id="form-amount-local" readonly class="w-full p-1 border rounded text-right text-[11px] bg-gray-100" value="">
+                                    <input type="hidden" id="form-amount-twd-hidden" value="">
+                                </div>
                             </div>
                         </div>
                         <div class="flex justify-between items-center pt-2 border-t">
@@ -743,7 +751,9 @@
                 const data = { 
                     dayId, Date: dateVal, Time: document.getElementById('form-time').value, Location: document.getElementById('form-location').value,
                     Type: document.getElementById('form-type').value, 說明: document.getElementById('form-details').value,
-                    Address: document.getElementById('form-address').value, Amount: parseFloat(document.getElementById('form-amount-twd').value) || 0, Rate: currentTripRate,
+                    Address: document.getElementById('form-address').value, 
+                    Amount: parseFloat(document.getElementById('form-amount-twd-hidden').value) || 0, // 儲存台幣總額以供統計
+                    Rate: currentTripRate,
                     members, MustGo: document.getElementById('form-must-go').checked, uid: currentUser.uid
                 };
                 
@@ -911,38 +921,40 @@
                     const members = da.members || [];
                     if (!members.length) return;
 
-                    // 1. 計算該行程每個成員的「消費金額」(台幣)
-                    let scheduleCostMembers = members.map(m => {
+                    // 1. 計算該行程總支出（台幣）
+                    let scheduleTotalTW = members.reduce((sum, m) => {
                         const amt = parseFloat(m.amount) || 0;
                         const fee = parseFloat(m.fee) || 0;
-                        const twValue = (m.method === 'card') ? (amt + fee) : (amt * rateVal);
-                        return { name: m.name, costTW: twValue, isPayer: m.isPayer };
-                    });
+                        return sum + (m.method === 'card' ? (amt + fee) : (amt * rateVal));
+                    }, 0);
 
-                    // 該行程總支出
-                    let scheduleTotalTW = scheduleCostMembers.reduce((sum, m) => sum + m.costTW, 0);
                     if (scheduleTotalTW <= 0) return;
-
                     total += scheduleTotalTW;
                     types[da.Type] = (types[da.Type] || 0) + scheduleTotalTW;
 
-                    // 2. 處理分帳平衡
-                    const payers = scheduleCostMembers.filter(m => m.isPayer);
+                    // 2. 判斷代墊邏輯
+                    let amountEnteredCount = members.filter(m => parseFloat(m.amount) > 0).length;
+                    let payerCount = members.filter(m => m.isPayer).length;
 
-                    scheduleCostMembers.forEach(m => {
+                    members.forEach(m => {
                         if(!mems[m.name]) mems[m.name] = { total: 0, cats: {} };
                         
-                        // 記錄每個成員在各類別的「消費額」
-                        mems[m.name].total += m.costTW;
-                        mems[m.name].cats[da.Type] = (mems[m.name].cats[da.Type] || 0) + m.costTW;
+                        const amt = parseFloat(m.amount) || 0;
+                        const fee = parseFloat(m.fee) || 0;
+                        const individualEnteredTW = (m.method === 'card' ? (amt + fee) : (amt * rateVal));
 
-                        // 計算債務平衡 (Balance)
-                        if (payers.length === 0) {
-                            // 各付各的：不計入債務
+                        let consumedByThisMember = 0;
+                        if (amountEnteredCount === 1 && payerCount === 1) {
+                            consumedByThisMember = scheduleTotalTW / members.length;
                         } else {
-                            // 有人代墊
-                            let paidByThisMember = m.isPayer ? (scheduleTotalTW / payers.length) : 0;
-                            let consumedByThisMember = m.costTW;
+                            consumedByThisMember = individualEnteredTW;
+                        }
+
+                        mems[m.name].total += consumedByThisMember;
+                        mems[m.name].cats[da.Type] = (mems[m.name].cats[da.Type] || 0) + consumedByThisMember;
+
+                        if (payerCount > 0) {
+                            let paidByThisMember = m.isPayer ? (scheduleTotalTW / payerCount) : 0;
                             balances[m.name] = (balances[m.name] || 0) + (paidByThisMember - consumedByThisMember);
                         }
                     });
