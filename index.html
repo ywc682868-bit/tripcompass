@@ -354,20 +354,17 @@
                 const members = schedule.members || [];
                 
                 let calculatedTotalTW = 0;
-                let allHaveAmount = members.length > 0;
+                let hasPayer = members.some(m => m.isPayer);
 
                 members.forEach(m => {
                     const amt = parseFloat(m.amount) || 0;
                     const fee = parseFloat(m.fee) || 0;
                     const mValueTW = (m.method === 'card' ? (amt + fee) : (amt * rate));
-                    if (amt > 0) calculatedTotalTW += mValueTW;
-                    if (amt <= 0) allHaveAmount = false; 
+                    calculatedTotalTW += mValueTW;
                 });
 
-                let splitDisplay = '－';
-                if (!allHaveAmount && calculatedTotalTW > 0 && members.length > 0) {
-                    splitDisplay = `TW$${formatCurrency(calculatedTotalTW / members.length)}`;
-                }
+                // 分帳顯示：若沒人勾選先付，顯示「－」表示各付各的
+                let splitDisplay = hasPayer ? "代墊" : "－";
                 
                 let memberHtml = members.length > 0 ? `<div class="flex flex-nowrap overflow-hidden justify-end gap-x-1.5 ml-2 max-w-[120px]">` + members.map((m, i) => `<span class="${MEMBER_COLORS[i % MEMBER_COLORS.length]} text-[10px] font-bold whitespace-nowrap">${typeof m === 'string' ? m : m.name}</span>`).join('') + `</div>` : '';
                 const mustGoHtml = schedule.MustGo ? `<div class="mt-auto w-full flex justify-start mb-3"><span class="text-[9px] text-[#CB8572] border border-[#CB8572] px-1 py-0.5 rounded-[2px] leading-none bg-white">必去</span></div>` : '';
@@ -485,31 +482,14 @@
                 contentEl.addEventListener('touchend', () => { contentEl.style.transform = (isSwiping && currentTranslate < -70) ? `translateX(-140px)` : `translateX(0)`; });
             }
 
-            // --- 計畫設定視窗 ---
+            // --- 修改行程主要設定 ---
             function openSettingsModal() {
                 const trip = tripData[currentTripId];
                 if (!trip) return;
                 const modal = document.getElementById('settings-modal');
                 const content = modal.querySelector('div');
 
-                content.innerHTML = `
-                    <h3 class="text-base font-bold mb-3 flex justify-between items-center text-[#4A4B4D]">計畫設定 <button id="settings-modal-close-btn" class="text-[#A9A9A9] text-xl">×</button></h3>
-                    <form id="settings-form" class="space-y-3">
-                        <div><label class="block text-xs font-medium text-[#7E92A1]">計畫名稱</label><input type="text" id="settings-trip-name" class="compact-input mt-0.5 block w-full rounded border"></div>
-                        <div class="grid grid-cols-[0.8fr_1.5fr_0.7fr] gap-1">
-                            <div><label class="block text-xs font-medium text-[#7E92A1]">國家</label><select id="settings-trip-country" class="compact-input mt-0.5 block w-full rounded border h-[28px]"><option value="USA">🇺🇸 美國</option><option value="JP">🇯🇵 日本</option><option value="KR">🇰🇷 韓國</option><option value="UK">🇬🇧 英國</option><option value="TW">🇹🇼 台灣</option></select></div>
-                            <div><label class="block text-xs font-medium text-[#7E92A1]">開始日期</label><input type="date" id="settings-start-date" class="compact-input mt-0.5 block w-full rounded border text-[10px] h-[28px]"></div>
-                            <div><label class="block text-xs font-medium text-[#7E92A1]">天數</label><input type="number" id="settings-num-days" min="1" class="compact-input mt-0.5 block w-full rounded border text-center h-[28px]"></div>
-                        </div>
-                        <div><label class="block text-xs font-medium text-[#7E92A1] mb-1">成員</label><div id="settings-members-container" class="grid grid-cols-3 gap-2"></div><button type="button" id="settings-add-member-btn" class="mt-2 text-[10px] text-[#7E92A1]">+ 新增成員</button></div>
-                        <div class="pt-3 flex justify-between items-center border-t border-gray-100 mt-2">
-                            <button type="button" id="new-trip-from-settings-btn" class="px-3 py-1.5 text-xs text-[#7E92A1] bg-[#EBF2FA] rounded">新計畫</button>
-                            <div class="flex space-x-2">
-                                <button type="button" id="delete-trip-btn" class="px-3 py-1.5 text-white bg-[#CB8572] rounded text-xs">刪除</button>
-                                <button type="button" id="settings-modal-save-btn" class="px-3 py-1.5 text-white bg-[#7E92A1] rounded text-xs">儲存</button>
-                            </div>
-                        </div>
-                    </form>`;
+                content.innerHTML = `<h3 class="text-base font-bold mb-3 flex justify-between items-center text-[#4A4B4D]">計畫設定 <button id="settings-modal-close-btn" class="text-[#A9A9A9] text-xl">×</button></h3><form id="settings-form" class="space-y-3"><div><label class="block text-xs font-medium text-[#7E92A1]">計畫名稱</label><input type="text" id="settings-trip-name" class="compact-input mt-0.5 block w-full rounded border"></div><div class="grid grid-cols-[0.8fr_1.5fr_0.7fr] gap-1"><div><label class="block text-xs font-medium text-[#7E92A1]">國家</label><select id="settings-trip-country" class="compact-input mt-0.5 block w-full rounded border h-[28px]"><option value="USA">🇺🇸 美國</option><option value="JP">🇯🇵 日本</option><option value="KR">🇰🇷 韓國</option><option value="UK">🇬🇧 英國</option><option value="TW">🇹🇼 台灣</option></select></div><div><label class="block text-xs font-medium text-[#7E92A1]">開始日期</label><input type="date" id="settings-start-date" class="compact-input mt-0.5 block w-full rounded border text-[10px] h-[28px]"></div><div><label class="block text-xs font-medium text-[#7E92A1]">天數</label><input type="number" id="settings-num-days" min="1" class="compact-input mt-0.5 block w-full rounded border text-center h-[28px]"></div></div><div><label class="block text-xs font-medium text-[#7E92A1] mb-1">成員</label><div id="settings-members-container" class="grid grid-cols-3 gap-2"></div><button type="button" id="settings-add-member-btn" class="mt-2 text-[10px] text-[#7E92A1]">+ 新增成員</button></div><div class="pt-3 flex justify-between items-center border-t border-gray-100 mt-2"><button type="button" id="new-trip-from-settings-btn" class="px-3 py-1.5 text-xs text-[#7E92A1] bg-[#EBF2FA] rounded">新計畫</button><div class="flex space-x-2"><button type="button" id="delete-trip-btn" class="px-3 py-1.5 text-white bg-[#CB8572] rounded text-xs">刪除</button><button type="button" id="settings-modal-save-btn" class="px-3 py-1.5 text-white bg-[#7E92A1] rounded text-xs">儲存</button></div></div></form>`;
 
                 document.getElementById('settings-trip-name').value = trip.name || '';
                 document.getElementById('settings-trip-country').value = trip.country || 'TW';
@@ -530,13 +510,7 @@
                 document.getElementById('settings-modal-close-btn').onclick = () => modal.style.display = 'none';
                 document.getElementById('settings-add-member-btn').onclick = () => addMemInput();
                 document.getElementById('new-trip-from-settings-btn').onclick = () => { modal.style.display = 'none'; openNewTripModal(); };
-                document.getElementById('delete-trip-btn').onclick = async () => { 
-                    if(confirm('確定要刪除整個行程嗎？此動作不可復原。')) { 
-                        await deleteDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}`)); 
-                        modal.style.display = 'none'; 
-                        location.reload(); 
-                    } 
-                };
+                document.getElementById('delete-trip-btn').onclick = async () => { if(confirm('確定要刪除整個行程嗎？此動作不可復原。')) { await deleteDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}`)); modal.style.display = 'none'; location.reload(); } };
                 document.getElementById('settings-modal-save-btn').onclick = async () => {
                     const members = Array.from(document.querySelectorAll('.setting-mem-input')).map(i => i.value.trim()).filter(v => v);
                     await updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}`), {
@@ -609,9 +583,9 @@
                 URL.revokeObjectURL(url);
             }
 
+            // --- 即時計帳刷新邏輯 ---
             function refreshModalTotals() {
                 let sumTW = 0;
-                let sumLocal = 0;
                 const memberRows = document.getElementById('form-members-container').querySelectorAll('.member-row');
 
                 memberRows.forEach(row => {
@@ -621,14 +595,14 @@
                     const method = row.querySelector('.payment-method').value;
 
                     if (method === 'card') {
+                        // 刷卡：直接加總台幣金額與手續費
                         sumTW += (amount + fee);
                     } else {
-                        sumLocal += amount;
+                        // 現金：當地貨幣 * 匯率
                         sumTW += (amount * currentTripRate);
                     }
                 });
 
-                document.getElementById('form-amount').value = sumLocal > 0 ? sumLocal.toFixed(2).replace(/\.00$/, '') : '';
                 document.getElementById('form-amount-twd').value = sumTW > 0 ? sumTW.toFixed(0) : '';
             }
 
@@ -668,9 +642,9 @@
                             <div class="flex items-center mb-1 gap-2"><label class="compact-label">成員</label><button type="button" id="add-member-btn" class="text-[#7E92A1] text-xs font-bold">＋</button></div>
                             <div id="form-members-container" class="space-y-1 mb-2"></div>
                             <div class="grid grid-cols-[1fr_20px_1fr] gap-2 items-center mt-2 border-t pt-2">
-                                <div class="flex items-center gap-1"><label id="form-currency-label" class="text-[10px] font-bold text-[#7E92A1] w-8 text-right">${config.currency}</label><input type="number" id="form-amount" readonly class="w-full p-1 border rounded text-right text-[11px] bg-gray-100" value="${s.Amount||''}"></div>
+                                <div class="text-[10px] font-bold text-[#7E92A1] w-full text-center">行程總消費額加總</div>
                                 <div class="text-center text-gray-400 text-xs font-bold">=</div>
-                                <div class="flex items-center gap-1"><span class="text-[10px] font-bold text-[#A9A9A9] w-8 text-right">TW</span><input type="number" id="form-amount-twd" readonly class="w-full p-1 border rounded text-right text-[11px] bg-gray-100" value="${s.Amount ? (s.Amount * currentTripRate).toFixed(0) : ''}"></div>
+                                <div class="flex items-center gap-1"><span class="text-[10px] font-bold text-[#A9A9A9] w-8 text-right">TW</span><input type="number" id="form-amount-twd" readonly class="w-full p-1 border rounded text-right text-[11px] bg-gray-100" value=""></div>
                             </div>
                         </div>
                         <div class="flex justify-between items-center pt-2 border-t">
@@ -680,7 +654,7 @@
                     </form>`;
                 
                 const memCont = content.querySelector('#form-members-container');
-                (s.members || []).forEach(m => addMemberInput(typeof m === 'string' ? m : m.name, m.amount || '', m.isPayer || false, m.method || 'cash', m.fee || ''));
+                (s.members || []).forEach(m => addMemberInput(typeof m === 'string' ? m : m.name, m.amount, m.isPayer || false, m.method || 'cash', m.fee));
                 if(!(s.members || []).length) { addMemberInput(); addMemberInput(); }
 
                 document.getElementById('modal-close-btn').onclick = () => modal.style.display = 'none';
@@ -697,11 +671,14 @@
                 d.className = 'member-row flex items-center w-full gap-2 border-b pb-1 last:border-0';
                 d.innerHTML = `
                     <input type="text" name="schedule-member-name" value="${name}" placeholder="名字" class="compact-input w-16 rounded-md font-bold text-[10px]">
-                    <input type="number" name="schedule-member-amount" value="${amt}" placeholder="金額" class="compact-input w-14 rounded-md text-[10px]">
+                    <input type="number" name="schedule-member-amount" value="${amt !== null ? amt : ''}" placeholder="金額" class="compact-input w-14 rounded-md text-[10px]">
                     <div class="flex items-center gap-1">
                         <label class="flex items-center text-xs text-[#7E92A1] cursor-pointer whitespace-nowrap"><input type="checkbox" class="payer-check mr-1 h-4 w-4" ${isPayer?'checked':''}>先付</label>
-                        <select class="payment-method text-xs border rounded px-1 h-6 text-center"><option value="cash" ${method==='cash'?'selected':''}>現金</option><option value="card" ${method==='card'?'selected':''}>刷卡</option></select>
-                        <input type="number" name="schedule-member-fee" value="${fee}" placeholder="手續" class="member-fee-input compact-input w-10 rounded-md text-[10px] ${method==='card'?'':'hidden'}">
+                        <select class="payment-method text-xs border rounded px-1 h-6 text-center">
+                            <option value="cash" ${method==='cash'?'selected':''}>現金</option>
+                            <option value="card" ${method==='card'?'selected':''}>刷卡</option>
+                        </select>
+                        <input type="number" name="schedule-member-fee" value="${fee !== undefined ? fee : ''}" placeholder="手續" class="member-fee-input compact-input w-10 rounded-md text-[10px] ${method==='card'?'':'hidden'}">
                     </div>
                     <button type="button" class="text-[#CB8572] font-bold p-1 ml-auto text-lg">×</button>`;
                 
@@ -742,11 +719,10 @@
                         amount: amt !== "" ? parseFloat(amt) : null, 
                         isPayer: row.querySelector('.payer-check').checked, 
                         method: row.querySelector('.payment-method').value,
-                        fee: fee ? parseFloat(fee) : 0
+                        fee: fee !== "" ? parseFloat(fee) : 0
                     });
                 });
 
-                const isRemind = document.getElementById('form-remind').checked;
                 const data = { 
                     dayId, Date: dateVal, Time: document.getElementById('form-time').value, Location: document.getElementById('form-location').value,
                     Type: document.getElementById('form-type').value, 說明: document.getElementById('form-details').value,
@@ -757,9 +733,7 @@
                 const col = collection(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`);
                 if (editingScheduleId) await updateDoc(doc(col, editingScheduleId), data); else await addDoc(col, data);
                 
-                if (isRemind) {
-                    addToCalendar(data);
-                }
+                if (document.getElementById('form-remind').checked) addToCalendar(data);
 
                 document.getElementById('add-schedule-modal').style.display = 'none'; loadSchedules(currentTripId, dayId);
             }
@@ -780,44 +754,25 @@
                     const tabs = document.getElementById('list-tabs'); const cont = document.getElementById('list-content');
                     tabs.innerHTML = ''; cont.innerHTML = '';
                     const lists = []; snap.forEach(d => lists.push({id: d.id, ...d.data()}));
-                    if(!lists.length) {
-                        renderAddTabButton(tabs);
-                        return;
-                    }
+                    if(!lists.length) { renderAddTabButton(tabs); return; }
                     if(!currentListTabId || !lists.find(l=>l.id===currentListTabId)) currentListTabId = lists[0].id;
                     lists.forEach(l => {
                         const t = document.createElement('div'); const isActive = l.id === currentListTabId;
                         t.className = `cursor-pointer px-3 py-2 text-sm flex-shrink-0 whitespace-nowrap transition-all ${isActive ? 'border-b-2 border-[#7E92A1] text-[#7E92A1] font-bold' : 'text-[#A9A9A9]'}`;
-                        
                         if (isActive) {
-                            const inp = document.createElement('input');
-                            inp.type = 'text';
-                            inp.value = l.name;
-                            inp.className = 'bg-transparent border-none focus:ring-0 p-0 w-20 font-bold text-[#7E92A1] text-sm text-center';
+                            const inp = document.createElement('input'); inp.type = 'text'; inp.value = l.name; inp.className = 'bg-transparent border-none focus:ring-0 p-0 w-20 font-bold text-[#7E92A1] text-sm text-center';
                             inp.onblur = async () => {
                                 const newName = inp.value.trim();
                                 if (newName === "") {
-                                    if(confirm(`要刪除清單「${l.name}」嗎？`)) {
-                                        await deleteDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Lists/${l.id}`));
-                                        currentListTabId = null;
-                                    } else {
-                                        inp.value = l.name;
-                                    }
-                                } else if (newName !== l.name) {
-                                    await updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Lists/${l.id}`), { name: newName });
-                                }
+                                    if(confirm(`要刪除清單「${l.name}」嗎？`)) { await deleteDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Lists/${l.id}`)); currentListTabId = null; }
+                                    else { inp.value = l.name; }
+                                } else if (newName !== l.name) { await updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Lists/${l.id}`), { name: newName }); }
                             };
-                            inp.onkeydown = (e) => { if(e.key === 'Enter') inp.blur(); };
-                            t.appendChild(inp);
-                        } else {
-                            t.textContent = l.name;
-                            t.onclick = () => { currentListTabId = l.id; loadLists(); };
-                        }
+                            inp.onkeydown = (e) => { if(e.key === 'Enter') inp.blur(); }; t.appendChild(inp);
+                        } else { t.textContent = l.name; t.onclick = () => { currentListTabId = l.id; loadLists(); }; }
                         tabs.appendChild(t);
                     });
-
                     renderAddTabButton(tabs);
-
                     const target = lists.find(l => l.id === currentListTabId); if (target) renderListItems(target, cont);
                 });
             }
@@ -873,15 +828,13 @@
                             </div>
                             <input type="text" value="${item.text||''}" class="txt border-none text-xs focus:ring-0 flex-1 min-w-0">
                             <button class="del text-gray-300 ml-1 desktop-del-btn font-bold text-lg flex-none">×</button>`;
-                        
                         c.querySelector('button').onclick = () => updateListItem(listData, idx, {isImportant: !item.isImportant});
                         c.querySelector('.checkL').onchange = (e) => updateListItem(listData, idx, {checkedLeft: e.target.checked});
                         c.querySelector('.checkR').onchange = (e) => updateListItem(listData, idx, {checkedRight: e.target.checked});
                         c.querySelector('.txt').onchange = (e) => updateListItem(listData, idx, {text: e.target.value});
                         c.querySelector('.del').onclick = () => deleteListItem(listData, idx);
                     } else {
-                        c.style.display = 'grid'; 
-                        c.style.gridTemplateColumns = '24px 50px 1fr 60px 20px';
+                        c.style.display = 'grid'; c.style.gridTemplateColumns = '24px 50px 1fr 60px 20px';
                         c.innerHTML = `
                             ${star}
                             <div class="shopping-img-box">${item.imageUrl?`<img src="${item.imageUrl}" class="w-full h-full object-cover">`:'📷'}</div>
@@ -893,7 +846,6 @@
                                 <textarea class="loc text-[9px] text-gray-400 border-none p-0 focus:ring-0 resize-none h-10 w-full bg-transparent leading-tight no-scrollbar" placeholder="地點">${item.location||''}</textarea>
                             </div>
                             <button class="del text-gray-200">×</button>`;
-                        
                         c.querySelector('button').onclick = () => updateListItem(listData, idx, {isImportant: !item.isImportant});
                         c.querySelector('.name').onchange = (e) => updateListItem(listData, idx, {text: e.target.value});
                         c.querySelector('.desc').onchange = (e) => updateListItem(listData, idx, {desc: e.target.value});
@@ -922,8 +874,7 @@
             }
 
             async function updateListItem(listData, idx, updates) {
-                const newItems = [...listData.items];
-                newItems[idx] = { ...newItems[idx], ...updates };
+                const newItems = [...listData.items]; newItems[idx] = { ...newItems[idx], ...updates };
                 await updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Lists/${listData.id}`), { items: newItems });
             }
             async function deleteListItem(listData, idx) {
@@ -931,6 +882,7 @@
                 await updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Lists/${listData.id}`), { items: newItems });
             }
 
+            // --- 核心分帳與結算邏輯 ---
             async function loadExpenseSummary() {
                 if(!currentTripId) return;
                 const snap = await getDocs(collection(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`));
@@ -941,71 +893,42 @@
                     const rateVal = parseFloat(da.Rate) || 1; 
                     const members = da.members || [];
                     if (!members.length) return;
-                    
-                    let manualTotalTW = 0;
-                    members.forEach(m => {
+
+                    // 1. 計算該行程每個成員的「消費金額」(台幣)
+                    let scheduleCostMembers = members.map(m => {
                         const amt = parseFloat(m.amount) || 0;
                         const fee = parseFloat(m.fee) || 0;
-                        manualTotalTW += m.method === 'card' ? (amt + fee) : (amt * rateVal);
+                        const twValue = (m.method === 'card') ? (amt + fee) : (amt * rateVal);
+                        return { name: m.name, costTW: twValue, isPayer: m.isPayer };
                     });
 
-                    let actualTotalTW = (manualTotalTW > 0) ? manualTotalTW : (parseFloat(da.Amount) || 0) * rateVal;
-                    if (isNaN(actualTotalTW) || actualTotalTW <= 0) return;
+                    // 該行程總支出
+                    let scheduleTotalTW = scheduleCostMembers.reduce((sum, m) => sum + m.costTW, 0);
+                    if (scheduleTotalTW <= 0) return;
 
-                    total += actualTotalTW;
-                    types[da.Type] = (types[da.Type] || 0) + actualTotalTW;
+                    total += scheduleTotalTW;
+                    types[da.Type] = (types[da.Type] || 0) + scheduleTotalTW;
 
-                    const payers = members.filter(m => m.isPayer);
-                    const allHaveAmount = members.every(m => (parseFloat(m.amount) || 0) > 0);
+                    // 2. 處理分帳平衡
+                    const payers = scheduleCostMembers.filter(m => m.isPayer);
 
-                    if (payers.length === 0) {
-                        members.forEach(m => {
-                            if(!mems[m.name]) mems[m.name] = { total: 0, cats: {} };
-                            const amt = parseFloat(m.amount) || 0;
-                            const fee = parseFloat(m.fee) || 0;
-                            const mSpentTW = allHaveAmount ? (m.method === 'card' ? (amt + fee) : (amt * rateVal)) : (actualTotalTW / members.length);
-                            
-                            mems[m.name].total += mSpentTW;
-                            mems[m.name].cats[da.Type] = (mems[m.name].cats[da.Type] || 0) + mSpentTW;
-                        });
-                    } else {
-                        let totalExplicitNonPayerTW = 0;
-                        let zeroAmountNonPayers = [];
+                    scheduleCostMembers.forEach(m => {
+                        if(!mems[m.name]) mems[m.name] = { total: 0, cats: {} };
                         
-                        members.forEach(m => {
-                            if(!mems[m.name]) mems[m.name] = { total: 0, cats: {} };
-                            if (!m.isPayer) {
-                                const amt = parseFloat(m.amount) || 0;
-                                const fee = parseFloat(m.fee) || 0;
-                                const mTW = (m.method === 'card' ? (amt + fee) : (amt * rateVal));
-                                if (mTW > 0) totalExplicitNonPayerTW += mTW;
-                                else zeroAmountNonPayers.push(m.name);
-                            }
-                        });
+                        // 記錄每個成員在各類別的「消費額」
+                        mems[m.name].total += m.costTW;
+                        mems[m.name].cats[da.Type] = (mems[m.name].cats[da.Type] || 0) + m.costTW;
 
-                        let remainderTW = actualTotalTW - totalExplicitNonPayerTW;
-                        let sharersCount = payers.length + zeroAmountNonPayers.length;
-                        let sharedRemainderTW = remainderTW / sharersCount;
-
-                        members.forEach(m => {
-                            let spent = 0;
-                            let paid = 0;
-                            const amt = parseFloat(m.amount) || 0;
-                            const fee = parseFloat(m.fee) || 0;
-                            const mValueTW = (m.method === 'card' ? (amt + fee) : (amt * rateVal));
-
-                            if (m.isPayer) {
-                                paid = mValueTW;
-                                spent = sharedRemainderTW;
-                            } else {
-                                spent = (amt > 0) ? mValueTW : sharedRemainderTW;
-                            }
-
-                            mems[m.name].total += spent;
-                            mems[m.name].cats[da.Type] = (mems[m.name].cats[da.Type] || 0) + spent;
-                            balances[m.name] = (balances[m.name] || 0) + (paid - spent);
-                        });
-                    }
+                        // 計算債務平衡 (Balance)
+                        if (payers.length === 0) {
+                            // 各付各的：不計入債務
+                        } else {
+                            // 有人代墊
+                            let paidByThisMember = m.isPayer ? (scheduleTotalTW / payers.length) : 0;
+                            let consumedByThisMember = m.costTW;
+                            balances[m.name] = (balances[m.name] || 0) + (paidByThisMember - consumedByThisMember);
+                        }
+                    });
                 });
 
                 const modal = document.getElementById('split-expense-modal');
@@ -1037,28 +960,13 @@
                 sortedKeys.forEach((k, i) => {
                     const color = (CATEGORY_COLORS[k]||CATEGORY_COLORS.default).hex;
                     const isLeft = i % 2 === 0;
-                    const contentHtml = isLeft 
-                        ? `<div class="w-2 h-2 rounded-full flex-shrink-0" style="background-color: ${color}"></div><div class="flex flex-col min-w-0"><span class="font-bold truncate text-[10px]">${CATEGORY_NAMES[k]||k}</span><span class="text-gray-400 text-[9px]">TW$${types[k].toFixed(0)}</span></div>`
-                        : `<div class="flex flex-col min-w-0 items-end text-right"><span class="font-bold truncate text-[10px]">${CATEGORY_NAMES[k]||k}</span><span class="text-gray-400 text-[9px]">TW$${types[k].toFixed(0)}</span></div><div class="w-2 h-2 rounded-full flex-shrink-0" style="background-color: ${color}"></div>`;
-                    
-                    const rowHtml = `<div class="flex items-center gap-1.5 h-12">${contentHtml}</div>`;
-                    if(isLeft) document.getElementById('leg-L').innerHTML += rowHtml; 
-                    else document.getElementById('leg-R').innerHTML += rowHtml;
+                    const rowHtml = `<div class="flex items-center gap-1.5 h-12">${isLeft ? `<div class="w-2 h-2 rounded-full flex-shrink-0" style="background-color: ${color}"></div><div class="flex flex-col min-w-0"><span class="font-bold truncate text-[10px]">${CATEGORY_NAMES[k]||k}</span><span class="text-gray-400 text-[9px]">TW$${types[k].toFixed(0)}</span></div>` : `<div class="flex flex-col min-w-0 items-end text-right"><span class="font-bold truncate text-[10px]">${CATEGORY_NAMES[k]||k}</span><span class="text-gray-400 text-[9px]">TW$${types[k].toFixed(0)}</span></div><div class="w-2 h-2 rounded-full flex-shrink-0" style="background-color: ${color}"></div>`}</div>`;
+                    if(isLeft) document.getElementById('leg-L').innerHTML += rowHtml; else document.getElementById('leg-R').innerHTML += rowHtml;
                 });
 
-                const mList = document.getElementById('exp-mem-list');
                 Object.keys(mems).sort().forEach(n => {
-                    let cats = Object.keys(mems[n].cats).map(c => {
-                        const catStyle = CATEGORY_COLORS[c] || CATEGORY_COLORS.default;
-                        return `<div class="flex items-center py-0.5 text-[10px] h-6">
-                            <span class="${catStyle.text} font-medium flex-1 text-left truncate">${CATEGORY_NAMES[c]}</span>
-                            <div class="flex items-center gap-0.5 flex-none">
-                                <span class="${catStyle.text} font-bold">TW$</span>
-                                <span class="${catStyle.text} font-bold text-right min-w-[35px]">${mems[n].cats[c].toFixed(0)}</span>
-                            </div>
-                        </div>`;
-                    }).join('');
-                    mList.innerHTML += `<div><div class="font-bold text-gray-600 mb-1 border-b pb-0.5">${n}</div>${cats}</div>`;
+                    let cats = Object.keys(mems[n].cats).map(c => `<div class="flex items-center py-0.5 text-[10px] h-6"><span class="${(CATEGORY_COLORS[c]||CATEGORY_COLORS.default).text} font-medium flex-1 text-left truncate">${CATEGORY_NAMES[c]}</span><div class="flex items-center gap-0.5 flex-none"><span class="${(CATEGORY_COLORS[c]||CATEGORY_COLORS.default).text} font-bold">TW$</span><span class="${(CATEGORY_COLORS[c]||CATEGORY_COLORS.default).text} font-bold text-right min-w-[35px]">${mems[n].cats[c].toFixed(0)}</span></div></div>`).join('');
+                    document.getElementById('exp-mem-list').innerHTML += `<div><div class="font-bold text-gray-600 mb-1 border-b pb-0.5">${n}</div>${cats}</div>`;
                 });
                 
                 let debtors = [], creditors = [];
@@ -1073,15 +981,7 @@
                     let i=0, j=0;
                     while(i < debtors.length && j < creditors.length){
                         let amt = Math.min(debtors[i].a, creditors[j].a);
-                        setCont.innerHTML += `
-                        <div class="flex justify-between items-center bg-gray-50 p-2.5 rounded-xl text-[11px] w-full">
-                            <div class="flex justify-around items-center flex-grow text-gray-600 mr-4">
-                                <span class="font-bold">${debtors[i].n}</span>
-                                <span class="text-gray-400">→</span>
-                                <span class="font-bold">${debtors[i].n}</span>
-                            </div>
-                            <div class="font-bold text-[#7E92A1] flex-none text-right">TW$${amt.toFixed(0)}</div>
-                        </div>`;
+                        setCont.innerHTML += `<div class="flex justify-between items-center bg-gray-50 p-2.5 rounded-xl text-[11px] w-full"><div class="flex justify-around items-center flex-grow text-gray-600 mr-4"><span class="font-bold">${debtors[i].n}</span><span class="text-gray-400">→</span><span class="font-bold">${creditors[j].n}</span></div><div class="font-bold text-[#7E92A1] flex-none text-right">TW$${amt.toFixed(0)}</div></div>`;
                         debtors[i].a -= amt; creditors[j].a -= amt;
                         if(debtors[i].a < 1) i++; if(creditors[j].a < 1) j++;
                     }
