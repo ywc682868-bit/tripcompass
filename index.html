@@ -372,11 +372,13 @@
                     calculatedTotalTW = parseFloat(schedule.Amount) * rate;
                 }
 
-                // 主頁面顯示的平均花費
                 let perPersonTW = members.length > 0 ? calculatedTotalTW / members.length : 0;
                 
                 let memberHtml = members.length > 0 ? `<div class="flex flex-nowrap overflow-hidden justify-end gap-x-1.5 ml-2 max-w-[120px]">` + members.map((m, i) => `<span class="${MEMBER_COLORS[i % MEMBER_COLORS.length]} text-[10px] font-bold whitespace-nowrap">${typeof m === 'string' ? m : m.name}</span>`).join('') + `</div>` : '';
                 const mustGoHtml = schedule.MustGo ? `<div class="mt-auto w-full flex justify-start mb-3"><span class="text-[9px] text-[#CB8572] border border-[#CB8572] px-1 py-0.5 rounded-[2px] leading-none bg-white">必去</span></div>` : '';
+
+                // 修改顯示部分：若有手動填寫金額 (個別分帳)，則不顯示平分金額
+                const splitLineHtml = (manualFillCount > 0) ? '' : `<span class="text-[#888888] font-bold text-[10px]">👫 TW$${formatCurrency(perPersonTW)}</span>`;
 
                 const card = document.createElement('div');
                 card.className = 'trip-card flex w-full mb-3 relative'; card.style.height = '100px'; 
@@ -405,7 +407,7 @@
                         <div class="card-static-actions"></div>
                         <div class="flex flex-col gap-1 mt-1">
                             <span class="text-[#8F9E8B] font-bold text-[10px]">💰 TW$${calculatedTotalTW.toFixed(0)}</span>
-                            <span class="text-[#888888] font-bold text-[10px]">👫 TW$${perPersonTW > 0 ? formatCurrency(perPersonTW) : '-'}</span>
+                            ${splitLineHtml}
                         </div>
                         ${mustGoHtml}
                     </div>`;
@@ -870,7 +872,6 @@
 
                     let payers = members.filter(m => m.isPayer);
                     
-                    // --- 核心邏輯：區分個人與團隊支出 ---
                     if (payers.length > 0) {
                         members.forEach(m => {
                             const amt = parseFloat(m.amount) || 0;
@@ -882,7 +883,7 @@
                             if(!mems[m.name]) mems[m.name] = { total: 0, cats: {} };
 
                             if (m.isPayer) {
-                                // 規則：若花費人與代墊人相同 -> 視為團隊支出，平分總額
+                                // 代墊人自己花費 -> 團隊支出模式：由全體平分
                                 let splitAmt = mSpentTW / members.length;
                                 members.forEach(member => {
                                     balances[member.name] = (balances[member.name] || 0) - splitAmt;
@@ -890,15 +891,13 @@
                                     mems[member.name].total += splitAmt;
                                     mems[member.name].cats[da.Type] = (mems[member.name].cats[da.Type] || 0) + splitAmt;
                                 });
-                                // 代墊人自己收回 Credit
                                 balances[m.name] = (balances[m.name] || 0) + mSpentTW;
                             } else {
-                                // 規則：若花費人與代墊人不同 -> 視為個人支出，花費人需負擔全額，代墊人獲得 Credit
+                                // 非代墊人花費 -> 個人支出模式：全額償還給先付者
                                 balances[m.name] = (balances[m.name] || 0) - mSpentTW;
                                 mems[m.name].total += mSpentTW;
                                 mems[m.name].cats[da.Type] = (mems[m.name].cats[da.Type] || 0) + mSpentTW;
                                 
-                                // 分配 Credit 給先付者（若多位先付則平分）
                                 let creditPerPayer = mSpentTW / payers.length;
                                 payers.forEach(p => {
                                     balances[p.name] = (balances[p.name] || 0) + creditPerPayer;
@@ -906,7 +905,7 @@
                             }
                         });
                     } else {
-                        // 若無代墊人，則單純按平均統計，不產生債務
+                        // 若無勾選先付，按平均統計
                         const avgPerPerson = actualTotalTW / members.length;
                         members.forEach(m => {
                             if(!mems[m.name]) mems[m.name] = { total: 0, cats: {} };
