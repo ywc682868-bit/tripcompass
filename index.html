@@ -355,6 +355,8 @@
                 
                 let calculatedTotalTW = 0;
                 let hasPayer = members.some(m => m.isPayer);
+                let payerCount = members.filter(m => m.isPayer).length;
+                let amountEnteredCount = members.filter(m => parseFloat(m.amount) > 0).length;
 
                 members.forEach(m => {
                     const amt = parseFloat(m.amount) || 0;
@@ -363,8 +365,22 @@
                     calculatedTotalTW += mValueTW;
                 });
 
-                // 分帳顯示：若沒人勾選先付，顯示「－」表示各付各的
-                let splitDisplay = hasPayer ? "代墊" : "－";
+                // --- 修正分帳顯示邏輯 ---
+                let splitDisplay = "－";
+                if (hasPayer) {
+                    // 邏輯：若僅有一位成員有輸入金額且勾選先付，且其他人未輸入，則顯示平均金額
+                    if (amountEnteredCount === 1 && payerCount === 1) {
+                        const onlyPayer = members.find(m => m.isPayer && parseFloat(m.amount) > 0);
+                        if (onlyPayer && members.length > 0) {
+                            const perPerson = calculatedTotalTW / members.length;
+                            splitDisplay = `TW$${perPerson.toFixed(0)}/人`;
+                        } else {
+                            splitDisplay = "代墊";
+                        }
+                    } else {
+                        splitDisplay = "代墊";
+                    }
+                }
                 
                 let memberHtml = members.length > 0 ? `<div class="flex flex-nowrap overflow-hidden justify-end gap-x-1.5 ml-2 max-w-[120px]">` + members.map((m, i) => `<span class="${MEMBER_COLORS[i % MEMBER_COLORS.length]} text-[10px] font-bold whitespace-nowrap">${typeof m === 'string' ? m : m.name}</span>`).join('') + `</div>` : '';
                 const mustGoHtml = schedule.MustGo ? `<div class="mt-auto w-full flex justify-start mb-3"><span class="text-[9px] text-[#CB8572] border border-[#CB8572] px-1 py-0.5 rounded-[2px] leading-none bg-white">必去</span></div>` : '';
