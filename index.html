@@ -354,7 +354,7 @@
                 const members = schedule.members || [];
                 
                 let calculatedTotalTW = 0;
-                // 使用成員名稱判定
+                // 用名稱集合判定
                 const uniquePayerNames = [...new Set(members.filter(m => m.isPayer).map(m => m.name))];
                 const uniqueAmountEnteredNames = [...new Set(members.filter(m => parseFloat(m.amount) > 0).map(m => m.name))];
                 const totalParticipantsNames = [...new Set(members.map(m => m.name))];
@@ -366,14 +366,12 @@
                     calculatedTotalTW += mValueTW;
                 });
 
-                // --- 修改分帳顯示邏輯：以成員名字判定代墊 ---
+                // --- 修正主頁分帳顯示邏輯 ---
                 let splitDisplay = "－";
-                // 若僅有一位唯一成員輸入金額，且該成員也是唯一的勾選先付者
+                // 只有「唯一的成員」輸入金額，且該成員也是「唯一的勾選先付者」，才顯示平分金額
                 if (uniqueAmountEnteredNames.length === 1 && uniquePayerNames.length === 1 && uniqueAmountEnteredNames[0] === uniquePayerNames[0]) {
                     const perPerson = calculatedTotalTW / totalParticipantsNames.length;
                     splitDisplay = `TW$${perPerson.toFixed(0)}`;
-                } else if (uniquePayerNames.length > 0) {
-                    splitDisplay = "－";
                 }
                 
                 let memberHtml = members.length > 0 ? `<div class="flex flex-nowrap overflow-hidden justify-end gap-x-1.5 ml-2 max-w-[120px]">` + [...new Set(members.map(m => m.name))].map((name, i) => `<span class="${MEMBER_COLORS[i % MEMBER_COLORS.length]} text-[10px] font-bold whitespace-nowrap">${name}</span>`).join('') + `</div>` : '';
@@ -422,7 +420,7 @@
             const loadSchedules = (tripId, dayId) => {
                 const container = document.getElementById('schedule-list-container');
                 if (!tripId) {
-                    container.innerHTML = '<div class="p-4 text-center text-[#A9A9A9] text-xs">請先建立或選擇計畫。</div>';
+                    container.innerHTML = '<div class="p-4 text-center text-[#A9A9A9] text-xs">請先選擇計畫。</div>';
                     return;
                 }
                 if (unsubscribeSchedule) unsubscribeSchedule();
@@ -449,8 +447,8 @@
                         schedules.forEach(schedule => container.appendChild(createTripCard(schedule)));
                     }
                 }, (error) => {
-                    console.error("載入出錯:", error);
-                    container.innerHTML = `<div class="p-4 text-center text-red-400 text-xs">行程載入失敗。</div>`;
+                    console.error("Snapshot error:", error);
+                    container.innerHTML = `<div class="p-4 text-center text-red-400 text-xs">載入出錯。</div>`;
                 });
             };
 
@@ -479,7 +477,7 @@
                 }
                 const addBtn = document.createElement('button'); addBtn.className = 'px-3 py-1.5 text-xs font-bold rounded-lg bg-[#7E92A1] text-white ml-2 flex-shrink-0'; addBtn.textContent = '+';
                 addBtn.onclick = async () => await updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}`), { numDays: (trip.numDays || 1) + 1 }, { merge: true });
-                container.appendChild(addBtn);
+                container.appendChild(btn);
             }
 
             async function calculateCurrency() {
@@ -927,7 +925,8 @@
                     const members = da.members || [];
                     if (!members.length) return;
 
-                    let scheduleTotalTW = members.reduce((sum, m) => {
+                    // 行程總額
+                    const scheduleTotalTW = members.reduce((sum, m) => {
                         const amt = parseFloat(m.amount) || 0;
                         const fee = parseFloat(m.fee) || 0;
                         return sum + (m.method === 'card' ? (amt + fee) : (amt * rateVal));
@@ -937,34 +936,49 @@
                     total += scheduleTotalTW;
                     types[da.Type] = (types[da.Type] || 0) + scheduleTotalTW;
 
-                    // 使用名字統計參與情況
-                    const uniqueNames = [...new Set(members.map(m => m.name))];
+                    const uniqueParticipantNames = [...new Set(members.map(m => m.name))];
+                    const numParticipants = uniqueParticipantNames.length;
+
+                    // 1. 計算該行程中每個人「消費」了多少
+                    const consumptionMap = {};
+                    uniqueParticipantNames.forEach(n => consumptionMap[n] = 0);
+
+                    // 判定是否為「團體平分」行（即只有一個人輸入金額且勾選先付）
                     const uniqueAmountNames = [...new Set(members.filter(m => parseFloat(m.amount) > 0).map(m => m.name))];
                     const uniquePayerNames = [...new Set(members.filter(m => m.isPayer).map(m => m.name))];
 
-                    uniqueNames.forEach(name => {
-                        if(!mems[name]) mems[name] = { total: 0, cats: {} };
-                        
-                        // 計算該成員在這筆行程的「實際消費額」
-                        let consumedByThisMember = 0;
-                        // 代墊模式 (一人代墊全團)：名字、金額與勾選先付均匹配唯一人
+                    // 遍歷所有成員紀錄行
+                    members.forEach(m => {
+                        const amt = parseFloat(m.amount) || 0;
+                        const fee = parseFloat(m.fee) || 0;
+                        const valTW = (m.method === 'card' ? (amt + fee) : (amt * rateVal));
+
                         if (uniqueAmountNames.length === 1 && uniquePayerNames.length === 1 && uniqueAmountNames[0] === uniquePayerNames[0]) {
-                            consumedByThisMember = scheduleTotalTW / uniqueNames.length;
+                            // 團體平分邏輯：總額平分給所有人
+                            // 注意：我們只在循環到那位輸入金額的成員時一次性處理平分
+                            if (m.name === uniqueAmountNames[0] && amt > 0) {
+                                uniqueParticipantNames.forEach(name => {
+                                    consumptionMap[name] += valTW / numParticipants;
+                                });
+                            }
                         } else {
-                            // 明細模式 (幫特定人付、各付各)：依據該名字下輸入的金額加總
-                            consumedByThisMember = members
-                                .filter(m => m.name === name)
-                                .reduce((s, m) => s + (m.method === 'card' ? (parseFloat(m.amount)||0) + (parseFloat(m.fee)||0) : (parseFloat(m.amount)||0) * rateVal), 0);
+                            // 明細/個人邏輯：誰的名字有金額，誰就消費那筆
+                            consumptionMap[m.name] += valTW;
                         }
+                    });
 
-                        mems[name].total += consumedByThisMember;
-                        mems[name].cats[da.Type] = (mems[name].cats[da.Type] || 0) + consumedByThisMember;
+                    // 2. 更新統計資料與平衡債務
+                    uniqueParticipantNames.forEach(name => {
+                        if(!mems[name]) mems[name] = { total: 0, cats: {} };
+                        const consumed = consumptionMap[name];
+                        mems[name].total += consumed;
+                        mems[name].cats[da.Type] = (mems[name].cats[da.Type] || 0) + consumed;
 
-                        // 債務平衡處理
+                        // 債務計算：實付 - 應付
                         if (uniquePayerNames.length > 0) {
-                            // 判定該成員實付了多少：代墊人支付總額 / 代墊人數
+                            // 判定該成員在該行程中實際支出的金額（代墊總額 / 代墊人數）
                             let paidByThisMember = uniquePayerNames.includes(name) ? (scheduleTotalTW / uniquePayerNames.length) : 0;
-                            balances[name] = (balances[name] || 0) + (paidByThisMember - consumedByThisMember);
+                            balances[name] = (balances[name] || 0) + (paidByThisMember - consumed);
                         }
                     });
                 });
