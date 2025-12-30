@@ -354,6 +354,9 @@
                 const members = schedule.members || [];
                 
                 let calculatedTotalTW = 0;
+                let payerCount = members.filter(m => m.isPayer).length;
+                let amountEnteredCount = members.filter(m => parseFloat(m.amount) > 0).length;
+
                 members.forEach(m => {
                     const amt = parseFloat(m.amount) || 0;
                     const fee = parseFloat(m.fee) || 0;
@@ -361,8 +364,13 @@
                     calculatedTotalTW += mValueTW;
                 });
 
-                // --- 顯示邏輯：一律顯示 － ---
+                // --- 修正主頁分帳顯示邏輯 ---
                 let splitDisplay = "－";
+                // 若符合「一人代墊全額」邏輯（僅一人輸入金額且勾選先付）
+                if (payerCount === 1 && amountEnteredCount === 1) {
+                    const perPerson = calculatedTotalTW / members.length;
+                    splitDisplay = `TW$${perPerson.toFixed(0)}`;
+                }
                 
                 let memberHtml = members.length > 0 ? `<div class="flex flex-nowrap overflow-hidden justify-end gap-x-1.5 ml-2 max-w-[120px]">` + members.map((m, i) => `<span class="${MEMBER_COLORS[i % MEMBER_COLORS.length]} text-[10px] font-bold whitespace-nowrap">${typeof m === 'string' ? m : m.name}</span>`).join('') + `</div>` : '';
                 const mustGoHtml = schedule.MustGo ? `<div class="mt-auto w-full flex justify-start mb-3"><span class="text-[9px] text-[#CB8572] border border-[#CB8572] px-1 py-0.5 rounded-[2px] leading-none bg-white">必去</span></div>` : '';
@@ -419,7 +427,7 @@
                 );
 
                 unsubscribeSchedule = onSnapshot(q, (snapshot) => {
-                    container.innerHTML = ''; // 進入 Snapshot 即清空加載中狀態
+                    container.innerHTML = '';
                     const trip = tripData[tripId]; 
                     if (trip && trip.startDate) {
                         try {
@@ -437,7 +445,7 @@
                     }
                 }, (error) => {
                     console.error("讀取失敗:", error);
-                    container.innerHTML = `<div class="p-4 text-center text-red-400 text-xs">連線失敗，請檢查網路或權限。</div>`;
+                    container.innerHTML = `<div class="p-4 text-center text-red-400 text-xs">行程加載失敗。</div>`;
                 });
             };
 
@@ -1018,8 +1026,7 @@
                         const userCred = await signInAnonymously(auth); currentUser = userCred.user;
                         loadTripList();
                     } catch (e) {
-                        console.error("Auth failed:", e);
-                        alert("登入失敗，請檢查 Firebase 配置或網路。");
+                        console.error("Firebase auth failed:", e);
                     }
                     
                     document.getElementById('trip-select').onchange = (e) => changeTrip(e.target.value);
