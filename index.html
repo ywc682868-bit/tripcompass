@@ -359,7 +359,6 @@
                 let calculatedTotalTW = 0;
                 let manualFillCount = 0;
 
-                // 主頁總計：計算所有成員欄位的實際台幣加總
                 members.forEach(m => {
                     const amt = parseFloat(m.amount) || 0;
                     const fee = parseFloat(m.fee) || 0;
@@ -369,7 +368,6 @@
                     }
                 });
 
-                // 若欄位中有任何人填寫金額，則採取手動分配模式
                 if (manualFillCount === 0 && (parseFloat(schedule.Amount) || 0) > 0) {
                     calculatedTotalTW = parseFloat(schedule.Amount) * rate;
                 }
@@ -377,10 +375,8 @@
                 let perPersonTW = 0;
                 if (members.length > 0) {
                     if (manualFillCount > 0) {
-                        // 如果是手動模式，卡片下方暫不顯示平均
                         perPersonTW = 0; 
                     } else {
-                        // 平分模式
                         perPersonTW = calculatedTotalTW / members.length;
                     }
                 }
@@ -873,12 +869,10 @@
                         manualTotalTW += m.method === 'card' ? (amt + fee) : (amt * rateVal);
                     });
 
-                    // 總額判定：若有人填寫個人金額，總額以此為準
                     let actualTotalTW = (manualFilledCount > 0) ? manualTotalTW : (parseFloat(da.Amount) || 0) * rateVal;
                     if (isNaN(actualTotalTW) || actualTotalTW <= 0) return;
 
                     let finalMemberShares = {};
-                    // 手動分帳模式：只要有任何人輸入金額(>0)
                     if (manualFilledCount > 0) {
                         members.forEach(m => {
                             const amt = parseFloat(m.amount) || 0;
@@ -886,7 +880,6 @@
                             finalMemberShares[m.name] = m.method === 'card' ? (amt + fee) : (amt * rateVal);
                         });
                     } else {
-                        // 全員都沒填個人金額，才啟動平均分配
                         const avg = actualTotalTW / members.length;
                         members.forEach(m => finalMemberShares[m.name] = avg);
                     }
@@ -904,11 +897,12 @@
                     let payers = members.filter(m => m.isPayer);
                     if (payers.length > 0) {
                         let creditPerPayer = actualTotalTW / payers.length;
-                        payers.forEach(p => balances[p.name] = (balances[p.name] || 0) + creditPerPayer);
-                        
-                        for (let name in finalMemberShares) {
-                            balances[name] = (balances[name] || 0) - finalMemberShares[name];
-                        }
+                        payers.forEach(p => {
+                            balances[p.name] = (balances[p.name] || 0) + creditPerPayer;
+                        });
+                    }
+                    for (let name in finalMemberShares) {
+                        balances[name] = (balances[name] || 0) - finalMemberShares[name];
                     }
                 });
 
