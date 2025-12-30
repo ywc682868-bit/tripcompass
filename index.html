@@ -355,8 +355,6 @@
                 
                 let calculatedTotalTW = 0;
                 let hasPayer = members.some(m => m.isPayer);
-                let payerCount = members.filter(m => m.isPayer).length;
-                let amountEnteredCount = members.filter(m => parseFloat(m.amount) > 0).length;
 
                 members.forEach(m => {
                     const amt = parseFloat(m.amount) || 0;
@@ -365,21 +363,9 @@
                     calculatedTotalTW += mValueTW;
                 });
 
-                // --- 分帳顯示邏輯 ---
+                // --- 修改分帳顯示邏輯 ---
+                // 不論是代墊或已分帳，只要有勾選先付（涉及分帳），主頁皆統一顯示為 －
                 let splitDisplay = "－";
-                if (hasPayer) {
-                    if (amountEnteredCount === 1 && payerCount === 1) {
-                        const onlyPayer = members.find(m => m.isPayer && parseFloat(m.amount) > 0);
-                        if (onlyPayer && members.length > 0) {
-                            const perPerson = calculatedTotalTW / members.length;
-                            splitDisplay = `TW$${perPerson.toFixed(0)}`;
-                        } else {
-                            splitDisplay = "代墊";
-                        }
-                    } else {
-                        splitDisplay = "代墊";
-                    }
-                }
                 
                 let memberHtml = members.length > 0 ? `<div class="flex flex-nowrap overflow-hidden justify-end gap-x-1.5 ml-2 max-w-[120px]">` + members.map((m, i) => `<span class="${MEMBER_COLORS[i % MEMBER_COLORS.length]} text-[10px] font-bold whitespace-nowrap">${typeof m === 'string' ? m : m.name}</span>`).join('') + `</div>` : '';
                 const mustGoHtml = schedule.MustGo ? `<div class="mt-auto w-full flex justify-start mb-3"><span class="text-[9px] text-[#CB8572] border border-[#CB8572] px-1 py-0.5 rounded-[2px] leading-none bg-white">必去</span></div>` : '';
@@ -619,13 +605,11 @@
                     }
                 });
 
-                // 更新顯示用的當地貨幣欄位與台幣顯示欄位
                 const localField = document.getElementById('form-amount-local');
                 const twdFieldDisplay = document.getElementById('form-amount-twd-display');
                 if(localField) localField.value = sumLocal > 0 ? sumLocal.toFixed(0) : '0';
                 if(twdFieldDisplay) twdFieldDisplay.value = sumTW > 0 ? sumTW.toFixed(0) : '0';
                 
-                // 更新隱藏的台幣總額，用於儲存至資料庫
                 const twdFieldHidden = document.getElementById('form-amount-twd-hidden');
                 if(twdFieldHidden) twdFieldHidden.value = sumTW;
             }
