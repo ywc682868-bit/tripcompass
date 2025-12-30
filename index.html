@@ -373,7 +373,8 @@
                         const onlyPayer = members.find(m => m.isPayer && parseFloat(m.amount) > 0);
                         if (onlyPayer && members.length > 0) {
                             const perPerson = calculatedTotalTW / members.length;
-                            splitDisplay = `TW$${perPerson.toFixed(0)}/人`;
+                            // 修正顯示格式：不需要「/人」
+                            splitDisplay = `TW$${perPerson.toFixed(0)}`;
                         } else {
                             splitDisplay = "代墊";
                         }
