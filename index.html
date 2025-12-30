@@ -372,6 +372,7 @@
                     calculatedTotalTW = parseFloat(schedule.Amount) * rate;
                 }
 
+                // 主頁面顯示的平均花費
                 let perPersonTW = members.length > 0 ? calculatedTotalTW / members.length : 0;
                 
                 let memberHtml = members.length > 0 ? `<div class="flex flex-nowrap overflow-hidden justify-end gap-x-1.5 ml-2 max-w-[120px]">` + members.map((m, i) => `<span class="${MEMBER_COLORS[i % MEMBER_COLORS.length]} text-[10px] font-bold whitespace-nowrap">${typeof m === 'string' ? m : m.name}</span>`).join('') + `</div>` : '';
@@ -531,16 +532,13 @@
 
             // --- 行程編輯視窗內的即時加總邏輯 ---
             function refreshModalTotals() {
-                const trip = tripData[currentTripId];
                 let sumTW = 0;
                 let sumLocal = 0;
-                
                 const memberRows = document.getElementById('form-members-container').querySelectorAll('.member-row');
 
                 memberRows.forEach(row => {
                     const amountInput = row.querySelector('input[name="schedule-member-amount"]');
-                    const amountStr = amountInput.value.trim();
-                    const amount = parseFloat(amountStr) || 0;
+                    const amount = parseFloat(amountInput.value) || 0;
                     const fee = parseFloat(row.querySelector('.member-fee-input').value) || 0;
                     const method = row.querySelector('.payment-method').value;
 
@@ -675,7 +673,7 @@
                 const data = { 
                     dayId, Date: dateVal, Time: document.getElementById('form-time').value, Location: document.getElementById('form-location').value,
                     Type: document.getElementById('form-type').value, 說明: document.getElementById('form-details').value,
-                    Address: document.getElementById('form-address').value, Amount: parseFloat(document.getElementById('form-amount').value) || 0, Rate: currentTripRate,
+                    Address: document.getElementById('form-address').value, Amount: parseFloat(document.getElementById('form-amount-twd').value) || 0, Rate: currentTripRate,
                     members, MustGo: document.getElementById('form-must-go').checked, uid: currentUser.uid
                 };
                 
@@ -872,43 +870,43 @@
 
                     let payers = members.filter(m => m.isPayer);
                     
-                    // --- 核心分帳邏輯 ---
+                    // --- 核心邏輯：區分個人與團隊支出 ---
                     if (payers.length > 0) {
                         members.forEach(m => {
                             const amt = parseFloat(m.amount) || 0;
                             const fee = parseFloat(m.fee) || 0;
-                            const mShareTW = m.method === 'card' ? (amt + fee) : (amt * rateVal);
+                            const mSpentTW = m.method === 'card' ? (amt + fee) : (amt * rateVal);
                             
-                            if (mShareTW <= 0) return;
+                            if (mSpentTW <= 0) return;
 
                             if(!mems[m.name]) mems[m.name] = { total: 0, cats: {} };
 
                             if (m.isPayer) {
-                                // 規則：若代墊人自己有金額 -> 視為團隊支出，平分給所有人
-                                let splitAmt = mShareTW / members.length;
+                                // 規則：若花費人與代墊人相同 -> 視為團隊支出，平分總額
+                                let splitAmt = mSpentTW / members.length;
                                 members.forEach(member => {
                                     balances[member.name] = (balances[member.name] || 0) - splitAmt;
                                     if(!mems[member.name]) mems[member.name] = { total: 0, cats: {} };
                                     mems[member.name].total += splitAmt;
                                     mems[member.name].cats[da.Type] = (mems[member.name].cats[da.Type] || 0) + splitAmt;
                                 });
-                                // 代墊人獲得 Credit
-                                balances[m.name] = (balances[m.name] || 0) + mShareTW;
+                                // 代墊人自己收回 Credit
+                                balances[m.name] = (balances[m.name] || 0) + mSpentTW;
                             } else {
-                                // 規則：若花費人不是代墊人 -> 視為個人支出，全額償還給代墊人
-                                balances[m.name] = (balances[m.name] || 0) - mShareTW;
-                                mems[m.name].total += mShareTW;
-                                mems[m.name].cats[da.Type] = (mems[m.name].cats[da.Type] || 0) + mShareTW;
+                                // 規則：若花費人與代墊人不同 -> 視為個人支出，花費人需負擔全額，代墊人獲得 Credit
+                                balances[m.name] = (balances[m.name] || 0) - mSpentTW;
+                                mems[m.name].total += mSpentTW;
+                                mems[m.name].cats[da.Type] = (mems[m.name].cats[da.Type] || 0) + mSpentTW;
                                 
-                                // Credit 給代墊人（若多位代墊人則平分信用）
-                                let creditPerPayer = mShareTW / payers.length;
+                                // 分配 Credit 給先付者（若多位先付則平分）
+                                let creditPerPayer = mSpentTW / payers.length;
                                 payers.forEach(p => {
                                     balances[p.name] = (balances[p.name] || 0) + creditPerPayer;
                                 });
                             }
                         });
                     } else {
-                        // 無代墊人則純統計，不計入債務 balances
+                        // 若無代墊人，則單純按平均統計，不產生債務
                         const avgPerPerson = actualTotalTW / members.length;
                         members.forEach(m => {
                             if(!mems[m.name]) mems[m.name] = { total: 0, cats: {} };
