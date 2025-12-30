@@ -361,7 +361,7 @@
                     calculatedTotalTW += mValueTW;
                 });
 
-                // --- 修改分帳顯示邏輯：一律顯示 － ---
+                // --- 顯示邏輯：一律顯示 － ---
                 let splitDisplay = "－";
                 
                 let memberHtml = members.length > 0 ? `<div class="flex flex-nowrap overflow-hidden justify-end gap-x-1.5 ml-2 max-w-[120px]">` + members.map((m, i) => `<span class="${MEMBER_COLORS[i % MEMBER_COLORS.length]} text-[10px] font-bold whitespace-nowrap">${typeof m === 'string' ? m : m.name}</span>`).join('') + `</div>` : '';
@@ -408,6 +408,7 @@
             }
 
             const loadSchedules = (tripId, dayId) => {
+                if (!tripId) return;
                 if (unsubscribeSchedule) unsubscribeSchedule();
                 const container = document.getElementById('schedule-list-container');
                 container.innerHTML = '<div class="p-4 text-center text-[#A9A9A9] text-xs">行程加載中...</div>';
@@ -418,9 +419,13 @@
                 );
 
                 unsubscribeSchedule = onSnapshot(q, (snapshot) => {
-                    container.innerHTML = '';
-                    const trip = tripData[currentTripId]; 
-                    if (trip && trip.startDate) updateHeaderDateWithDDay(getDateFromDayId(trip, dayId));
+                    container.innerHTML = ''; // 進入 Snapshot 即清空加載中狀態
+                    const trip = tripData[tripId]; 
+                    if (trip && trip.startDate) {
+                        try {
+                            updateHeaderDateWithDDay(getDateFromDayId(trip, dayId));
+                        } catch (e) { console.error("日期更新錯誤", e); }
+                    }
                     
                     if (snapshot.empty) {
                         container.innerHTML = `<div class="p-4 text-center text-[#A9A9A9] text-xs">此日暫無行程。</div>`;
@@ -430,6 +435,9 @@
                         schedules.sort((a, b) => (a.Time || "").localeCompare(b.Time || ""));
                         schedules.forEach(schedule => container.appendChild(createTripCard(schedule)));
                     }
+                }, (error) => {
+                    console.error("讀取失敗:", error);
+                    container.innerHTML = `<div class="p-4 text-center text-red-400 text-xs">連線失敗，請檢查網路或權限。</div>`;
                 });
             };
 
@@ -458,7 +466,7 @@
                 }
                 const addBtn = document.createElement('button'); addBtn.className = 'px-3 py-1.5 text-xs font-bold rounded-lg bg-[#7E92A1] text-white ml-2 flex-shrink-0'; addBtn.textContent = '+';
                 addBtn.onclick = async () => await updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}`), { numDays: (trip.numDays || 1) + 1 }, { merge: true });
-                container.appendChild(btn);
+                container.appendChild(addBtn);
             }
 
             async function calculateCurrency() {
@@ -616,7 +624,7 @@
                 const modal = document.getElementById('add-schedule-modal');
                 const content = modal.querySelector('div');
                 const trip = tripData[currentTripId];
-                const config = COUNTRY_CONFIG[trip.country || 'TW'] || COUNTRY_CONFIG['TW'];
+                const config = COUNTRY_CONFIG[trip ? trip.country : 'TW'] || COUNTRY_CONFIG['TW'];
                 
                 content.innerHTML = `
                     <h3 class="text-base font-bold mb-2 text-[#4A4B4D] pr-8 truncate"><span id="add-schedule-modal-title">${s.Location || '編輯行程'}</span></h3>
@@ -1006,12 +1014,26 @@
             function initApp() {
                 document.addEventListener('DOMContentLoaded', async () => {
                     const app = initializeApp(firebaseConfig); db = getFirestore(app); auth = getAuth(app); 
-                    const userCred = await signInAnonymously(auth); currentUser = userCred.user;
-                    loadTripList();
+                    try {
+                        const userCred = await signInAnonymously(auth); currentUser = userCred.user;
+                        loadTripList();
+                    } catch (e) {
+                        console.error("Auth failed:", e);
+                        alert("登入失敗，請檢查 Firebase 配置或網路。");
+                    }
+                    
                     document.getElementById('trip-select').onchange = (e) => changeTrip(e.target.value);
                     document.getElementById('center-add-btn').onclick = () => {
                         if(!currentTripId) return alert('請先建立計畫');
-                        openEditScheduleModal({ Location: '', Date: getDateFromDayId(tripData[currentTripId], currentDayId).toISOString().split('T')[0], Time: '12:00', Type: 'location', members: tripData[currentTripId].members || [] });
+                        const trip = tripData[currentTripId];
+                        const dayDate = getDateFromDayId(trip, currentDayId);
+                        openEditScheduleModal({ 
+                            Location: '', 
+                            Date: dayDate ? dayDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0], 
+                            Time: '12:00', 
+                            Type: 'location', 
+                            members: trip.members || [] 
+                        });
                     };
                     document.getElementById('settings-btn').onclick = openSettingsModal;
                     document.getElementById('btn-lists').onclick = loadLists;
