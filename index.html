@@ -475,7 +475,7 @@
                 }
                 const addBtn = document.createElement('button'); addBtn.className = 'px-3 py-1.5 text-xs font-bold rounded-lg bg-[#7E92A1] text-white ml-2 flex-shrink-0'; addBtn.textContent = '+';
                 addBtn.onclick = async () => await updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}`), { numDays: (trip.numDays || 1) + 1 }, { merge: true });
-                container.appendChild(addBtn);
+                container.appendChild(btn);
             }
 
             async function calculateCurrency() {
@@ -700,7 +700,7 @@
                 d.className = 'member-row flex items-center w-full gap-2 border-b pb-1 last:border-0';
                 d.innerHTML = `
                     <input type="text" name="schedule-member-name" value="${name}" placeholder="名字" class="compact-input w-16 rounded-md font-bold text-[0.7rem]">
-                    <input type="number" name="schedule-member-amount" value="${amt !== null ? amt : ''}" placeholder="金額" class="compact-input w-14 rounded-md text-[0.7rem]">
+                    <input type="number" name="schedule-member-amount" value="${amt !== null ? amt : ''}" placeholder="金額" class="compact-input w-20 rounded-md text-[0.7rem]">
                     <div class="flex items-center gap-1">
                         <label class="flex items-center text-[0.7rem] text-[#7E92A1] cursor-pointer whitespace-nowrap"><input type="checkbox" class="payer-check mr-1 h-4 w-4" ${isPayer?'checked':''}>先付</label>
                         <select class="payment-method text-[0.7rem] border rounded px-1 h-6 text-center">
