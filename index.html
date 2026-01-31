@@ -456,26 +456,26 @@
     const colRef = collection(db, `artifacts/${appId}/public/data/Trips`);
     unsubscribeTrips = onSnapshot(colRef, (snapshot) => {
         const select = document.getElementById('trip-select'); 
+        if (!select) return;
         select.innerHTML = ''; 
         tripData = {}; 
-        let firstId = null;
-
+        
         if (snapshot.empty) {
-            // 重要：當沒有計畫時，清空顯示並重設變數
             currentTripId = ''; 
             document.getElementById('schedule-list-container').innerHTML = 
-                '<div class="p-4 text-center text-[#A9A9A9] text-xs">目前沒有任何計畫，請點擊左上角 📅 建立。</div>';
+                '<div class="p-8 text-center text-[#A9A9A9] text-sm">尚未有旅遊計畫<br>點擊左上角 📅 開始建立！</div>';
             return;
         }
 
-        snapshot.forEach(doc => { 
-            const d = doc.data(); 
-            tripData[doc.id] = { id: doc.id, ...d }; 
+        let firstId = null;
+        snapshot.forEach(docSnap => { 
+            const d = docSnap.data(); 
+            tripData[docSnap.id] = { id: docSnap.id, ...d }; 
             const op = document.createElement('option'); 
-            op.value = doc.id; 
+            op.value = docSnap.id; 
             op.textContent = d.name || '未命名'; 
             select.appendChild(op); 
-            if(!firstId) firstId = doc.id; 
+            if (!firstId) firstId = docSnap.id; 
         });
 
         if (!currentTripId || !tripData[currentTripId]) currentTripId = firstId;
@@ -520,40 +520,80 @@
             // --- 修改行程主要設定 ---
             function openSettingsModal() {
     const modal = document.getElementById('settings-modal');
+    if (!modal) return;
     const content = modal.querySelector('div');
-    
-    // 檢查目前有沒有選中的計畫
-    const trip = currentTripId ? tripData[currentTripId] : null;
 
-    // 如果完全沒有計畫，直接幫使用者打開「新增計畫」的視窗
-    if (!trip) {
+    // 檢查有沒有計畫。注意：若 currentTripId 為空，直接跳到新增計畫
+    if (!currentTripId || !tripData[currentTripId]) {
         openNewTripModal();
         return;
     }
 
-    // 如果有計畫，才顯示修改介面
+    const trip = tripData[currentTripId];
+
     content.innerHTML = `
         <h3 class="text-base font-bold mb-3 flex justify-between items-center text-[#4A4B4D]">
-            計畫設定 
+            計畫設定
             <button id="settings-modal-close-btn" class="text-[#A9A9A9] text-xl">×</button>
         </h3>
         <form id="settings-form" class="space-y-3">
+            <div>
+                <label class="block text-xs font-medium text-[#7E92A1]">計畫名稱</label>
+                <input type="text" id="settings-trip-name" class="compact-input mt-0.5 block w-full rounded border" value="${trip.name || ''}">
+            </div>
+            <div class="grid grid-cols-[0.8fr_1.5fr_0.7fr] gap-1">
+                <div>
+                    <label class="block text-xs font-medium text-[#7E92A1]">國家</label>
+                    <select id="settings-trip-country" class="compact-input mt-0.5 block w-full rounded border h-[28px]">
+                        <option value="USA" ${trip.country==='USA'?'selected':''}>🇺🇸 美國</option>
+                        <option value="JP" ${trip.country==='JP'?'selected':''}>🇯🇵 日本</option>
+                        <option value="KR" ${trip.country==='KR'?'selected':''}>🇰🇷 韓國</option>
+                        <option value="UK" ${trip.country==='UK'?'selected':''}>🇬🇧 英國</option>
+                        <option value="TW" ${trip.country==='TW'?'selected':''}>🇹🇼 台灣</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-[#7E92A1]">開始日期</label>
+                    <input type="date" id="settings-start-date" class="compact-input mt-0.5 block w-full rounded border text-[10px] h-[28px]" value="${trip.startDate || ''}">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-[#7E92A1]">天數</label>
+                    <input type="number" id="settings-num-days" min="1" class="compact-input mt-0.5 block w-full rounded border text-center h-[28px]" value="${trip.numDays || 1}">
+                </div>
+            </div>
             <div class="pt-3 flex justify-between items-center border-t border-gray-100 mt-2">
-                <button type="button" id="new-trip-from-settings-btn" class="px-3 py-1.5 text-xs text-white bg-[#8F9E8B] rounded font-bold shadow-md">＋ 建立新旅程</button>
-                
+                <button type="button" id="new-trip-from-settings-btn" class="px-3 py-1.5 text-xs text-white bg-[#8F9E8B] rounded font-bold shadow-md">＋ 新計畫</button>
                 <div class="flex space-x-2">
                     <button type="button" id="delete-trip-btn" class="px-3 py-1.5 text-white bg-[#CB8572] rounded text-xs font-bold">刪除</button>
                     <button type="button" id="settings-modal-save-btn" class="px-3 py-1.5 text-white bg-[#7E92A1] rounded text-xs font-bold">儲存</button>
                 </div>
             </div>
-        </form>`;
+        </form>
+    `;
 
-    // ... 填入資料與綁定事件的邏輯 (同前一次建議) ...
+    modal.style.display = 'flex';
+
+    // 重新綁定事件，避免語法衝突
+    document.getElementById('settings-modal-close-btn').onclick = () => { modal.style.display = 'none'; };
     
-    // 確保「建立新旅程」按鈕能運作
     document.getElementById('new-trip-from-settings-btn').onclick = () => {
         modal.style.display = 'none';
         openNewTripModal();
+    };
+
+    document.getElementById('settings-modal-save-btn').onclick = async () => {
+        const newName = document.getElementById('settings-trip-name').value;
+        const newCountry = document.getElementById('settings-trip-country').value;
+        const newDate = document.getElementById('settings-start-date').value;
+        const newDays = parseInt(document.getElementById('settings-num-days').value) || 1;
+        
+        await updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}`), {
+            name: newName,
+            country: newCountry,
+            startDate: newDate,
+            numDays: newDays
+        });
+        modal.style.display = 'none';
     };
 }
                 document.getElementById('delete-trip-btn').onclick = async () => { if(confirm('確定要刪除整個行程嗎？此動作不可復原。')) { await deleteDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}`)); modal.style.display = 'none'; location.reload(); } };
@@ -1090,5 +1130,6 @@
     </script>
 </body>
 </html>
+
 
 
