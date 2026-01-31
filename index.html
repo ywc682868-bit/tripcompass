@@ -523,7 +523,7 @@
     if (!modal) return;
     const content = modal.querySelector('div');
 
-    // 檢查有沒有計畫。注意：若 currentTripId 為空，直接跳到新增計畫
+    // 關鍵修正：如果 currentTripId 為空，代表目前沒有計畫，直接打開「新增視窗」
     if (!currentTripId || !tripData[currentTripId]) {
         openNewTripModal();
         return;
@@ -531,6 +531,7 @@
 
     const trip = tripData[currentTripId];
 
+    // 只有在有資料時才渲染修改介面
     content.innerHTML = `
         <h3 class="text-base font-bold mb-3 flex justify-between items-center text-[#4A4B4D]">
             計畫設定
@@ -562,18 +563,17 @@
                 </div>
             </div>
             <div class="pt-3 flex justify-between items-center border-t border-gray-100 mt-2">
-                <button type="button" id="new-trip-from-settings-btn" class="px-3 py-1.5 text-xs text-white bg-[#8F9E8B] rounded font-bold shadow-md">＋ 新計畫</button>
+                <button type="button" id="new-trip-from-settings-btn" class="px-3 py-1.5 text-xs text-white bg-[#8F9E8B] rounded font-bold shadow-md">＋ 建立新計畫</button>
                 <div class="flex space-x-2">
                     <button type="button" id="delete-trip-btn" class="px-3 py-1.5 text-white bg-[#CB8572] rounded text-xs font-bold">刪除</button>
                     <button type="button" id="settings-modal-save-btn" class="px-3 py-1.5 text-white bg-[#7E92A1] rounded text-xs font-bold">儲存</button>
                 </div>
             </div>
-        </form>
-    `;
+        </form>`;
 
     modal.style.display = 'flex';
 
-    // 重新綁定事件，避免語法衝突
+    // 綁定按鈕事件
     document.getElementById('settings-modal-close-btn').onclick = () => { modal.style.display = 'none'; };
     
     document.getElementById('new-trip-from-settings-btn').onclick = () => {
@@ -582,16 +582,13 @@
     };
 
     document.getElementById('settings-modal-save-btn').onclick = async () => {
-        const newName = document.getElementById('settings-trip-name').value;
-        const newCountry = document.getElementById('settings-trip-country').value;
-        const newDate = document.getElementById('settings-start-date').value;
-        const newDays = parseInt(document.getElementById('settings-num-days').value) || 1;
-        
+        const members = Array.from(document.querySelectorAll('.setting-mem-input')).map(i => i.value.trim()).filter(v => v);
         await updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}`), {
-            name: newName,
-            country: newCountry,
-            startDate: newDate,
-            numDays: newDays
+            name: document.getElementById('settings-trip-name').value,
+            country: document.getElementById('settings-trip-country').value,
+            startDate: document.getElementById('settings-start-date').value,
+            numDays: parseInt(document.getElementById('settings-num-days').value) || 1,
+            members: members
         });
         modal.style.display = 'none';
     };
@@ -1130,6 +1127,7 @@
     </script>
 </body>
 </html>
+
 
 
 
