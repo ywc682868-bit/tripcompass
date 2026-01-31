@@ -892,33 +892,54 @@
                 tabsContainer.appendChild(addTab);
             }
 
-            function renderListItems(listData, container) {
-                const modalBody = container.parentElement; modalBody.style.position = 'relative';
-                const oldFab = modalBody.querySelector('.list-fab-dynamic'); if(oldFab) oldFab.remove();
-                const fab = document.createElement('div'); fab.className = 'list-fab-dynamic'; fab.textContent = '＋';
+function renderListItems(listData, container) {
+                const modalBody = container.parentElement; 
+                modalBody.style.position = 'relative';
+
+                // 清除舊的按鈕避免重複生成
+                const oldFab = modalBody.querySelector('.list-fab-dynamic'); 
+                if(oldFab) oldFab.remove();
+
+                // 重新建立右下角的「＋」新增按鈕
+                const fab = document.createElement('div'); 
+                fab.className = 'list-fab-dynamic'; 
+                fab.textContent = '＋';
                 fab.style.cssText = `position: absolute; bottom: 20px; right: 20px; width: 44px; height: 44px; background-color: #7E92A1; border-radius: 50%; color: white; font-size: 24px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.25); cursor: pointer; z-index: 50;`;
+                
                 fab.onclick = async () => {
                     const newItem = listData.type === 'check' 
                         ? { id: Date.now(), text: '', checkedLeft: false, checkedRight: false, isImportant: false } 
                         : { id: Date.now(), text: '', desc: '', location: '', imageUrl: '', isImportant: false };
-                    await updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Lists/${listData.id}`), { items: [...(listData.items||[]), newItem] });
+                    
+                    // 確保使用正確的 Firebase 路徑存檔
+                    await updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Lists/${listData.id}`), { 
+                        items: [...(listData.items||[]), newItem] 
+                    });
                 };
                 modalBody.appendChild(fab);
 
                 const inner = document.createElement('div'); 
                 inner.className = listData.type === 'check' ? 'grid grid-cols-2 gap-2 pb-16 mt-2' : 'space-y-2 pb-16 mt-2';
                 
-                const itemsWithOriginalIdx = (listData.items || []).map((item, index) => ({...item, originalIdx: index}));
-                itemsWithOriginalIdx.sort((a, b) => (b.isImportant ? 1 : 0) - (a.isImportant ? 1 : 0));
+                // 恢復重要項目置頂排序
+                const itemsWithIdx = (listData.items || []).map((item, index) => ({...item, originalIdx: index}));
+                itemsWithIdx.sort((a, b) => (b.isImportant ? 1 : 0) - (a.isImportant ? 1 : 0));
 
-                itemsWithOriginalIdx.forEach((item) => {
+                itemsWithIdx.forEach((item) => {
                     const idx = item.originalIdx;
-                    const wrap = document.createElement('div'); wrap.className = 'swipe-item-container';
-                    const bg = document.createElement('div'); bg.className = 'swipe-item-delete-bg'; bg.innerHTML = `<button class="px-2 h-full bg-[#CB8572] text-white font-bold text-xs">刪除</button>`;
+                    const wrap = document.createElement('div'); 
+                    wrap.className = 'swipe-item-container';
+                    
+                    // 恢復側滑刪除背景
+                    const bg = document.createElement('div'); 
+                    bg.className = 'swipe-item-delete-bg'; 
+                    bg.innerHTML = `<button class="px-2 h-full bg-[#CB8572] text-white font-bold text-xs">刪除</button>`;
                     bg.querySelector('button').onclick = () => deleteListItem(listData, idx);
+                    
                     const c = document.createElement('div'); 
                     c.className = 'swipe-item-content bg-white py-1 px-2 border border-gray-100 rounded-lg flex items-center gap-2';
                     const star = `<button class="${item.isImportant?'text-yellow-400':'text-gray-200'} text-lg">${item.isImportant?'★':'☆'}</button>`;
+                    
                     if(listData.type==='check') {
                         c.innerHTML = `
                             ${star}
@@ -934,6 +955,7 @@
                         c.querySelector('.txt').onchange = (e) => updateListItem(listData, idx, {text: e.target.value});
                         c.querySelector('.del').onclick = () => deleteListItem(listData, idx);
                     } else {
+                        // 購物清單設計
                         c.style.display = 'grid'; c.style.gridTemplateColumns = '24px 50px 1fr 60px 20px';
                         c.innerHTML = `
                             ${star}
@@ -952,13 +974,17 @@
                         c.querySelector('.loc').onchange = (e) => updateListItem(listData, idx, {location: e.target.value});
                         c.querySelector('.del').onclick = () => deleteListItem(listData, idx);
                         c.querySelector('.shopping-img-box').onclick = () => {
-                            if(item.imageUrl) { document.getElementById('zoom-img').src=item.imageUrl; document.getElementById('image-zoom-modal').style.display='flex'; }
-                            else {
+                            if(item.imageUrl) {
+                                document.getElementById('zoom-img').src=item.imageUrl;
+                                document.getElementById('image-zoom-modal').style.display='flex';
+                            } else {
+                                // 觸發相機/檔案上傳邏輯
                                 const inp = document.createElement('input'); inp.type='file'; inp.accept='image/*';
                                 inp.onchange = (e) => {
                                     const fr = new FileReader(); fr.onload=(ev)=>{
                                         const img=new Image(); img.onload=()=>{
-                                            const cvs=document.createElement('canvas'); const s=400/img.width; cvs.width=400; cvs.height=img.height*s;
+                                            const cvs=document.createElement('canvas'); const s=400/img.width;
+                                            cvs.width=400; cvs.height=img.height*s;
                                             cvs.getContext('2d').drawImage(img,0,0,400,cvs.height);
                                             updateListItem(listData,idx,{imageUrl:cvs.toDataURL("image/jpeg",0.7)});
                                         }; img.src=ev.target.result;
@@ -973,141 +999,25 @@
                 container.appendChild(inner);
             }
 
-            // --- 核心分帳與結算邏輯 ---
-            async function loadExpenseSummary() {
-                if(!currentTripId) return;
-                const snap = await getDocs(collection(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`));
-                let total=0, types={}, mems={}, balances={};
-                
-                snap.forEach(d => {
-                    const da = d.data(); 
-                    const rateVal = parseFloat(da.Rate) || 1; 
-                    const members = da.members || [];
-                    if (!members.length) return;
-
-                    const scheduleTotalTW = members.reduce((sum, m) => {
-                        const amt = parseFloat(m.amount) || 0;
-                        const fee = parseFloat(m.fee) || 0;
-                        return sum + (m.method === 'card' ? (amt + fee) : (amt * rateVal));
-                    }, 0);
-
-                    if (scheduleTotalTW <= 0) return;
-                    total += scheduleTotalTW;
-                    types[da.Type] = (types[da.Type] || 0) + scheduleTotalTW;
-
-                    const uniqueParticipantNames = [...new Set(members.map(m => m.name))];
-                    const numParticipants = uniqueParticipantNames.length;
-
-                    const consumptionMap = {};
-                    uniqueParticipantNames.forEach(n => consumptionMap[n] = 0);
-
-                    const uniqueAmountNames = [...new Set(members.filter(m => parseFloat(m.amount) > 0).map(m => m.name))];
-                    const uniquePayerNames = [...new Set(members.filter(m => m.isPayer).map(m => m.name))];
-
-                    members.forEach(m => {
-                        const amt = parseFloat(m.amount) || 0;
-                        const fee = parseFloat(m.fee) || 0;
-                        const valTW = (m.method === 'card' ? (amt + fee) : (amt * rateVal));
-
-                        if (uniqueAmountNames.length === 1 && uniquePayerNames.length === 1 && uniqueAmountNames[0] === uniquePayerNames[0]) {
-                            if (m.name === uniqueAmountNames[0] && amt > 0) {
-                                uniqueParticipantNames.forEach(name => {
-                                    consumptionMap[name] += valTW / numParticipants;
-                                });
-                            }
-                        } else {
-                            consumptionMap[m.name] += valTW;
-                        }
-                    });
-
-                    uniqueParticipantNames.forEach(name => {
-                        if(!mems[name]) mems[name] = { total: 0, cats: {} };
-                        const consumed = consumptionMap[name];
-                        mems[name].total += consumed;
-                        mems[name].cats[da.Type] = (mems[name].cats[da.Type] || 0) + consumed;
-
-                        if (uniquePayerNames.length > 0) {
-                            let paidByThisMember = uniquePayerNames.includes(name) ? (scheduleTotalTW / uniquePayerNames.length) : 0;
-                            balances[name] = (balances[name] || 0) + (paidByThisMember - consumed);
-                        }
-                    });
-                });
-
-                const modal = document.getElementById('split-expense-modal');
-                modal.innerHTML = `
-                    <div class="bg-white rounded-xl shadow-2xl p-4 w-11/12 max-w-sm flex flex-col max-h-[90vh]">
-                        <div class="flex justify-between items-center mb-3"><h3 class="font-bold text-[#4A4B4D]">花費</h3><button id="exp-close" class="text-2xl text-gray-400">×</button></div>
-                        <div class="bg-[#F9F9F9] p-3 rounded-xl border mb-3">
-                            <div class="flex justify-between items-end border-b pb-1 mb-2"><span class="text-xs text-gray-500">總支出</span><span class="font-extrabold text-sm text-[#4A4B4D]">TW$ ${total.toFixed(0)}</span></div>
-                            <div class="grid grid-cols-[25%_50%_25%] items-center h-44">
-                                <div id="leg-L" class="flex flex-col text-[10px] overflow-hidden h-full justify-start"></div>
-                                <div class="flex justify-center items-center h-full"><canvas id="exp-chart" style="max-width: 100%; max-height: 100%;"></canvas></div>
-                                <div id="leg-R" class="flex flex-col text-[10px] overflow-hidden h-full justify-start items-end"></div>
-                            </div>
-                        </div>
-                        <div class="overflow-y-auto flex-grow space-y-2">
-                            <div id="exp-mem-list" class="grid grid-cols-2 gap-x-10 gap-y-4 text-[11px]"></div>
-                            <div id="settlement" class="mt-4 space-y-1"></div>
-                        </div>
-                    </div>`;
-                
-                document.getElementById('exp-close').onclick = () => modal.style.display = 'none';
-                const sortedKeys = Object.keys(types).sort((a,b)=>types[b]-types[a]);
-                expenseChart = new Chart(document.getElementById('exp-chart'), {
-                    type: 'doughnut',
-                    data: { datasets: [{ data: sortedKeys.map(k=>types[k]), backgroundColor: sortedKeys.map(k=>(CATEGORY_COLORS[k]||CATEGORY_COLORS.default).hex), borderWidth: 0 }] },
-                    options: { maintainAspectRatio: false, cutout: '65%', plugins: { legend: { display: false } } }
-                });
-                
-                sortedKeys.forEach((k, i) => {
-                    const color = (CATEGORY_COLORS[k]||CATEGORY_COLORS.default).hex;
-                    const isLeft = i % 2 === 0;
-                    const rowHtml = `<div class="flex items-center gap-1.5 h-12">${isLeft ? `<div class="w-2 h-2 rounded-full flex-shrink-0" style="background-color: ${color}"></div><div class="flex flex-col min-w-0"><span class="font-bold truncate text-[10px]">${CATEGORY_NAMES[k]||k}</span><span class="text-gray-400 text-[9px]">TW$${types[k].toFixed(0)}</span></div>` : `<div class="flex flex-col min-w-0 items-end text-right"><span class="font-bold truncate text-[10px]">${CATEGORY_NAMES[k]||k}</span><span class="text-gray-400 text-[9px]">TW$${types[k].toFixed(0)}</span></div><div class="w-2 h-2 rounded-full flex-shrink-0" style="background-color: ${color}"></div>`}</div>`;
-                    if(isLeft) document.getElementById('leg-L').innerHTML += rowHtml; else document.getElementById('leg-R').innerHTML += rowHtml;
-                });
-
-                Object.keys(mems).sort().forEach(n => {
-                    let cats = Object.keys(mems[n].cats).map(c => `<div class="flex items-center py-0.5 text-[10px] h-6"><span class="${(CATEGORY_COLORS[c]||CATEGORY_COLORS.default).text} font-medium flex-1 text-left truncate">${CATEGORY_NAMES[c]}</span><div class="flex items-center gap-0.5 flex-none"><span class="${(CATEGORY_COLORS[c]||CATEGORY_COLORS.default).text} font-bold">TW$</span><span class="${(CATEGORY_COLORS[c]||CATEGORY_COLORS.default).text} font-bold text-right min-w-[35px]">${mems[n].cats[c].toFixed(0)}</span></div></div>`).join('');
-                    let totalRow = `<div class="flex items-center py-0.5 text-[10px] h-6 border-t mt-1 pt-1 font-bold text-gray-700"><span class="flex-1 text-left">總計</span><div class="flex items-center gap-0.5 flex-none"><span>TW$</span><span class="text-right min-w-[35px]">${mems[n].total.toFixed(0)}</span></div></div>`;
-                    document.getElementById('exp-mem-list').innerHTML += `<div><div class="font-bold text-gray-600 mb-1 border-b pb-0.5">${n}</div>${cats}${totalRow}</div>`;
-                });
-                
-                let debtors = [], creditors = [];
-                for(let n in balances) { 
-                    if(balances[n] < -0.99) debtors.push({n, a: Math.abs(balances[n])}); 
-                    else if(balances[n] > 0.99) creditors.push({n, a: balances[n]}); 
-                }
-
-                const setCont = document.getElementById('settlement');
-                if(!debtors.length) setCont.innerHTML = '<div class="text-[10px] text-gray-400 text-center">已結清</div>';
-                else {
-                    let i=0, j=0;
-                    while(i < debtors.length && j < creditors.length){
-                        let amt = Math.min(debtors[i].a, creditors[j].a);
-                        setCont.innerHTML += `<div class="flex justify-between items-center bg-gray-50 p-2.5 rounded-xl text-[11px] w-full"><div class="flex justify-around items-center flex-grow text-gray-600 mr-4"><span class="font-bold">${debtors[i].n}</span><span class="text-gray-400">→</span><span class="font-bold">${creditors[j].n}</span></div><div class="font-bold text-[#7E92A1] flex-none text-right">TW$${amt.toFixed(0)}</div></div>`;
-                        debtors[i].a -= amt; creditors[j].a -= amt;
-                        if(debtors[i].a < 1) i++; if(creditors[j].a < 1) j++;
-                    }
-                }
-                modal.style.display = 'flex';
-            }
-
-            async function deleteSchedule(id) { if(confirm('確定刪除?')) { await deleteDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`, id)); loadSchedules(currentTripId, currentDayId); document.getElementById('add-schedule-modal').style.display='none'; } }
-
+            // 2. 恢復更新清單項目的功能
             async function updateListItem(listData, idx, newData) {
                 const newItems = [...listData.items];
                 newItems[idx] = { ...newItems[idx], ...newData };
-                await updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Lists/${listData.id}`), { items: newItems });
+                await updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Lists/${listData.id}`), { 
+                    items: newItems 
+                });
             }
 
+            // 3. 恢復刪除清單項目的功能
             async function deleteListItem(listData, idx) {
-                if(confirm('確定刪除此項目？')) {
+                if(confirm('確定要刪除此項目？')) {
                     const newItems = [...listData.items];
                     newItems.splice(idx, 1);
-                    await updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Lists/${listData.id}`), { items: newItems });
+                    await updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Lists/${listData.id}`), { 
+                        items: newItems 
+                    });
                 }
             }
-
             function initApp() {
                 document.addEventListener('DOMContentLoaded', async () => {
                     const app = initializeApp(firebaseConfig); db = getFirestore(app); auth = getAuth(app); 
@@ -1144,3 +1054,4 @@
     </script>
 </body>
 </html>
+
