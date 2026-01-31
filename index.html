@@ -453,23 +453,36 @@
             };
 
             const loadTripList = () => {
-                const colRef = collection(db, `artifacts/${appId}/public/data/Trips`);
-                unsubscribeTrips = onSnapshot(colRef, (snapshot) => {
-                    const select = document.getElementById('trip-select'); select.innerHTML = ''; tripData = {}; let firstId = null;
-                    snapshot.forEach(doc => { 
-                        const d = doc.data(); tripData[doc.id] = { id: doc.id, ...d }; 
-                        const op = document.createElement('option'); op.value = doc.id; op.textContent = d.name || '未命名'; select.appendChild(op); 
-                        if(!firstId) firstId = doc.id; 
-                    });
-                    if (!currentTripId || !tripData[currentTripId]) currentTripId = firstId;
-                    if (currentTripId) { 
-                        select.value = currentTripId; 
-                        changeTrip(currentTripId); 
-                    } else {
-                        document.getElementById('schedule-list-container').innerHTML = '<div class="p-4 text-center text-[#A9A9A9] text-xs">尚無行程，點擊 📅 建立。</div>';
-                    }
-                });
-            };
+    const colRef = collection(db, `artifacts/${appId}/public/data/Trips`);
+    unsubscribeTrips = onSnapshot(colRef, (snapshot) => {
+        const select = document.getElementById('trip-select'); 
+        select.innerHTML = ''; 
+        tripData = {}; 
+        let firstId = null;
+
+        if (snapshot.empty) {
+            // 重要：當沒有計畫時，清空顯示並重設變數
+            currentTripId = ''; 
+            document.getElementById('schedule-list-container').innerHTML = 
+                '<div class="p-4 text-center text-[#A9A9A9] text-xs">目前沒有任何計畫，請點擊左上角 📅 建立。</div>';
+            return;
+        }
+
+        snapshot.forEach(doc => { 
+            const d = doc.data(); 
+            tripData[doc.id] = { id: doc.id, ...d }; 
+            const op = document.createElement('option'); 
+            op.value = doc.id; 
+            op.textContent = d.name || '未命名'; 
+            select.appendChild(op); 
+            if(!firstId) firstId = doc.id; 
+        });
+
+        if (!currentTripId || !tripData[currentTripId]) currentTripId = firstId;
+        select.value = currentTripId; 
+        changeTrip(currentTripId); 
+    });
+};
 
             function renderDayTabs() {
                 const container = document.getElementById('day-tabs-container'); container.innerHTML = '';
@@ -1077,4 +1090,5 @@
     </script>
 </body>
 </html>
+
 
