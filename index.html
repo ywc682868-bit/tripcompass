@@ -280,11 +280,7 @@
                     let dString = diffDaysTrip === 0 ? 'D-0' : (diffDaysTrip > 0 ? `D+${diffDaysTrip + 1}` : `D${diffDaysTrip}`);
                     tripCountdownHtml = `<span class="ml-2 text-[#7E92A1] text-xs font-bold tracking-wide">🛫 ${dString}</span>`;
                 }
-                const anniversary = new Date('2025-08-01T00:00:00');
-                const diffTimeLove = today.getTime() - anniversary.getTime();
-                const diffDaysLove = Math.floor(diffTimeLove / (1000 * 60 * 60 * 24)) + 1;
-                let loveHtml = !isNaN(diffDaysLove) ? `<span class="ml-2 text-[#D4A5A5] text-xs font-extrabold tracking-wide">❤️ ${diffDaysLove}天</span>` : '';
-                document.getElementById('header-day-date-display').innerHTML = `${dateStr}${tripCountdownHtml}${loveHtml}`;
+                document.getElementById('header-day-date-display').innerHTML = `${dateStr}${tripCountdownHtml}`;
             }
 
             async function updateHeaderInfo() {
@@ -320,12 +316,12 @@
                             try {
                                 const geoRes = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=zh-tw`);
                                 const geoData = await geoRes.json();
-                                localizedName = geoData.city || geoData.locality || geoData.countryName || "目前位置";
+                                localizedName = geoData.city || geoData.locality || geoData.principalSubdivision || geoData.countryName || "目前位置";
                             } catch (e) { console.error(e); }
                             fetchWeather(lat, lon, localizedName);
                         },
                         () => { fetchWeather(config.lat, config.lon, config.localName); },
-                        { timeout: 5000 }
+                        { timeout: 10000, enableHighAccuracy: true }
                     );
                 } else { fetchWeather(config.lat, config.lon, config.localName); }
             }
@@ -355,6 +351,16 @@
                 const rate = schedule.Rate || 1;
                 const members = schedule.members || [];
                 
+                // --- 連結邏輯：地址欄位為網址則跳轉，否則開啟 Google Maps 搜尋 ---
+                let mapUrl = "";
+                const addressText = schedule.Address || "";
+                if (addressText.startsWith('http')) {
+                    mapUrl = addressText;
+                } else {
+                    const query = encodeURIComponent(addressText || schedule.Location);
+                    mapUrl = `https://www.google.com/maps/search/?api=1&query=${query}`;
+                }
+
                 let calculatedTotalTW = 0;
                 const uniquePayerNames = [...new Set(members.filter(m => m.isPayer).map(m => m.name))];
                 const uniqueAmountEnteredNames = [...new Set(members.filter(m => parseFloat(m.amount) > 0).map(m => m.name))];
@@ -394,7 +400,7 @@
                     </div>
                     <div class="flex-grow py-2 pl-2 pr-1 flex flex-col justify-start min-w-0 overflow-hidden">
                         <div class="flex justify-between items-start w-full">
-                            <h3 class="text-xs font-bold text-[#4A4B4D] truncate"><a href="#" class="location-link hover:underline">${schedule.Location}</a></h3>
+                            <h3 class="text-xs font-bold text-[#4A4B4D] truncate"><a href="${mapUrl}" target="_blank" class="location-link hover:underline decoration-[#7E92A1]">${schedule.Location}</a></h3>
                             ${memberHtml}
                         </div>
                         <p class="text-[#888888] text-[10px] line-clamp-4 whitespace-pre-wrap mt-0.5" style="line-height: 1.2;">${schedule.說明 || ''}</p>
@@ -431,7 +437,6 @@
                 );
 
                 unsubscribeSchedule = onSnapshot(q, (snapshot) => {
-                    // 獲取快照後立即清空容器，不論資料是否為空
                     container.innerHTML = '';
                     const trip = tripData[tripId]; 
                     if (trip && trip.startDate) {
@@ -504,7 +509,6 @@
                 contentEl.addEventListener('touchend', () => { contentEl.style.transform = (isSwiping && currentTranslate < -70) ? `translateX(-140px)` : `translateX(0)`; });
             }
 
-            // --- 修改行程主要設定 ---
             function openSettingsModal() {
                 const trip = tripData[currentTripId];
                 if (!trip) return;
@@ -546,7 +550,6 @@
                 };
             }
 
-            // --- 新增計畫視窗 ---
             function openNewTripModal() {
                 const modal = document.getElementById('new-trip-modal');
                 const content = modal.querySelector('div');
@@ -605,7 +608,6 @@
                 URL.revokeObjectURL(url);
             }
 
-            // --- 即時計帳刷新邏輯 ---
             function refreshModalTotals() {
                 let sumTW = 0;
                 let sumLocal = 0;
@@ -681,9 +683,9 @@
                                 <input type="hidden" id="form-amount-twd-hidden" value="0">
                             </div>
                         </div>
-                        <div class="flex justify-between items-center pt-2 border-t">
+                        <div class="flex items-center pt-2 border-t">
                             <button type="button" id="modal-delete-btn" class="px-3 py-1 bg-[#CB8572] text-white rounded text-xs font-bold ${editingScheduleId?'':'hidden'}">刪除</button>
-                            <button type="button" id="modal-save-btn" class="px-3 py-1 bg-[#7E92A1] text-white rounded text-xs font-bold shadow-sm">儲存</button>
+                            <button type="button" id="modal-save-btn" class="ml-auto px-3 py-1 bg-[#7E92A1] text-white rounded text-xs font-bold shadow-sm">儲存</button>
                         </div>
                     </form>`;
                 
@@ -781,6 +783,18 @@
                     await addDoc(col, {name: '物品', type: 'check', order: 1, items:[], uid: currentUser.uid});
                     await addDoc(col, {name: '購物', type: 'shopping', order: 2, items:[], uid: currentUser.uid});
                 }
+            }
+
+            async function updateListItem(listData, idx, updates) {
+                const items = [...(listData.items || [])];
+                items[idx] = { ...items[idx], ...updates };
+                await updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Lists/${listData.id}`), { items });
+            }
+
+            async function deleteListItem(listData, idx) {
+                const items = [...(listData.items || [])];
+                items.splice(idx, 1);
+                await updateDoc(doc(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Lists/${listData.id}`), { items });
             }
 
             function loadLists() {
@@ -909,7 +923,6 @@
                 container.appendChild(inner);
             }
 
-            // --- 核心分帳與結算邏輯 ---
             async function loadExpenseSummary() {
                 if(!currentTripId) return;
                 const snap = await getDocs(collection(db, `artifacts/${appId}/public/data/Trips/${currentTripId}/Schedules`));
@@ -1052,13 +1065,10 @@
                         });
                     };
 
-                    // --- 修改處：日曆圖示點擊邏輯 ---
                     document.getElementById('settings-btn').onclick = () => {
-                        // 如果目前沒有計畫，點擊日曆圖示直接開啟「新增計畫」視窗
                         if (!currentTripId || !tripData[currentTripId]) {
                             openNewTripModal();
                         } else {
-                            // 若已有計畫，則進入設定頁面
                             openSettingsModal();
                         }
                     };
