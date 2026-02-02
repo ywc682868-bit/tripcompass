@@ -651,15 +651,15 @@
                         <div class="flex gap-4 w-full">
                             <div class="w-[36%] min-w-0">
                                 <label class="compact-label block">日期</label>
-                                <input type="date" id="form-date" class="compact-input w-full rounded border text-[10px] px-1" value="${s.Date||''}">
+                                <input type="date" id="form-date" class="compact-input w-full rounded border h-[38px] text-[12px] px-1" value="${s.Date||''}">
                             </div> 
                             <div class="w-[28%] min-w-0">
                                 <label class="compact-label block">時間</label>
-                                <input type="time" id="form-time" class="compact-input w-full rounded border text-[10px] px-1" value="${s.Time||''}">
+                                <input type="time" id="form-time" class="compact-input w-full rounded border h-[38px] text-[12px] px-1" value="${s.Time||''}">
                             </div>
                             <div class="w-[32%] min-w-0">
                                 <label class="compact-label block">類型</label>
-                                <select id="form-type" class="compact-input w-full rounded border text-[15px] px-0.5">
+                                <select id="form-type" class="compact-input w-full rounded border h-[38px] text-[12px] px-0.5">
                                     <option value="location" ${s.Type==='location'?'selected':''}>📍景點</option>
                                     <option value="restaurant" ${s.Type==='restaurant'?'selected':''}>🍽️餐廳</option>
                                     <option value="coffee" ${s.Type==='coffee'?'selected':''}>☕咖啡</option>
@@ -1096,6 +1096,7 @@
     </script>
 </body>
 </html>
+
 
 
 
