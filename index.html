@@ -648,7 +648,7 @@
                     <h3 class="text-base font-bold mb-2 text-[#4A4B4D] pr-8 truncate"><span id="add-schedule-modal-title">${s.Location || '編輯行程'}</span></h3>
                     <button id="modal-close-btn" class="absolute top-3 right-3 text-[#A9A9A9] text-2xl leading-none">×</button>
                     <form id="add-schedule-form" class="space-y-2">
-                        <div class="flex gap-4 w-full">
+                        <div class="flex gap-5 w-full">
                             <div class="w-[36%] min-w-0">
                                 <label class="compact-label block">日期</label>
                                 <input type="date" id="form-date" class="compact-input w-full rounded border h-[32px] text-[12px] px-1" value="${s.Date||''}">
@@ -659,7 +659,7 @@
                             </div>
                             <div class="w-[32%] min-w-0">
                                 <label class="compact-label block">類型</label>
-                                <select id="form-type" class="compact-input w-full rounded border h-[35px] text-[12px] px-0.5">
+                                <select id="form-type" class="compact-input w-full rounded border h-[34px] text-[12px] px-0.5">
                                     <option value="location" ${s.Type==='location'?'selected':''}>📍景點</option>
                                     <option value="restaurant" ${s.Type==='restaurant'?'selected':''}>🍽️餐廳</option>
                                     <option value="coffee" ${s.Type==='coffee'?'selected':''}>☕咖啡</option>
@@ -1096,6 +1096,7 @@
     </script>
 </body>
 </html>
+
 
 
 
