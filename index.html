@@ -274,6 +274,14 @@
                 const dateStr = formatDateForHeader(d);
                 const today = new Date(); today.setHours(0, 0, 0, 0);
                 const trip = tripData[currentTripId];
+                
+                // 1. 計算交往紀念日 (2025.08.01)
+                const anniversary = new Date('2025-08-01T00:00:00');
+                const diffTimeLove = today.getTime() - anniversary.getTime();
+                const diffDaysLove = Math.floor(diffTimeLove / (1000 * 60 * 60 * 24)) + 1;
+                let loveHtml = !isNaN(diffDaysLove) ? `<span class="ml-2 text-[#D4A5A5] text-xs font-extrabold tracking-wide">❤️ ${diffDaysLove}天</span>` : '';
+
+                // 2. 計算行程出發日倒數
                 let tripCountdownHtml = '';
                 if (trip && trip.startDate) {
                     const tripStart = new Date(trip.startDate); tripStart.setHours(0, 0, 0, 0);
@@ -282,7 +290,9 @@
                     let dString = diffDaysTrip === 0 ? 'D-0' : (diffDaysTrip > 0 ? `D+${diffDaysTrip + 1}` : `D${diffDaysTrip}`);
                     tripCountdownHtml = `<span class="ml-2 text-[#7E92A1] text-xs font-bold tracking-wide">🛫 ${dString}</span>`;
                 }
-                document.getElementById('header-day-date-display').innerHTML = `${dateStr}${tripCountdownHtml}`;
+
+                // 3. 渲染到畫面上 (交往天數在出發日左邊)
+                document.getElementById('header-day-date-display').innerHTML = `${dateStr}${loveHtml}${tripCountdownHtml}`;
             }
 
             async function updateHeaderInfo() {
@@ -1098,4 +1108,5 @@
     </script>
 </body>
 </html>
+
 
