@@ -1,1 +1,2405 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TIGPS</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#faf9f7;--bg2:#f1ede8;--bg3:#e8e3db;--text:#5a5651;--text2:#8b8580;--text3:#b4ada5;--border:#e3dcd4;--border2:#d4ccc2;--accent:#6b7171;--radius:8px;
+  --cat-data:#d4dce8;--cat-meeting:#e8d4d4;--cat-admin:#d4e8d8;--cat-questionnaire:#e8e2d0;--cat-platform:#ddd4e8;
+  --cal-side:320px;
+  --cat-data-text:#4a5a70;--cat-meeting-text:#704a4a;--cat-admin-text:#4a7055;--cat-questionnaire-text:#706040;--cat-platform-text:#604870;
+}
+html,body{height:100%;overflow:hidden}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);font-size:15px}
 
+/* Page Structure */
+.page-container{display:flex;flex-direction:column;height:100vh;overflow:hidden;}
+.topbar{height:60px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 12px;flex-shrink:0;z-index:200;}
+.app{display:flex;flex:1;overflow:hidden;}
+
+.sidebar{width:240px;min-width:240px;border-right:1px solid var(--border);background:var(--bg2);display:flex;flex-direction:column;padding:16px 12px;overflow:hidden;transition:width 0.25s,min-width 0.25s,padding 0.25s,border 0.25s}
+.sidebar.collapsed{width:0;min-width:0;padding:0;border-right:none}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+
+.sb-nav{flex:1;overflow-y:auto;padding:12px 0;margin-top:0px}
+.team-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.member-cell{display:flex;flex-direction:column;align-items:center;gap:3px}
+.avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600}
+.sb-item{padding:8px 12px;border-radius:var(--radius);cursor:pointer;color:var(--text2);margin-bottom:2px;user-select:none}
+.sb-item:hover{background:var(--bg3);color:var(--text)}
+.sb-item.active{background:var(--border);color:var(--text);font-weight:500}
+.content{flex:1;overflow:hidden;display:flex;flex-direction:column}
+.view{display:none;flex:1;overflow:hidden}
+.view.active{display:flex;flex-direction:column}
+
+/* Calendar */
+.cal-wrap{display:flex;flex:1;overflow:hidden}
+.cal-left{width:var(--cal-side);min-width:var(--cal-side);border-right:1px solid var(--border);padding:16px 14px;overflow-y:auto;background:var(--bg2);display:flex;flex-direction:column;gap:16px}
+.cal-center{flex:1;display:flex;flex-direction:column;overflow-y:auto;min-height:0}
+.cal-right{width:var(--cal-side);min-width:var(--cal-side);border-left:1px solid var(--border);padding:16px 14px;overflow-y:auto;background:var(--bg2);display:flex;flex-direction:column;gap:16px}
+.cal-side-section{display:flex;flex-direction:column;gap:8px}
+.cal-side-title{font-size:12px;font-weight:700;padding:4px 8px;border-radius:4px;display:inline-block;text-transform:uppercase;letter-spacing:0.05em}
+.cal-side-title.current{background:#e5e7e6;color:#6b7171}
+.cal-side-title.next{background:#e8e0d8;color:#8a7460}
+.cal-side-title.deadline{background:#e8e0dd;color:#8a6b66}
+.cal-side-title.meeting{background:var(--cat-meeting);color:var(--cat-meeting-text)}
+.cal-side-item{font-size:13px;padding:5px 7px;border-radius:4px;color:var(--text2);cursor:pointer;display:flex;gap:4px;align-items:flex-start}
+.cal-side-item:hover{background:var(--border);color:var(--text)}
+.cal-side-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;margin-top:3px}
+.cal-nav{display:flex;align-items:center;justify-content:center;gap:16px;padding:10px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
+.cal-month-year{text-align:center;flex:1}
+.cal-nav-title{font-size:22px;font-weight:600;color:var(--text)}
+.cal-nav-year{font-size:15px;color:var(--text2);margin-top:2px}
+.arrow-btn,.cal-today-btn,.add-round{border:1.5px solid var(--border2);background:transparent;cursor:pointer;color:var(--text2);border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:16px;transition:all 0.2s}
+.add-round{width:32px;height:32px;font-size:20px;line-height:1}
+.cal-today-btn{border-radius:var(--radius);width:auto;padding:0 12px;font-size:13px;font-weight:500}
+.arrow-btn:hover,.cal-today-btn:hover,.add-round:hover{background:var(--bg2);color:var(--text)}
+.cal-grid{padding:6px;display:flex;flex-direction:column;gap:0;flex:1;width:100%;max-width:calc((100vh - 200px) / 6 * 7 + 18px);margin:0 auto}
+.cal-dow-row{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--border);margin-bottom:1px}
+.cal-dow{font-size:12px;color:var(--text3);text-align:center;font-weight:600;padding:6px 0;background:var(--bg)}
+.cal-body{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--border)}
+.cal-cell{aspect-ratio:1/1;min-height:0;padding:5px;background:var(--bg);cursor:pointer;overflow:hidden;display:flex;flex-direction:column;vertical-align:top}
+.cal-cell:hover{background:var(--bg2)}
+.cal-cell.weekend{background:#fdf5f0}
+.cal-cell.weekend .cal-date-num{color:#c97070}
+.cal-cell.holiday .cal-date-num{color:#c97070;font-weight:600}
+.cal-cell.other-month{background:#faf9f7!important}
+.cal-cell.other-month .cal-date-num{color:var(--text3)}
+.cal-date-num{font-size:13px;color:var(--text2);margin-bottom:2px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;border-radius:50%;font-weight:500}
+.cal-date-num.today{font-weight:700;color:var(--text)}
+.cal-cell.is-today{background:#ede8e0}
+.cal-chip{font-size:11px;padding:2px 5px;border-radius:3px;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;line-height:1.3}
+.cal-chip:hover{opacity:0.8}
+.cal-chip.chip-data{background:var(--cat-data);color:var(--cat-data-text)}
+.cal-chip.chip-meeting{background:var(--cat-meeting);color:var(--cat-meeting-text)}
+.cal-chip.chip-admin{background:var(--cat-admin);color:var(--cat-admin-text)}
+.cal-chip.chip-questionnaire{background:var(--cat-questionnaire);color:var(--cat-questionnaire-text)}
+.cal-chip.chip-platform{background:var(--cat-platform);color:var(--cat-platform-text)}
+
+/* Tasks table */
+.task-toolbar{display:flex;gap:8px;padding:10px 16px;border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap;align-items:center}
+.filter-chip{padding:4px 12px;font-size:13px;border-radius:12px;border:1px solid var(--border2);background:var(--bg);cursor:pointer;color:var(--text2);transition:all 0.2s;font-weight:500}
+.filter-chip:hover{background:var(--bg2)}
+.filter-chip.active{border-color:var(--accent);background:#e5e7e6;color:#6b7171}
+.table-wrap{flex:1;overflow:auto}
+.data-table{width:100%;border-collapse:collapse;font-size:14px}
+.data-table th{padding:8px 12px;text-align:left;font-size:13px;font-weight:600;color:var(--text2);border-bottom:1px solid var(--border);background:var(--bg2);position:sticky;top:0;z-index:2;white-space:nowrap}
+.data-table td{padding:7px 12px;border-bottom:1px solid var(--border);vertical-align:middle;transition:background 0.2s;}
+.data-table tr:hover td{background:var(--bg2)}
+.data-table tr.done-row td{opacity:0.4}
+.check{width:14px;height:14px;border-radius:3px;border:1.5px solid var(--border2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;background:transparent}
+.check.done{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.status{display:inline-flex;padding:2px 8px;border-radius:10px;font-size:12px;font-weight:500}
+.st-done{background:#e5e8e3;color:#6f8070}
+.st-inprogress{background:#e5e7e6;color:#6b7171}
+.st-notstarted{background:var(--bg3);color:var(--text2)}
+
+/* Modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.3);z-index:300;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{position:relative;background:var(--bg);border-radius:12px;border:1px solid var(--border);width:540px;max-height:90vh;overflow-y:auto;padding:24px 28px;box-shadow:0 8px 32px rgba(0,0,0,0.12)}
+.modal-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+.modal-title{font-size:18px;font-weight:600}
+.close-btn{width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:transparent;cursor:pointer;color:var(--text2);font-size:16px;display:flex;align-items:center;justify-content:center;transition:background 0.2s;}
+.close-btn:hover{background:var(--bg2)}
+.fg{margin-bottom:14px}
+.flabel{font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px;display:block;text-transform:uppercase;letter-spacing:0.05em}
+input[type="text"], input[type="date"], input[type="email"], select, textarea, input[type="number"]{width:100%;padding:8px 12px;font-size:15px;border:1px solid var(--border2);border-radius:8px;background:var(--bg);color:var(--text);outline:none;font-family:inherit;transition:border-color 0.2s;}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);background:var(--bg2)}
+textarea{resize:vertical;min-height:80px}
+.modal-footer{display:flex;justify-content:flex-end;gap:10px;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
+.btn{padding:8px 18px;font-size:14px;font-weight:500;border-radius:8px;border:1px solid var(--border2);background:transparent;cursor:pointer;color:var(--text);display:flex;align-items:center;gap:5px;transition:all 0.2s}
+.btn:hover{background:var(--bg2)}
+.btn-primary{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+.btn-primary:hover{background:#5a6161}
+.btn-danger{color:#c97070;border-color:#e0d0c5}
+.btn-danger:hover{background:#fdf0ee}
+
+/* Detail Panel (right slide-in) */
+.detail-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.25);z-index:250;align-items:flex-start;justify-content:flex-end}
+.detail-overlay.open{display:flex}
+.detail-panel-inner{width:480px;height:100vh;background:var(--bg);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;box-shadow:-4px 0 20px rgba(0,0,0,0.08)}
+
+/* Member edit overlay */
+.member-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.3);z-index:310;align-items:center;justify-content:center}
+.member-overlay.open{display:flex}
+
+/* Progress */
+.prog-bar-wrap{padding:10px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
+tr[draggable]{cursor:grab}
+tr[draggable]:active{cursor:grabbing}
+
+/* Sub rows */
+.sub-row{background:var(--bg2)}
+.sub-row td{font-size:13px;color:var(--text2)}
+
+/* Ledger specific styles */
+.ledger-summary-box{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:16px;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0}
+.ledger-card{background:var(--bg);padding:12px;border-radius:var(--radius);border:1px solid var(--border2);display:flex;flex-direction:column;gap:4px}
+.ledger-card-label{font-size:12px;color:var(--text2);font-weight:600}
+.ledger-card-val{font-size:20px;font-weight:700}
+.cleared-row{background:#fbeee9 !important;}
+.text-income{color:#2e7d32 !important;font-weight:600;}
+.text-expense{color:#c62828 !important;font-weight:600;}
+
+/* Schedule (排班表) */
+.sched-wrap{display:flex;flex:1;overflow:hidden}
+.sched-main{flex:1;overflow-y:auto;padding:16px 16px 16px 20px}
+.sched-side{width:400px;min-width:400px;border-left:1px solid var(--border);padding:16px;overflow-y:auto;background:var(--bg2)}
+.sched-side-title{font-size:14px;font-weight:700;color:var(--text);margin-bottom:12px}
+.sched-rate-note{font-size:11px;color:var(--text3);margin-top:2px;margin-bottom:14px;line-height:1.5}
+.sched-chip{font-size:11px;padding:2px 5px;border-radius:3px;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;line-height:1.3}
+.sched-chip:hover{opacity:0.8}
+.sched-chip.onsite{background:var(--cat-data);color:var(--cat-data-text)}
+.sched-chip.remote{background:var(--cat-admin);color:var(--cat-admin-text)}
+.sched-stat-table{width:100%;table-layout:fixed;border-collapse:separate;border-spacing:0 8px;font-size:12px}
+.sched-stat-table th{text-align:right;font-size:11px;color:var(--text2);font-weight:700;padding:0 4px 6px;text-transform:uppercase;letter-spacing:0.03em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sched-stat-table th:first-child{text-align:left}
+.sched-stat-table td{padding:10px 4px;text-align:right;overflow:hidden;background:var(--row-bg,var(--bg2))}
+.sched-stat-table td:first-child{text-align:left}
+.sched-stat-table input[type=number]{padding:5px 3px;font-size:12px;width:100%;max-width:56px;text-align:right;border-radius:6px}
+.sched-stat-name{display:flex;align-items:center;gap:6px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sched-member-row td:first-child{border-radius:8px 0 0 8px;border-left:5px solid var(--row-accent,var(--accent));padding-left:9px}
+.sched-member-row td:last-child{border-radius:0 8px 8px 0}
+.sched-total-row td{font-weight:700;background:var(--bg3)}
+.sched-total-row td:first-child{border-radius:8px 0 0 8px}
+.sched-total-row td:last-child{border-radius:0 8px 8px 0}
+.sched-type-btn{padding:10px;font-size:14px;font-weight:500;border-radius:8px;border:1px solid var(--border2);background:transparent;cursor:pointer;color:var(--text2);transition:all 0.2s}
+.sched-type-btn.active{border-color:var(--accent);background:#e5e7e6;color:#6b7171;font-weight:600}
+
+@media (max-width: 900px){
+  .sched-wrap{flex-direction:column;overflow-y:auto}
+  .sched-side{width:auto;min-width:0;border-left:0;border-top:1px solid var(--border)}
+}
+
+/* Manual (使用手冊) */
+.manual-bar{padding:8px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-shrink:0;background:var(--bg2)}
+.manual-bar-title{font-size:14px;font-weight:600;color:var(--text)}
+.manual-bar-link{margin-left:auto;font-size:13px;color:var(--text2);text-decoration:none;border:1px solid var(--border2);padding:4px 10px;border-radius:6px;background:var(--bg)}
+.manual-bar-link:hover{background:var(--bg3);color:var(--text)}
+.manual-frame-wrap{flex:1;overflow:hidden}
+#manualFrame{width:100%;height:100%;border:none;display:block;background:#F5F3EE}
+
+/* ═══════════ 手機 / 平板版面 ═══════════ */
+@media (max-width: 900px){
+  /* 行事曆改為直向堆疊，日曆優先 */
+  .cal-wrap{flex-direction:column;overflow-y:auto}
+  .cal-center{order:-1;overflow:visible;min-height:auto}
+  .cal-left,.cal-right{
+    width:auto;min-width:0;border-left:0;border-right:0;
+    border-top:1px solid var(--border);flex-direction:row;flex-wrap:wrap;gap:14px;
+  }
+  .cal-left .cal-side-section,.cal-right .cal-side-section{flex:1 1 240px;min-width:0}
+}
+
+@media (max-width: 768px){
+  /* 側邊欄改為覆蓋式抽屜，不再壓縮內容 */
+  .sidebar{
+    position:fixed;top:60px;left:0;bottom:0;
+    width:min(78vw,300px);min-width:0;z-index:150;
+    box-shadow:6px 0 22px rgba(0,0,0,.16);
+  }
+  .sidebar.collapsed{width:0;min-width:0;box-shadow:none}
+  .sb-item{padding:12px 14px}
+  .team-grid{grid-template-columns:repeat(4,1fr);gap:10px}
+
+  /* 頂部 LOGO 縮小，避免溢出 */
+  .topbar > img{height:130px !important}
+  .topbar > div[title]{width:220px !important}
+
+  /* 日曆格子壓縮 */
+  .cal-grid{padding:5px;max-width:none}
+  .cal-cell{min-height:0;padding:3px}
+  .cal-nav{gap:8px;padding:10px}
+  .cal-nav-title{font-size:20px}
+
+  /* 表格改為橫向捲動，不硬擠 */
+  .table-wrap{-webkit-overflow-scrolling:touch}
+  .data-table{min-width:700px}
+  .data-table th,.data-table td{padding:10px 12px}
+
+  /* 工具列換行 */
+  .task-toolbar{padding:10px;gap:8px}
+  .filter-chip{padding:6px 12px}
+
+  /* 彈窗與側滑面板貼合螢幕 */
+  .modal-overlay{padding:12px}
+  .modal{width:auto;max-width:100%;padding:20px 18px;max-height:86vh}
+  .detail-panel-inner{width:100vw}
+  .modal [style*="1fr 1fr"],
+  .detail-panel-inner [style*="1fr 1fr"]{grid-template-columns:1fr !important}
+
+  /* 零用金摘要卡兩欄 */
+  .ledger-summary-box{grid-template-columns:1fr 1fr;padding:12px;gap:10px}
+
+  /* iOS 聚焦時不自動放大 */
+  input[type="text"],input[type="date"],input[type="email"],
+  input[type="password"],input[type="number"],select,textarea{font-size:16px}
+
+  /* 點擊目標放大 */
+  .btn{padding:10px 18px}
+  .check{width:18px;height:18px}
+}
+
+@media (max-width: 480px){
+  .topbar > img{height:104px !important}
+  .team-grid{grid-template-columns:repeat(3,1fr)}
+  .cal-cell{min-height:0}
+  .cal-dow{padding:4px 0}
+  .ledger-summary-box{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div id="login-screen" style="position:fixed;inset:0;z-index:99999;background:var(--bg);display:flex;align-items:center;justify-content:center;">
+  <div style="background:var(--bg2);padding:40px;border-radius:12px;border:1px solid var(--border);box-shadow:0 8px 32px rgba(0,0,0,0.1);width:320px;display:flex;flex-direction:column;gap:16px;">
+    <div style="text-align:center;font-size:22px;font-weight:600;color:var(--text);margin-bottom:8px;">TIGPS 系統登入</div>
+    <input type="email" id="login-email" placeholder="信箱 (Email)" style="width:100%;padding:10px 12px;border:1px solid var(--border2);border-radius:8px;outline:none;">
+    <input type="password" id="login-password" placeholder="密碼 (Password)" style="width:100%;padding:10px 12px;border:1px solid var(--border2);border-radius:8px;outline:none;" onkeydown="if(event.key==='Enter') handleLogin()">
+    <div id="login-error" style="color:#c97070;font-size:14px;display:none;text-align:center;"></div>
+    <button onclick="handleLogin()" style="width:100%;padding:12px;background:var(--accent);color:var(--bg);border:none;border-radius:8px;cursor:pointer;font-weight:600;margin-top:8px;">登入</button>
+  </div>
+</div>
+
+<div class="page-container">
+  
+  <div class="topbar" style="position: relative;">
+    <button id="sidebarToggleBtn" onclick="toggleSidebar()" style="border:none;background:transparent;width:36px;height:36px;cursor:pointer;font-size:22px;display:flex;align-items:center;justify-content:center;color:var(--text);margin-right:12px;">☰</button>
+    
+    <img src="logo.png" alt="TIGPS LOGO" style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); height: 280px; width: auto; object-fit: contain; pointer-events: none;">
+    
+    <div onclick="switchView('dashboard', null)" style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 400px; height: 60px; cursor: pointer; z-index: 10;" title="回首頁/行事曆"></div>
+  </div>
+
+  <div class="app">
+    <div class="sidebar collapsed" id="mainSidebar">
+      <div class="sb-nav">
+        <div class="team-grid" id="sidebarTeam"></div>
+        <div class="sb-item" id="sb-progress" onclick="switchView('progress',this)">📊 工作進度</div>
+        <div class="sb-item" id="sb-schedule" onclick="switchView('schedule',this)">🗓️ 排班表</div>
+        <div class="sb-item" id="sb-ledger" onclick="switchView('ledger',this)">💰 零用金記帳</div>
+        <div class="sb-item" id="sb-manual" onclick="switchView('manual',this)">📘 TIGPS 說明書</div>
+      </div>
+    </div>
+
+    <div class="main">
+      <div class="content">
+
+        <div class="view active" id="view-dashboard">
+          <div class="cal-wrap">
+            <div class="cal-left">
+              <div class="cal-side-section">
+                <span class="cal-side-title current">當月代辦</span>
+                <div id="dashCurrentMonth"></div>
+              </div>
+              <div class="cal-side-section">
+                <span class="cal-side-title next">次月代辦</span>
+                <div id="dashNextMonth"></div>
+              </div>
+            </div>
+
+            <div class="cal-center">
+              <div class="cal-nav">
+                <button class="arrow-btn" onclick="changeCalMonth(-1)">‹</button>
+                <div class="cal-month-year">
+                  <div class="cal-nav-title" id="calMonthTitle"></div>
+                  <div class="cal-nav-year" id="calYearLabel"></div>
+                </div>
+                <button class="arrow-btn" onclick="changeCalMonth(1)">›</button>
+                <button class="cal-today-btn" onclick="goToday()">Today</button>
+                <button class="add-round" onclick="openAdd()" style="margin-left:auto">＋</button>
+              </div>
+              <div class="cal-grid">
+                <div class="cal-dow-row">
+                  <div class="cal-dow">日</div><div class="cal-dow">一</div><div class="cal-dow">二</div>
+                  <div class="cal-dow">三</div><div class="cal-dow">四</div><div class="cal-dow">五</div><div class="cal-dow">六</div>
+                </div>
+                <div class="cal-body" id="calBody"></div>
+              </div>
+            </div>
+
+            <div class="cal-right">
+              <div class="cal-side-section">
+                <span class="cal-side-title deadline">重要事項</span>
+                <div id="dashDeadlines"></div>
+              </div>
+              <div class="cal-side-section">
+                <span class="cal-side-title meeting">會議</span>
+                <div id="dashMeetings"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="view" id="view-progress">
+          <div class="task-toolbar" style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="display:flex;gap:6px;flex-wrap:wrap;flex:1" id="progYearTabs"></div>
+          </div>
+          <div class="prog-bar-wrap" id="progBar"></div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th style="width:30px"></th>
+                  <th style="width:90px">日期</th>
+                  <th style="min-width:180px">工作項目</th>
+                  <th>負責人</th>
+                  <th style="width:90px">Deadline</th>
+                  <th style="width:90px">完成日期</th>
+                  <th style="width:40px"></th>
+                </tr>
+              </thead>
+              <tbody id="progTbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="view" id="view-schedule">
+          <div class="cal-nav" style="justify-content:flex-start;">
+            <button class="arrow-btn" onclick="changeSchedMonth(-1)">‹</button>
+            <div class="cal-month-year" style="flex:0 0 auto;min-width:140px">
+              <div class="cal-nav-title" id="schedMonthTitle"></div>
+              <div class="cal-nav-year" id="schedYearLabel"></div>
+            </div>
+            <button class="arrow-btn" onclick="changeSchedMonth(1)">›</button>
+            <button class="cal-today-btn" onclick="schedGoToday()">Today</button>
+            <button class="add-round" onclick="openSchedAdd(null)" style="margin-left:16px" title="新增排班">＋</button>
+            <span style="margin-left:16px;font-size:12px;color:var(--text3)">點擊日期即可新增排班，同一天可新增多筆、指定不同人員</span>
+          </div>
+          <div class="sched-wrap">
+            <div class="sched-main">
+              <div class="cal-grid" id="schedMain"></div>
+            </div>
+            <div class="sched-side">
+              <div class="sched-side-title">📊 月時數統計</div>
+              <div class="sched-rate-note">實體／遠端時數依當月所有排班自動加總；時薪為每位成員固定設定；月薪＝合計時數 × 時薪（自動計算）；月申報請手動填入實際申報金額。</div>
+              <table class="sched-stat-table" id="schedStatTable"></table>
+            </div>
+          </div>
+        </div>
+
+        <div class="view" id="view-ledger">
+          <div class="task-toolbar" style="display:flex; justify-content:space-between; width:100%;">
+            <div id="ledgerMainToolbar" style="display:flex;gap:8px;align-items:center;">
+              <select id="ledgerYearFilter" style="width:90px;" onchange="renderLedger()"></select>
+              <select id="ledgerMonthFilter" style="width:80px;" onchange="renderLedger()">
+                <option value="all">月份</option>
+                <option value="1">1月</option><option value="2">2月</option><option value="3">3月</option>
+                <option value="4">4月</option><option value="5">5月</option><option value="6">6月</option>
+                <option value="7">7月</option><option value="8">8月</option><option value="9">9月</option>
+                <option value="10">10月</option><option value="11">11月</option><option value="12">12月</option>
+              </select>
+              <button class="btn btn-primary" onclick="openLedgerAdd()" style="padding:6px 12px;height:32px;">＋ 新增</button>
+            </div>
+            
+            <div style="display:flex;gap:8px;align-items:center;">
+              <button class="filter-chip active" id="tabLedgerMain" onclick="switchLedgerTab('main')">記帳明細</button>
+              <button class="filter-chip" id="tabLedgerRemit" onclick="switchLedgerTab('remit')">戶頭與匯入管理</button>
+            </div>
+          </div>
+          
+          <div class="table-wrap" id="ledgerMainWrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th style="width:100px;">日期</th>
+                  <th style="min-width:180px;">項目</th>
+                  <th style="width:90px;text-align:right;">進帳</th>
+                  <th style="width:90px;text-align:right;">支出</th>
+                  <th style="width:110px;text-align:right;">可用餘額</th>
+                  <th style="width:90px;">負責人</th>
+                  <th style="width:60px;text-align:center;">編輯</th>
+                </tr>
+              </thead>
+              <tbody id="ledgerTbody"></tbody>
+            </table>
+          </div>
+
+          <div class="table-wrap" id="ledgerRemitWrap" style="display:none; padding:16px;">
+            <div style="margin-bottom: 24px; padding: 16px; background: var(--bg2); border-radius: 8px; display: flex; align-items: center; gap: 12px; border: 1px solid var(--border);">
+              <span style="font-weight: 600; font-size: 16px; color: var(--text);">🏦 戶頭目前餘額：</span>
+              <input type="number" id="bankBalanceInput" style="width: 160px; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border2); font-size: 18px; font-weight: 700; color: var(--text);" placeholder="輸入目前金額">
+              <button class="btn btn-primary" onclick="saveBankBalance()">儲存紀錄</button>
+              <span id="bankBalanceLastUpdate" style="font-size: 14px; color: var(--text3); margin-left: auto;"></span>
+            </div>
+            
+            <h3 style="font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid var(--border);">📋 待匯入 / 已匯入名單 (包含報支日期之項目)</h3>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th style="width:100px;">報支日期</th>
+                  <th style="min-width:180px;">項目</th>
+                  <th style="width:100px;">代墊人</th>
+                  <th style="width:90px;text-align:right;">報支(支出)金額</th>
+                  <th style="width:120px;text-align:center;">匯入狀態</th>
+                  <th style="width:140px;text-align:center;">匯入日期</th>
+                </tr>
+              </thead>
+              <tbody id="ledgerRemitTbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="view" id="view-manual">
+          <div class="manual-bar">
+            <span class="manual-bar-title">📘 TIGPS 後台使用手冊</span>
+            <a class="manual-bar-link" href="tigps-manual.html" target="_blank" rel="noopener">在新分頁開啟 ↗</a>
+          </div>
+          <div class="manual-frame-wrap">
+            <iframe id="manualFrame" data-src="tigps-manual.html" title="TIGPS 後台使用手冊" allow="clipboard-write"></iframe>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="detail-overlay" id="taskDetailOverlay" onclick="if(event.target===this)closeTaskDetail()">
+  <div class="detail-panel-inner">
+    <div style="padding: 24px 24px 20px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 16px; flex-shrink: 0; background: var(--bg);">
+      <span id="tdCatBadge" style="font-size: 15px; padding: 4px 12px; border-radius: 4px; font-weight: 600; background: #e8e3db; color: #8b8580;"></span>
+      <input type="text" id="tdTitle" style="font-size: 24px; font-weight: 700; flex: 1; color: #5a5651; border: none; background: transparent; outline: none; font-family: inherit;" placeholder="新增工作">
+      <button class="close-btn" onclick="closeTaskDetail()" style="border: 1px solid var(--border2); background: #fff; width: 36px; height: 36px; border-radius: 50%;">✕</button>
+    </div>
+    
+    <div style="flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 24px; background: var(--bg);">
+      <div>
+        <div style="color: #8b8580; font-size: 14px; font-weight: 700; margin-bottom: 12px;">負責人員</div>
+        <div id="tdAssignees" style="display: flex; gap: 16px; flex-wrap: wrap;"></div>
+      </div>
+      
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+        <div>
+          <div style="color: #8b8580; font-size: 14px; font-weight: 700; margin-bottom: 8px;">日期</div>
+          <input type="date" id="tdDate" style="height: 40px; border: 1px solid #d4ccc2; border-radius: 8px; padding: 0 12px; background: #fff;">
+        </div>
+        <div>
+          <div style="color: #8b8580; font-size: 14px; font-weight: 700; margin-bottom: 8px;">DEADLINE</div>
+          <input type="date" id="tdDeadline" style="height: 40px; border: 1px solid #d4ccc2; border-radius: 8px; padding: 0 12px; background: #fff;">
+        </div>
+        <div>
+          <div style="color: #8b8580; font-size: 14px; font-weight: 700; margin-bottom: 8px;">完成日期</div>
+          <input type="date" id="tdDoneDate" style="height: 40px; border: 1px solid #d4ccc2; border-radius: 8px; padding: 0 12px; background: #fff;">
+        </div>
+        <div>
+          <div style="color: #8b8580; font-size: 14px; font-weight: 700; margin-bottom: 8px;">狀態</div>
+          <select id="tdStatus" style="height: 40px; border: 1px solid #d4ccc2; border-radius: 8px; padding: 0 12px; background: #fff;">
+            <option value="notstarted">未開始</option>
+            <option value="inprogress">進行中</option>
+            <option value="done">完成</option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <div style="color: #8b8580; font-size: 14px; font-weight: 700; margin-bottom: 8px;">說明</div>
+        <textarea id="tdDesc" style="min-height: 100px; border: 1px solid #d4ccc2; border-radius: 8px; padding: 12px; background: #fff;"></textarea>
+      </div>
+
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <div style="color: #8b8580; font-size: 15px; font-weight: 700; margin-bottom: 0;">子計畫</div>
+          <button onclick="addSubtask()" style="font-size: 15px; padding: 6px 16px; border: 1px solid #d4ccc2; border-radius: 6px; background: #fff; cursor: pointer; color: #8b8580;">＋ 新增</button>
+        </div>
+        <div id="tdSubtasks"></div>
+      </div>
+    </div>
+    
+    <div style="padding: 16px 24px; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: space-between; flex-shrink: 0; background: var(--bg2);">
+      <div style="display: flex; gap: 8px;">
+        <button class="btn btn-danger" onclick="deleteCurrentTask()" style="background: #fff;">刪除</button>
+        <button class="btn" onclick="copyCurrentTask()" style="background: #fff; color: var(--text);">複製</button>
+      </div>
+      <button class="btn btn-primary" onclick="saveTaskDetail()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <button class="close-btn" onclick="closeModal()" style="position: absolute; top: 24px; right: 28px; z-index: 10;">✕</button>
+
+    <div style="display:flex;align-items:flex-end;gap:10px;margin-bottom:12px; flex-wrap: wrap; padding-right: 36px;">
+      <div id="creatorChips" style="display:flex;gap:6px;align-items:center;flex-shrink:0"></div>
+      
+      <div class="fg" style="flex:0 0 auto;margin-bottom:0">
+        <label class="flabel">波次</label>
+        <select id="iProgYear" style="padding:7px 5px;width:88px"></select>
+      </div>
+      
+      <div class="fg" style="flex:0 0 auto;margin-bottom:0">
+        <label class="flabel">類型</label>
+        <select id="iCat" style="padding:7px 6px;width:90px" onchange="updateCatColor(this)">
+          <option value="data">📋 資料</option>
+          <option value="meeting">🗓 會議</option>
+          <option value="admin">📁 行政</option>
+          <option value="questionnaire">📝 問卷</option>
+          <option value="platform">💻 平台</option>
+        </select>
+      </div>
+      
+      <div class="fg" style="flex:0 0 auto;margin-bottom:0">
+        <label class="flabel" style="visibility:hidden">!</label>
+        <select id="iUrgency" style="padding:7px 4px;width:54px;text-align:center">
+          <option value="low">！</option>
+          <option value="mid">！！</option>
+          <option value="high">！！！</option>
+        </select>
+      </div>
+
+      <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px; margin-left: 6px;">
+        <label style="cursor:pointer; display:flex; align-items:center; gap:4px; font-size:14px; color:var(--text2); font-weight: 500;">
+          <input type="checkbox" id="iDoneCheckbox" style="width:14px; height:14px;"> 完成
+        </label>
+        <label style="cursor:pointer; display:flex; align-items:center; gap:4px; font-size:14px; color:var(--text2); font-weight: 500;" title="寄信通知參與成員">
+          <input type="checkbox" id="iAlarmCheckbox" style="width:14px; height:14px;"> ⏰
+        </label>
+      </div>
+    </div>
+
+    <div style="margin-bottom:18px; padding-bottom: 8px; border-bottom: 1px solid var(--border);">
+      <input type="text" id="iTitle" placeholder="輸入名稱..." style="width:100%;font-size:20px;font-weight:600;border:none;border-radius:0;padding:0;background:transparent;outline:none;">
+    </div>
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-bottom:16px">
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="fg" style="margin-bottom:0"><label class="flabel">日期</label><input type="date" id="iDate"></div>
+        <div class="fg" style="margin-bottom:0">
+          <label class="flabel">時間</label>
+          <div style="display:flex;gap:4px">
+            <select id="iTimeH" style="flex:1;text-align:center">
+              <option value="">--</option>
+              <option>00</option><option>01</option><option>02</option><option>03</option><option>04</option><option>05</option><option>06</option><option>07</option><option>08</option><option>09</option><option>10</option><option>11</option><option>12</option><option>13</option><option>14</option><option>15</option><option>16</option><option>17</option><option>18</option><option>19</option><option>20</option><option>21</option><option>22</option><option>23</option>
+            </select>
+            <span style="display:flex;align-items:center;color:var(--text2)">:</span>
+            <select id="iTimeM" style="flex:1;text-align:center">
+              <option value="">--</option>
+              <option value="00">00</option><option value="10">10</option><option value="20">20</option><option value="30">30</option><option value="40">40</option><option value="50">50</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="fg" style="margin-bottom:0"><label class="flabel">Deadline 日期</label><input type="date" id="iDeadline"></div>
+        <div class="fg" style="margin-bottom:0">
+          <label class="flabel">Deadline 時間</label>
+          <div style="display:flex;gap:4px">
+            <select id="iDeadlineH" style="flex:1;text-align:center">
+              <option value="">--</option>
+              <option>00</option><option>01</option><option>02</option><option>03</option><option>04</option><option>05</option><option>06</option><option>07</option><option>08</option><option>09</option><option>10</option><option>11</option><option>12</option><option>13</option><option>14</option><option>15</option><option>16</option><option>17</option><option>18</option><option>19</option><option>20</option><option>21</option><option>22</option><option>23</option>
+            </select>
+            <span style="display:flex;align-items:center;color:var(--text2)">:</span>
+            <select id="iDeadlineM" style="flex:1;text-align:center">
+              <option value="">--</option>
+              <option value="00">00</option><option value="10">10</option><option value="20">20</option><option value="30">30</option><option value="40">40</option><option value="50">50</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="fg" style="margin-bottom:16px">
+      <label class="flabel">重複週期</label>
+      <select id="iRecurrence" style="width:100%">
+        <option value="none">不重複</option>
+        <option value="weekly">每週重複</option>
+        <option value="monthly">每月重複</option>
+        <option value="quarterly">每季重複</option>
+        <option value="yearly">每年重複</option>
+      </select>
+    </div>
+
+    <div class="fg" style="margin-bottom:16px">
+      <label class="flabel">說明</label>
+      <textarea id="iDesc"></textarea>
+    </div>
+    <div class="fg" style="margin-bottom:0">
+      <label class="flabel">參與成員</label>
+      <div id="partChips" style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px"></div>
+    </div>
+    
+    <div class="modal-footer" style="display:flex;justify-content:space-between">
+      <button id="modalDeleteBtn" class="btn btn-danger" style="display:none" onclick="deleteEditingTask()">刪除</button>
+      <button class="btn btn-primary" onclick="saveTask()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="ledgerModalOverlay" onclick="if(event.target===this)closeLedgerModal()">
+  <div class="modal" style="width:460px;">
+    <button class="close-btn" onclick="closeLedgerModal()" style="position: absolute; top: 24px; right: 28px; z-index: 10;">✕</button>
+    <div class="modal-hdr">
+      <span class="modal-title" id="ledgerModalTitle">新增收支紀錄</span>
+    </div>
+    <input type="hidden" id="ledgerEditingId">
+    
+    <div class="fg">
+      <label class="flabel">日期</label>
+      <input type="date" id="lDate" required>
+    </div>
+
+    <div class="fg">
+      <label class="flabel">名稱</label>
+      <input type="text" id="lTitle" required>
+    </div>
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-bottom:14px;">
+      <div class="fg" style="margin-bottom:0;">
+        <label class="flabel" style="color:#2e7d32;">收入</label>
+        <input type="number" id="lIncome" min="0" style="color:#2e7d32; border-color:#c8e6c9;">
+      </div>
+      <div class="fg" style="margin-bottom:0;">
+        <label class="flabel" style="color:#c62828;">支出</label>
+        <input type="number" id="lExpense" min="0" style="color:#c62828; border-color:#ffcdd2;">
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns: 2fr 1fr; gap:16px; margin-bottom:14px; align-items: flex-end;">
+      <div class="fg" style="margin-bottom:0;">
+        <label class="flabel">代墊人</label>
+        <input type="text" id="lPayer" style="padding:8px 12px;">
+      </div>
+      <div class="fg" style="margin-bottom:0; padding-bottom:10px;">
+        <label style="cursor:pointer; display:inline-flex; align-items:center; gap:6px; font-weight:700; color:var(--text2); font-size:12px; text-transform:uppercase; letter-spacing:0.05em;">
+          <input type="checkbox" id="lIsPaid" style="width:15px; height:15px; cursor:pointer;"> 已支付
+        </label>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-bottom:14px;">
+      <div class="fg" style="margin-bottom:0;">
+        <label class="flabel">報支日期</label>
+        <input type="date" id="lReimburseDate">
+      </div>
+      <div class="fg" style="margin-bottom:0;">
+        <label class="flabel">匯入日期</label>
+        <input type="date" id="lRemitDate">
+      </div>
+    </div>
+
+    <div class="fg">
+      <label class="flabel">說明</label>
+      <textarea id="lClearedInfo" rows="4" style="min-height:92px; resize:vertical; font-family:inherit;"></textarea>
+    </div>
+
+    <div class="fg">
+      <label class="flabel">負責人</label>
+      <div id="ledgerResponsibleChips" style="display:flex; gap:12px; flex-wrap:wrap; margin-top:8px;"></div>
+    </div>
+    
+    <div class="modal-footer" style="display:flex;justify-content:space-between">
+      <button id="ledgerModalDeleteBtn" class="btn btn-danger" style="display:none" onclick="deleteLedgerEntry()">刪除</button>
+      <button class="btn btn-primary" onclick="saveLedgerEntry()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="schedModalOverlay" onclick="if(event.target===this)closeSchedModal()">
+  <div class="modal" style="width:420px;">
+    <button class="close-btn" onclick="closeSchedModal()" style="position: absolute; top: 24px; right: 28px; z-index: 10;">✕</button>
+    <div class="modal-hdr">
+      <span class="modal-title" id="schedModalTitle">新增排班</span>
+    </div>
+    <input type="hidden" id="sEditingId">
+
+    <div class="fg">
+      <label class="flabel">人員</label>
+      <select id="sMember"></select>
+    </div>
+
+    <div class="fg">
+      <label class="flabel">日期</label>
+      <input type="date" id="sDate">
+    </div>
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-bottom:14px;">
+      <div class="fg" style="margin-bottom:0;">
+        <label class="flabel">開始時間</label>
+        <input type="time" id="sStart">
+      </div>
+      <div class="fg" style="margin-bottom:0;">
+        <label class="flabel">結束時間</label>
+        <input type="time" id="sEnd">
+      </div>
+    </div>
+
+    <div class="fg">
+      <label class="flabel">工作方式</label>
+      <div style="display:flex;gap:10px;margin-top:6px">
+        <button type="button" class="sched-type-btn active" id="sTypeOnsiteBtn" onclick="setSchedType('onsite')" style="flex:1">🏢 實體</button>
+        <button type="button" class="sched-type-btn" id="sTypeRemoteBtn" onclick="setSchedType('remote')" style="flex:1">🏠 遠端</button>
+      </div>
+    </div>
+
+    <div class="modal-footer" style="display:flex;justify-content:space-between">
+      <button id="schedModalDeleteBtn" class="btn btn-danger" style="display:none" onclick="deleteSchedEntry()">刪除</button>
+      <button class="btn btn-primary" onclick="saveSchedEntry()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<div class="member-overlay" id="memberEditOverlay" onclick="if(event.target===this)closeMemberEdit()">
+  <div class="modal" style="width:340px">
+    <div class="modal-hdr">
+      <span class="modal-title" id="memberModalTitle">編輯成員</span>
+      <button class="close-btn" onclick="closeMemberEdit()" style="position: absolute; top: 24px; right: 24px;">✕</button>
+    </div>
+    <input type="hidden" id="memberEditId">
+    
+    <div class="fg" style="text-align:center;margin-bottom:16px">
+      <div style="position:relative;display:inline-block">
+        <label id="photoUploadLabel" style="display:inline-flex;align-items:center;justify-content:center;width:80px;height:80px;border-radius:50%;border:1.5px dashed var(--border2);background:var(--bg2);cursor:pointer;color:var(--text2);font-size:13px;flex-direction:column;gap:2px">
+          <span style="font-size:22px;color:var(--text3)">＋</span>
+          <span>照片</span>
+          <input type="file" accept="image/*" onchange="onPhotoChange(event)" id="photoInput" style="display:none">
+        </label>
+        <label id="photoPreviewLabel" style="display:none;cursor:pointer" title="點擊更換照片">
+          <img id="memberEditPreview" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid var(--border2);display:block; margin: 0 auto;">
+          <input type="file" accept="image/*" onchange="onPhotoChange(event)" style="display:none">
+        </label>
+        <button id="memberDeletePhotoBtn" onclick="deleteMemberPhoto()" title="移除照片" style="display:none;position:absolute;top:-2px;right:-2px;width:22px;height:22px;border-radius:50%;border:1.5px solid var(--border2);background:var(--bg);cursor:pointer;font-size:13px;color:var(--text2);align-items:center;justify-content:center">✕</button>
+      </div>
+      <div style="font-size:12px;color:var(--text3);margin-top:6px">點擊照片可更換</div>
+    </div>
+    
+    <div class="fg">
+      <label class="flabel">姓名</label>
+      <input type="text" id="memberEditName" placeholder="輸入姓名">
+    </div>
+    <div class="fg">
+      <label class="flabel">信箱</label>
+      <input type="email" id="memberEditEmail" placeholder="輸入信箱">
+    </div>
+    
+    <hr style="border:none; border-top:1px solid var(--border); margin: 20px 0;">
+    
+    <div class="modal-footer" style="justify-content:space-between; border-top:none; padding-top:0; margin-top:0;">
+      <button class="btn btn-danger" id="memberDeleteBtn" onclick="confirmDeleteMember()">刪除成員</button>
+      <button class="btn btn-primary" onclick="saveMemberEdit()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Firebase ──────────────────────────────────────────────────────────────────
+const firebaseConfig = {
+  apiKey: "AIzaSyD_7Sg6qXfR1T8-2R7NARm6B4S-xGDBu48",
+  authDomain: "tigps-7779e.firebaseapp.com",
+  databaseURL: "https://tigps-7779e-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "tigps-7779e",
+  storageBucket: "tigps-7779e.firebasestorage.app",
+  messagingSenderId: "933488060768",
+  appId: "1:933488060768:web:8ae42d8adcd2e1ddef1605",
+  measurementId: "G-8LXGGQ8YM2"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// ── Auth 登入與資料保護 ───────────────────────────────────────────────────────
+let isDataLoaded = false;
+
+// 記錄當前登入者資訊
+let loggedInEmail = '';
+let loggedInMemberId = '';
+let loggedInMemberName = '';
+
+const ALLOWED_EMAILS = [
+  'ywc682868@gmail.com',
+  'anneyuo@gmail.com',
+  'anneyuo@gate.sinica.edu.tw',
+  'nininanaaa1122@gmail.com',
+  'wanyi0224@as.edu.tw'
+];
+
+firebase.auth().onAuthStateChanged((user) => {
+  if (user) {
+    if (ALLOWED_EMAILS.includes(user.email)) {
+      loggedInEmail = user.email; // 儲存登入信箱
+      document.getElementById('login-screen').style.display = 'none';
+      if (!isDataLoaded) {
+        isDataLoaded = true;
+        initDataListeners();
+      }
+    } else {
+      firebase.auth().signOut();
+      const errEl = document.getElementById('login-error');
+      errEl.textContent = '登入失敗：該信箱無系統存取權限';
+      errEl.style.display = 'block';
+      document.getElementById('login-screen').style.display = 'flex';
+    }
+  } else {
+    document.getElementById('login-screen').style.display = 'flex';
+  }
+});
+
+function handleLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pwd = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+  
+  if (!email || !pwd) {
+    errEl.textContent = '請填寫信箱與密碼';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  firebase.auth().signInWithEmailAndPassword(email, pwd)
+    .then((userCredential) => {
+      if (!ALLOWED_EMAILS.includes(userCredential.user.email)) {
+        firebase.auth().signOut();
+        errEl.textContent = '登入失敗：該信箱無系統存取權限';
+        errEl.style.display = 'block';
+      } else {
+        errEl.style.display = 'none';
+      }
+    })
+    .catch(err => {
+      console.error("Firebase 登入詳細錯誤:", err.code, err.message);
+      if (err.code === 'auth/invalid-email') {
+        errEl.textContent = '信箱格式不正確（請檢查是否有空格）';
+      } else if (err.code === 'auth/user-not-found') {
+        errEl.textContent = '找不到此帳號，請確認是否已在控制台建立';
+      } else if (err.code === 'auth/wrong-password') {
+        errEl.textContent = '密碼錯誤';
+      } else if (err.code === 'auth/invalid-api-key') {
+        errEl.textContent = '系統設定錯誤：API Key 無效';
+      } else {
+        errEl.textContent = '變更登入失敗：' + err.message;
+      }
+      errEl.style.display = 'block';
+    });
+}
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let tasks = [];
+let memberData = {};
+let MEMBERS = [];
+let ledgerEntries = [];
+let bankBalanceData = { amount: '', lastUpdate: '' }; // 新增戶頭狀態
+let selLedgerResponsible = ''; 
+let calYear = new Date().getFullYear();
+let calMonth = new Date().getMonth();
+let scheduleEntries = {};   // { pushId: { memberId, date:'YYYY-MM-DD', start:'HH:MM', end:'HH:MM', type:'onsite'|'remote' } }
+let scheduleRates = {};     // { memberId: 時薪 }
+let scheduleDeclared = {};  // { 'YYYY-MM': { memberId: 月申報金額 } }
+let schedYear = new Date().getFullYear();
+let schedMonth = new Date().getMonth();
+let selSchedType = 'onsite';
+let editingId = null;
+let selCreator = '';
+let selParts = [];
+let progYear = 2023;
+let progYears = [2023, 2024, 2025, 2026];
+let progOrders = {}; 
+let _detailKey = null;
+let _detailTaskId = null;
+let _dndSrc = null;
+let _dndAction = null; 
+
+const today = new Date();
+today.setHours(0, 0, 0, 0);
+
+const MONTHS = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+const MEMBER_BG = ['#e5ddd8','#dfe5df','#e5dfd8','#e5dfe5','#dde5e8','#e8e0d5','#e8dfd5','#d5e8e6'];
+// 排班統計表每位成員的區隔色（比大頭貼底色更飽和，才看得出區別）
+const SCHED_ACCENTS = ['#8a9a78','#6f8fb5','#c99a5c','#9a7ec2','#4fa89c','#c07d94','#7594a8','#b39a4a'];
+const SCHED_ROW_BG = ['#f4f6f1','#eff3f7','#faf4ec','#f5f1f8','#eef7f5','#faf0f2','#eff3f5','#f8f5ec'];
+const CAT_NAMES = {data:'資料',meeting:'會議',admin:'行政',questionnaire:'問卷',platform:'平台'};
+
+const TW_HOLIDAYS = {
+  '2025-01-01':'元旦','2025-01-27':'農曆除夕','2025-01-28':'春節','2025-01-29':'春節',
+  '2025-01-30':'春節','2025-01-31':'春節','2025-02-28':'和平紀念日',
+  '2025-04-03':'兒童節清明節','2025-04-04':'兒童節清明節補假','2025-05-01':'勞動節',
+  '2025-05-30':'端午節補假','2025-05-31':'端午節','2025-06-01':'端午節',
+  '2025-09-28':'教師節','2025-09-29':'教師節補假','2025-10-10':'國慶日',
+  '2025-10-24':'台灣光復節補假','2025-10-25':'台灣光復節',
+  '2025-12-25':'行憲紀念日','2025-12-26':'行憲紀念日',
+  '2026-01-01':'元旦','2026-02-15':'小年夜','2026-02-16':'農曆除夕',
+  '2026-02-17':'春節','2026-02-18':'春節','2026-02-19':'春節','2026-02-20':'春節補假',
+  '2026-02-27':'和平紀念日補假','2026-02-28':'和平紀念日',
+  '2026-04-03':'兒童節補假','2026-04-04':'兒童節','2026-04-05':'清明節',
+  '2026-04-06':'清明節補假','2026-05-01':'勞動節','2026-06-19':'端午節',
+  '2026-06-20':'端午節','2026-06-21':'端午節','2026-09-25':'中秋節',
+  '2026-09-26':'中秋節','2026-09-27':'中秋節','2026-09-28':'教師節',
+  '2026-10-09':'國慶日補假','2026-10-10':'國慶日',
+  '2026-10-25':'台灣光復節','2026-10-26':'台灣光復節補假',
+  '2026-12-25':'行憲紀念日','2026-12-26':'行憲紀念日','2026-12-27':'行憲紀念日'
+};
+
+const ANNUAL_TASKS = [
+  {key:'questionnaire_discussion',label:'問卷討論'},
+  {key:'irb_submission',label:'IRB 送審'},
+  {key:'questionnaire_launch',label:'問卷上架'},
+  {key:'questionnaire_test',label:'問卷一條龍測試'},
+  {key:'conference',label:'研討會'},
+  {key:'school_briefing',label:'學校說明會'},
+  {key:'send_materials',label:'寄送資料與摺頁'},
+  {key:'new_group_survey',label:'新增組調查'},
+  {key:'tracking_survey',label:'追蹤組調查'},
+  {key:'data_validation',label:'資料檢誤'},
+  {key:'interim_report',label:'期中報告'},
+  {key:'release_data_cn_q',label:'釋出－問卷中文版'},
+  {key:'release_data_en_q',label:'釋出－問卷英文版'},
+  {key:'release_codebook_cn',label:'釋出－Codebook 中文版'},
+  {key:'release_codebook_en',label:'釋出－Codebook 英文版'},
+  {key:'release_manual_cn',label:'釋出－資料使用手冊中文版'},
+  {key:'release_manual_en',label:'釋出－資料使用手冊英文版'},
+  {key:'data_review1',label:'資料一校'},
+  {key:'data_review2',label:'資料二校'},
+];
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function waveLabel(y) {
+  return y + ' 波次';
+}
+
+function progYearOf(t) {
+  // 舊資料若沒有 progYear，視為 2023 波次
+  return t.progYear == null ? '2023' : String(t.progYear);
+}
+
+function progRecs(atKey, year) {
+  const y = String(year == null ? progYear : year);
+  return tasks.filter(t => t.annualKey === atKey && progYearOf(t) === y);
+}
+
+function getProgTask(atKey, year) {
+  return progRecs(atKey, year).find(t => !t.deleted) || null;
+}
+
+function closeTaskDetail() {
+  document.getElementById('taskDetailOverlay').classList.remove('open');
+  _detailKey = null;
+  _detailTaskId = null;
+}
+
+function getActiveMembers() {
+  return Object.entries(memberData)
+    .filter(([id, d]) => !d.deleted)
+    .map(([id, d], i) => ({
+      id,
+      name: d.name || id,
+      email: d.email || '',
+      initials: (d.name || id).charAt(0),
+      bg: MEMBER_BG[i % MEMBER_BG.length],
+      photo: d.photo || null
+    }));
+}
+
+function getMemberAvatar(m, size = 24) {
+  if (!m) return '';
+  const saved = memberData[m.id] || {};
+  const name = saved.name || m.name || '?';
+  const photo = saved.photo || m.photo;
+  const initials = (saved.name || m.name || '?').charAt(0);
+  const bg = m.bg || '#e0ddd8';
+  if (photo) return `<img src="${photo}" title="${name}" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;border:1.5px solid var(--bg)">`;
+  return `<div title="${name}" style="width:${size}px;height:${size}px;border-radius:50%;background:${bg};color:#555;font-size:${Math.max(9,Math.round(size*0.38))}px;font-weight:600;display:flex;align-items:center;justify-content:center;border:1.5px solid var(--bg)">${initials}</div>`;
+}
+
+function getAllCalendarEvents() {
+  let events = [];
+  tasks.filter(t => !t.deleted).forEach(t => {
+    if (t.date || t.deadline) {
+      events.push({
+        id: t.id,
+        annualKey: t.annualKey,
+        title: t.title,
+        date: t.date,
+        deadline: t.deadline,
+        cat: t.cat || 'data',
+        done: t.done,
+        urgency: t.urgency,
+        isSub: false,
+        recurrence: t.recurrence || 'none'
+      });
+      
+      if (t.recurrence && t.recurrence !== 'none' && t.date) {
+        const start = new Date(t.date);
+        const endLimit = new Date(calYear + 1, calMonth + 12, 31);
+        let nextDate = new Date(start);
+
+        while (true) {
+          if (t.recurrence === 'weekly') {
+            nextDate.setDate(nextDate.getDate() + 7);
+          } else if (t.recurrence === 'monthly') {
+            nextDate.setMonth(nextDate.getMonth() + 1);
+          } else if (t.recurrence === 'quarterly') {
+            nextDate.setMonth(nextDate.getMonth() + 3);
+          } else if (t.recurrence === 'yearly') {
+            nextDate.setFullYear(nextDate.getFullYear() + 1);
+          }
+
+          if (nextDate > endLimit) break;
+
+          const ds = nextDate.toISOString().split('T')[0];
+          events.push({
+            id: t.id,
+            annualKey: t.annualKey,
+            title: `🔄 ${t.title}`,
+            date: ds,
+            deadline: '',
+            cat: t.cat || 'data',
+            done: t.done,
+            urgency: t.urgency,
+            isSub: false,
+            isRecurInstance: true
+          });
+        }
+      }
+    }
+    
+    if (t.subtasks) {
+      Object.entries(t.subtasks).forEach(([sKey, s]) => {
+        if (s.date || s.deadline) {
+          events.push({
+            id: t.id,
+            annualKey: t.annualKey, 
+            title: `↳ ${s.title || '子計畫'}`,
+            date: s.date,
+            deadline: s.deadline,
+            cat: t.cat || 'data',
+            done: s.done,
+            urgency: t.urgency,
+            isSub: true
+          });
+        }
+      });
+    }
+  });
+  return events;
+}
+
+// ── Firebase listeners ────────────────────────────────────────────────────────
+function initDataListeners() {
+  db.ref('members').on('value', snapshot => {
+    memberData = {};
+    snapshot.forEach(child => { memberData[child.key] = { ...child.val() }; });
+    MEMBERS = getActiveMembers();
+    
+    // 比對登入使用者的 Email 並設定預設身分
+    const currentUserMatch = MEMBERS.find(m => m.email === loggedInEmail);
+    if (currentUserMatch) {
+      loggedInMemberId = currentUserMatch.id;
+      loggedInMemberName = currentUserMatch.name;
+    }
+
+    renderTeam();
+  });
+
+  db.ref('progOrders').on('value', snapshot => {
+    progOrders = snapshot.val() || {};
+    renderProgContent();
+  });
+
+  db.ref('tasks').on('value', snapshot => {
+    tasks = [];
+    snapshot.forEach(child => { tasks.push({ id: child.key, ...child.val() }); });
+    renderCalendar();
+    renderDashSidebar();
+    renderProgContent();
+    
+    if (_detailKey && document.getElementById('taskDetailOverlay').classList.contains('open')) {
+      const freshTask = getProgTask(_detailKey);
+      _detailTaskId = freshTask ? freshTask.id : null;
+      renderDetailSubs(freshTask);
+    }
+  });
+
+  db.ref('ledger').on('value', snapshot => {
+    ledgerEntries = [];
+    snapshot.forEach(child => { ledgerEntries.push({ id: child.key, ...child.val() }); });
+    initLedgerFilters(); 
+    renderLedger();     
+    renderRemitList(); // 讓匯入名單也同步更新
+  });
+
+  // 監聽排班表資料
+  db.ref('scheduleEntries').on('value', snapshot => {
+    scheduleEntries = {};
+    snapshot.forEach(child => { scheduleEntries[child.key] = child.val(); });
+    renderSchedule();
+  });
+  db.ref('scheduleRates').on('value', snapshot => {
+    scheduleRates = snapshot.val() || {};
+    renderSchedule();
+  });
+  db.ref('scheduleDeclared').on('value', snapshot => {
+    scheduleDeclared = snapshot.val() || {};
+    renderSchedule();
+  });
+
+  // 監聽銀行戶頭餘額
+  db.ref('bankAccount').on('value', snapshot => {
+    bankBalanceData = snapshot.val() || { amount: '', lastUpdate: '' };
+    const input = document.getElementById('bankBalanceInput');
+    if(input) input.value = bankBalanceData.amount;
+    const lbl = document.getElementById('bankBalanceLastUpdate');
+    if(lbl) lbl.textContent = bankBalanceData.lastUpdate ? `最後更新：${bankBalanceData.lastUpdate}` : '';
+  });
+}
+
+// ── Members Core Logic ───────────────────────────────────────────────────────
+function renderTeam() {
+  const teamEl = document.getElementById('sidebarTeam');
+  const vis = getActiveMembers();
+  
+  let html = vis.map(m => {
+    const saved = memberData[m.id] || {};
+    const name = saved.name || m.name;
+    const photo = saved.photo;
+    const av = photo
+      ? `<img src="${photo}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;cursor:pointer">`
+      : `<div class="avatar" style="background:${m.bg};color:#555;cursor:pointer">${m.initials}</div>`;
+    return `<div class="member-cell" onclick="openMemberEdit('${m.id}')">
+      ${av}
+      <div style="font-size:11px;color:var(--text2);text-align:center;line-height:1.2;margin-top:2px;max-width:48px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${name}</div>
+    </div>`;
+  }).join('');
+
+  html += `<div class="member-cell" onclick="openMemberAdd()">
+    <div class="avatar" style="background:var(--bg3); color:var(--text2); font-size:20px; font-weight:400; border:1.5px dashed var(--border2); cursor:pointer;">＋</div>
+    <div style="font-size:11px;color:var(--text3);text-align:center;line-height:1.2;margin-top:2px;">新增</div>
+  </div>`;
+
+  teamEl.innerHTML = html;
+}
+
+function openMemberAdd() {
+  document.getElementById('memberEditOverlay').classList.add('open');
+  document.getElementById('memberModalTitle').textContent = '新增成員';
+  document.getElementById('memberEditId').value = 'user_' + Date.now();
+  document.getElementById('memberEditName').value = '';
+  document.getElementById('memberEditEmail').value = '';
+  document.getElementById('memberDeleteBtn').style.display = 'none';
+  refreshPhotoUI(null);
+}
+
+function openMemberEdit(id) {
+  const saved = memberData[id] || {};
+  document.getElementById('memberEditOverlay').classList.add('open');
+  document.getElementById('memberModalTitle').textContent = '編輯成員';
+  document.getElementById('memberEditId').value = id;
+  document.getElementById('memberEditName').value = saved.name || '';
+  document.getElementById('memberEditEmail').value = saved.email || '';
+  document.getElementById('memberDeleteBtn').style.display = 'inline-block';
+  refreshPhotoUI(saved.photo || null);
+}
+
+function refreshPhotoUI(photoSrc) {
+  const uploadLabel = document.getElementById('photoUploadLabel');
+  const previewLabel = document.getElementById('photoPreviewLabel');
+  const preview = document.getElementById('memberEditPreview');
+  const delBtn = document.getElementById('memberDeletePhotoBtn');
+  if (photoSrc) {
+    if (preview) preview.src = photoSrc;
+    if (uploadLabel) uploadLabel.style.display = 'none';
+    if (previewLabel) previewLabel.style.display = 'inline-block';
+    if (delBtn) delBtn.style.display = 'flex';
+  } else {
+    if (preview) preview.src = '';
+    if (uploadLabel) uploadLabel.style.display = 'inline-flex';
+    if (previewLabel) previewLabel.style.display = 'none';
+    if (delBtn) delBtn.style.display = 'none';
+  }
+}
+
+function deleteMemberPhoto() {
+  const id = document.getElementById('memberEditId').value;
+  refreshPhotoUI(null);
+  if (memberData[id]) delete memberData[id].photo;
+  db.ref('members/' + id + '/photo').remove();
+  renderTeam();
+}
+
+function confirmDeleteMember() {
+  const id = document.getElementById('memberEditId').value;
+  const name = (memberData[id] && memberData[id].name) || id;
+  if (!confirm(`確定要刪除成員「${name}」嗎？`)) return;
+  db.ref('members/' + id).set({ deleted: true });
+  memberData[id] = { deleted: true };
+  closeMemberEdit();
+  renderTeam();
+}
+
+function closeMemberEdit() { document.getElementById('memberEditOverlay').classList.remove('open'); }
+
+function saveMemberEdit() {
+  const id = document.getElementById('memberEditId').value;
+  const name = document.getElementById('memberEditName').value.trim();
+  const email = document.getElementById('memberEditEmail').value.trim();
+  if (!name) return;
+  if (!memberData[id]) memberData[id] = {};
+  
+  memberData[id].name = name;
+  memberData[id].email = email;
+  
+  const preview = document.getElementById('memberEditPreview');
+  const hasPhoto = preview && preview.src && preview.src.length > 100 && !preview.src.endsWith('undefined');
+  const dataToSave = { name, email };
+  if (hasPhoto) {
+    memberData[id].photo = preview.src;
+    dataToSave.photo = preview.src;
+  }
+  db.ref('members/' + id).set(dataToSave)
+    .catch(err => {
+      if (err.message && err.message.toLowerCase().includes('size')) {
+        db.ref('members/' + id).set({ name, email });
+        alert('照片太大，只儲存姓名與信箱。');
+      } else {
+        alert('儲存失敗: ' + err.message);
+      }
+    });
+  closeMemberEdit();
+  renderTeam();
+}
+
+function onPhotoChange(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const MAX = 64;
+      let w = img.width, h = img.height;
+      if (w > h) { if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; } }
+      else { if (h > MAX) { w = Math.round(w * MAX / h); h = MAX; } }
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      const compressed = canvas.toDataURL('image/jpeg', 0.45);
+      refreshPhotoUI(compressed);
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+// ── Email Notification Logic ──
+function sendAlarmEmail(taskTitle, partIds) {
+  if (!partIds || partIds.length === 0) return;
+  const emails = partIds
+    .map(id => memberData[id] && memberData[id].email)
+    .filter(email => email && email.includes('@'));
+  if (emails.length === 0) {
+    alert('已勾選鬧鐘通知，但您所選擇的參與成員均未設定有效的電子信箱。');
+    return;
+  }
+  
+  if (!confirm('要使用官方帳號 (tigpsteam@gmail.com) 寄信通知參與成員嗎？\n\n按「確定」：開啟官方帳號撰寫視窗\n按「取消」：不寄送提醒')) {
+    return;
+  }
+  
+  const subject = encodeURIComponent(`【TIGPS 任務提醒】${taskTitle}`);
+  const body = encodeURIComponent(`您好，\n\n這是一封來自 TIGPS 系統的任務提醒。\n\n工作名稱：${taskTitle}\n\n請記得至系統確認詳細進度與期限！\n\n祝 順心\n\nTIGPS 團隊敬上`);
+  const baseUrl = "https://mail.google.com/mail/u/tigpsteam@gmail.com/?view=cm&fs=1";
+  const gmailUrl = `${baseUrl}&to=${emails.join(',')}&su=${subject}&body=${body}`;
+  window.open(gmailUrl, '_blank');
+}
+
+// ── Calendar ──────────────────────────────────────────────────────────────────
+function renderCalendar() {
+  document.getElementById('calMonthTitle').textContent = MONTHS[calMonth];
+  document.getElementById('calYearLabel').textContent = calYear + '年';
+  const first = new Date(calYear, calMonth, 1);
+  const lastDay = new Date(calYear, calMonth + 1, 0).getDate();
+  const startDow = first.getDay();
+
+  let cells = '';
+  const prevMonth = calMonth === 0 ? 11 : calMonth - 1;
+  const prevYear = calMonth === 0 ? calYear - 1 : calYear;
+  const prevLastDay = new Date(prevYear, prevMonth + 1, 0).getDate();
+  
+  const allEvts = getAllCalendarEvents();
+
+  for (let i = 0; i < startDow; i++) {
+    const d = prevLastDay - startDow + i + 1;
+    cells += `<div class="cal-cell other-month"><div class="cal-date-num">${d}</div></div>`;
+  }
+
+  for (let d = 1; d <= lastDay; d++) {
+    const ds = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dt = allEvts.filter(e => e.date === ds);
+    const dlTasks = allEvts.filter(e => e.deadline === ds && e.date !== ds);
+    const allChips = [...dt, ...dlTasks];
+    const isT = new Date(calYear, calMonth, d).getTime() === today.getTime();
+    const numCls = isT ? 'cal-date-num today' : 'cal-date-num';
+    const dow = new Date(ds).getDay();
+    const weekendCls = (dow === 0 || dow === 6) ? 'weekend' : '';
+    const holidayName = TW_HOLIDAYS[ds] || '';
+    const holidayCls = holidayName ? 'holiday' : '';
+    const todayCls = isT ? 'is-today' : '';
+    const holidayLabel = holidayName
+      ? `<div style="font-size:10px;color:#c97070;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${holidayName}</div>`
+      : '';
+    const chips = allChips.slice(0, 3).map(e => {
+      const isDL = e.deadline === ds && e.date !== ds;
+      const border = isDL ? 'border-left:2px solid #c97070;' : '';
+      
+      const clickAction = `openEdit('${e.id}')`;
+      return `<div class="cal-chip chip-${e.cat||'data'}" style="${border}" onclick="${clickAction};event.stopPropagation()">${e.title}</div>`;
+    }).join('');
+    const more = allChips.length > 3 ? `<div style="font-size:11px;color:var(--text3);padding:1px">+${allChips.length-3}</div>` : '';
+    cells += `<div class="cal-cell ${weekendCls} ${holidayCls} ${todayCls}" onclick="openAddOnDate('${ds}')">
+      <div class="${numCls}">${d}</div>${holidayLabel}${chips}${more}
+    </div>`;
+  }
+
+  const total = startDow + lastDay;
+  const rem = (7 - total % 7) % 7;
+  for (let i = 0; i < rem; i++) cells += `<div class="cal-cell other-month"><div class="cal-date-num">${i+1}</div></div>`;
+  document.getElementById('calBody').innerHTML = cells;
+}
+
+function changeCalMonth(d) {
+  calMonth += d;
+  if (calMonth > 11) { calMonth = 0; calYear++; }
+  if (calMonth < 0) { calMonth = 11; calYear--; }
+  renderCalendar();
+  renderDashSidebar();
+}
+function goToday() { calYear = new Date().getFullYear(); calMonth = new Date().getMonth(); renderCalendar(); renderDashSidebar(); }
+
+function renderDashSidebar() {
+  const now = new Date();
+  const curY = now.getFullYear(), curM = now.getMonth();
+  const curStr = `${curY}-${String(curM+1).padStart(2,'0')}`;
+  
+  const nextY = curM === 11 ? curY + 1 : curY;
+  const nextM = curM === 11 ? 0 : curM + 1;
+  const nextStr = `${nextY}-${String(nextM+1).padStart(2,'0')}`;
+
+  const allEvts = getAllCalendarEvents();
+  const cur = allEvts.filter(e => e.date && e.date.startsWith(curStr) && !e.done && e.cat !== 'meeting');
+  const nxt = allEvts.filter(e => e.date && e.date.startsWith(nextStr) && !e.done && e.cat !== 'meeting');
+  const urgent = allEvts.filter(e => e.urgency === 'high' && !e.done).sort((a,b) => (a.date||'').localeCompare(b.date||''));
+  const mtg = allEvts.filter(e => e.cat === 'meeting' && e.date && !e.done).sort((a,b) => a.date.localeCompare(b.date));
+
+  const renderItem = e => {
+    const clickAction = `openEdit('${e.id}')`;
+    return `<div class="cal-side-item" onclick="${clickAction}">
+      <div class="cal-side-dot" style="background:#8a6b66;margin-top:4px"></div>
+      <div><div style="font-size:13px;line-height:1.3">${e.title}</div><div style="font-size:12px;color:var(--text3)">${e.date||''}</div></div>
+    </div>`;
+  };
+
+  const empty = '<div style="font-size:13px;color:var(--text3)">無</div>';
+  document.getElementById('dashCurrentMonth').innerHTML = cur.length ? cur.map(renderItem).join('') : empty;
+  document.getElementById('dashNextMonth').innerHTML = nxt.length ? nxt.map(renderItem).join('') : empty;
+  document.getElementById('dashDeadlines').innerHTML = urgent.length ? urgent.map(renderItem).join('') : empty;
+  
+  document.getElementById('dashMeetings').innerHTML = mtg.length ? mtg.map(e => {
+    const clickAction = `openEdit('${e.id}')`;
+    return `<div class="cal-side-item" onclick="${clickAction}">
+      <div class="cal-side-dot" style="background:var(--cat-meeting-text);margin-top:4px"></div>
+      <div><div style="font-size:13px;line-height:1.3">${e.title}</div><div style="font-size:12px;color:var(--text3)">${e.date||''}</div></div>
+    </div>`;
+  }).join('') : empty;
+}
+
+// ── Progress View ─────────────────────────────────────────────────────────────
+function initProgTabs() {
+  const tabsEl = document.getElementById('progYearTabs');
+  tabsEl.innerHTML = progYears.map(y => {
+    const active = y === progYear ? 'active' : '';
+    return `<button class="filter-chip ${active}" 
+      onclick="switchProgYear(${y},this)"
+      ondragover="yearTabDragOver(event)"
+      ondragleave="yearTabDragLeave(event)"
+      ondrop="yearTabDrop(event, ${y})"
+      style="transition: all 0.2s;"
+      >${waveLabel(y)}</button>`;
+  }).join('');
+}
+
+function switchProgYear(y, el) {
+  progYear = y;
+  document.querySelectorAll('#progYearTabs .filter-chip').forEach(b => b.classList.remove('active'));
+  if (el) el.classList.add('active');
+  renderProgContent();
+}
+
+// ── Drag & Drop Reordering Logic ──
+function yearTabDragOver(ev) { ev.preventDefault(); ev.dataTransfer.dropEffect = 'move'; ev.currentTarget.style.transform = 'scale(1.1)'; ev.currentTarget.style.boxShadow = '0 0 0 2px var(--accent)'; }
+function yearTabDragLeave(ev) { ev.currentTarget.style.transform = 'none'; ev.currentTarget.style.boxShadow = 'none'; }
+function yearTabDrop(ev, targetYear) {
+  ev.preventDefault(); ev.currentTarget.style.transform = 'none'; ev.currentTarget.style.boxShadow = 'none';
+  const srcKey = _dndSrc; _dndSrc = null; if (!srcKey) return;
+  const t = getProgTask(srcKey); if (!t || progYearOf(t) === String(targetYear)) return;
+  if (getProgTask(srcKey, targetYear)) { alert(`${targetYear} 波次已經有這個項目了，請先處理該筆再移動。`); return; }
+  if (confirm(`確定將整筆工作移至 ${targetYear} 年度嗎？`)) {
+    db.ref('tasks/' + t.id).update({ progYear: String(targetYear) }).then(() => renderProgContent());
+  }
+}
+
+function dndStart(ev, key) {
+  _dndSrc = key;
+  ev.dataTransfer.effectAllowed = 'move';
+  ev.currentTarget.style.opacity = '0.4';
+}
+
+function dndOver(ev, key) {
+  ev.preventDefault();
+  ev.dataTransfer.dropEffect = 'move';
+  ev.currentTarget.style.borderTop = '2px solid var(--accent)';
+}
+
+function dndLeave(ev, key) {
+  ev.currentTarget.style.borderTop = 'none';
+}
+
+function dndDrop(ev, targetKey) {
+  ev.preventDefault();
+  ev.currentTarget.style.borderTop = 'none';
+  
+  if (!_dndSrc || _dndSrc === targetKey) {
+    renderProgContent();
+    return;
+  }
+
+  let order = progOrders[progYear] || ANNUAL_TASKS.map(a => a.key);
+  // 若現有的秩序列表沒涵蓋所有項目，補進去
+  ANNUAL_TASKS.forEach(a => { if(!order.includes(a.key)) order.push(a.key); });
+
+  const srcIdx = order.indexOf(_dndSrc);
+  const tgtIdx = order.indexOf(targetKey);
+
+  if (srcIdx > -1 && tgtIdx > -1) {
+    order.splice(srcIdx, 1);
+    order.splice(tgtIdx, 0, _dndSrc);
+    db.ref('progOrders/' + progYear).set(order).then(() => {
+        _dndSrc = null;
+    });
+  } else {
+    _dndSrc = null;
+    renderProgContent();
+  }
+}
+
+function renderProgContent() {
+  const barEl = document.getElementById('progBar');
+  const tbody = document.getElementById('progTbody');
+  if (!barEl || !tbody) return;
+  let yearTasks = [];
+  ANNUAL_TASKS.forEach(at => {
+    const recs = progRecs(at.key);                    // 只看目前波次
+    const live = recs.find(t => !t.deleted) || null;
+    if (!live && recs.length) return;                 // 本波次曾建立過但已刪除 → 不顯示
+    yearTasks.push({ at, t: live });
+  });
+  const customTasks = tasks.filter(t => progYearOf(t) === String(progYear) && t.annualKey && t.annualKey.startsWith('custom_') && !t.deleted);
+  customTasks.forEach(t => yearTasks.push({ at: { key: t.annualKey, label: t.title }, t }));
+  let yearOrder = progOrders[progYear] || [];
+  yearTasks.sort((a, b) => {
+    const aDone = a.t && a.t.done ? 1 : 0;
+    const bDone = b.t && b.t.done ? 1 : 0;
+    if (aDone !== bDone) return aDone - bDone;
+    const aIdx = yearOrder.indexOf(a.at.key);
+    const bIdx = yearOrder.indexOf(b.at.key);
+    if (aIdx !== -1 && bIdx !== -1) return aIdx - bIdx;
+    if (aIdx !== -1) return -1;
+    if (bIdx !== -1) return 1;
+    const aAnnIdx = ANNUAL_TASKS.findIndex(x => x.key === a.at.key);
+    const bAnnIdx = ANNUAL_TASKS.findIndex(x => x.key === b.at.key);
+    return aAnnIdx - bAnnIdx;
+  });
+  const doneCount = yearTasks.filter(x => x.t && x.t.done).length;
+  const pct = yearTasks.length === 0 ? 0 : Math.round(doneCount / yearTasks.length * 100);
+  barEl.innerHTML = `<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--text2);margin-bottom:5px">
+    <span>${waveLabel(progYear)} 年度完成進度</span>
+    <span>${doneCount} / ${yearTasks.length}（${pct}%）</span>
+  </div>
+  <div style="height:8px;background:var(--bg3);border-radius:4px;overflow:hidden">
+    <div style="height:100%;background:var(--accent);width:${pct}%;transition:width 0.4s;"></div>
+  </div>`;
+  let html = '';
+  for (const { at, t } of yearTasks) {
+    const isDone = !!(t && t.done);
+    const parts = t && Array.isArray(t.parts) ? t.parts : [];
+    const assignees = getActiveMembers().filter(m => parts.includes(m.id)).map(m => `<span style="display:flex;flex-direction:column;align-items:center;gap:2px">
+        ${getMemberAvatar(m, 22)}
+        <span style="font-size:10px;color:var(--text3)">${m.name}</span>
+      </span>`).join('');
+    const subs = t && t.subtasks ? Object.entries(t.subtasks) : [];
+    const hasSub = subs.length > 0;
+    const subDone = subs.filter(([k,s]) => s && s.done).length;
+    
+    const clickRowAction = `openProgDetail('${at.key}')`;
+
+    html += `<tr id="dndrow_${at.key}" onclick="${clickRowAction}" draggable="true" ondragstart="dndStart(event,'${at.key}')" ondragover="dndOver(event,'${at.key}')" ondragleave="dndLeave(event,'${at.key}')" ondrop="dndDrop(event,'${at.key}')" style="cursor:pointer${isDone?';opacity:0.5':''}">
+      <td onclick="event.stopPropagation();quickDone('${at.key}')"><div class="check ${isDone?'done':''}">${isDone?'✓':''}</div></td>
+      <td style="font-size:13px;">${t&&t.date?t.date:''}</td>
+      <td style="font-weight:${isDone?'400':'500'}">${at.label}${hasSub?`<span style="font-size:11px;color:var(--text3);margin-left:4px" id="stbtn_${at.key}" onclick="event.stopPropagation();progToggleSub('${at.key}')">▸ ${subDone}/${subs.length}</span>`:''}</td>
+      <td><div style="display:flex;gap:3px;flex-wrap:wrap">${assignees}</div></td>
+      <td style="font-size:13px;">${t&&t.deadline?t.deadline:''}</td>
+      <td style="font-size:13px;">${t&&t.doneDate?t.doneDate:''}</td>
+      <td><button onclick="event.stopPropagation();${clickRowAction}" style="border:none;background:transparent;cursor:pointer;color:var(--text3);font-size:18px;">›</button></td>
+    </tr>`;
+
+    if (hasSub) {
+      subs.forEach(([subKey, s], si) => {
+        if (!s) return;
+        const sAssignees = Array.isArray(s.parts)
+          ? getActiveMembers().filter(m => s.parts.includes(m.id)).map(m => getMemberAvatar(m, 18)).join('')
+          : '';
+        html += `<tr class="sub-row subrow_${at.key}" style="display:none">
+          <td style="padding-left:16px">
+            <div class="check ${s.done?'done':''}" onclick="progSubToggle('${at.key}','${subKey}')">${s.done?'✓':''}</div>
+          </td>
+          <td style="font-size:12px;color:var(--text3);white-space:nowrap">${s.date||''}</td>
+          <td style="font-size:13px;color:var(--text2);${s.done?'text-decoration:line-through':''}">↳ ${s.title||''}</td>
+          <td><div style="display:flex;gap:2px">${sAssignees}</div></td>
+          <td style="font-size:12px;color:var(--text3);white-space:nowrap">${s.deadline||''}</td>
+          <td style="font-size:12px;color:var(--text3);white-space:nowrap">${s.doneDate||''}</td>
+          <td></td>
+        </tr>`;
+      });
+    }
+  }
+  tbody.innerHTML = html;
+}
+
+function progToggleSub(safeKey) {
+  const rows = document.querySelectorAll('.subrow_' + safeKey);
+  const btn = document.getElementById('stbtn_' + safeKey);
+  if (!rows.length) return;
+  const isHidden = rows[0].style.display === 'none';
+  rows.forEach(r => { r.style.display = isHidden ? '' : 'none'; });
+  if (btn) btn.textContent = isHidden ? `▾ ${btn.textContent.split(' ')[1]}` : `▸ ${btn.textContent.split(' ')[1]}`;
+}
+
+// ── 寫入結果回報（避免權限或網路錯誤靜默失敗）────────────────────────────────
+function dbFail(label) {
+  return function (err) {
+    console.error('[寫入失敗] ' + label, err);
+    alert('「' + label + '」寫入失敗：\n' + (err && err.message ? err.message : err) +
+          '\n\n若訊息包含 permission_denied，代表 Firebase 規則擋住了寫入。');
+  };
+}
+
+function quickDone(atKey) {
+  const t = getProgTask(atKey);
+  if (t) {
+    const newDone = !t.done;
+    const doneDate = newDone ? new Date().toISOString().split('T')[0] : '';
+    db.ref('tasks/' + t.id).update({ done: newDone, status: newDone ? 'done' : 'notstarted', doneDate }).catch(dbFail('勾選完成'));
+  } else {
+    let at = ANNUAL_TASKS.find(x => x.key === atKey);
+    const data = {
+      annualKey: atKey,
+      progYear: String(progYear),
+      title: at ? at.label : '未命名工作',
+      done: true,
+      status: 'done',
+      doneDate: new Date().toISOString().split('T')[0],
+      parts: [],
+      subtasks: {},
+      deleted: false
+    };
+    db.ref('tasks').push(data).catch(dbFail('建立工作'));
+  }
+}
+
+// ── Progress Detail Logic ──
+function openProgDetail(atKey) {
+  _detailKey = atKey;
+  const t = getProgTask(atKey);
+  _detailTaskId = t ? t.id : null;
+  const at = ANNUAL_TASKS.find(x => x.key === atKey);
+  document.getElementById('tdCatBadge').textContent = waveLabel(progYear);
+  const titleInput = document.getElementById('tdTitle');
+  titleInput.value = at ? at.label : (t ? t.title : '');
+  titleInput.readOnly = !(_detailKey && _detailKey.startsWith('custom_'));
+  document.getElementById('tdDate').value = t ? (t.date || '') : '';
+  document.getElementById('tdDeadline').value = t ? (t.deadline || '') : '';
+  document.getElementById('tdDoneDate').value = t ? (t.doneDate || '') : '';
+  document.getElementById('tdStatus').value = t ? (t.status || 'notstarted') : 'notstarted';
+  document.getElementById('tdDesc').value = t ? (t.desc || '') : '';
+  const vis = getActiveMembers();
+  const selP = t ? (t.parts || []) : [];
+  document.getElementById('tdAssignees').innerHTML = vis.map(m => {
+    const sel = selP.includes(m.id);
+    const ring = sel ? 'box-shadow:0 0 0 2px #fff, 0 0 0 4px var(--accent);' : '';
+    return `<div id="tda_${m.id}" onclick="detailToggleAssignee('${m.id}')" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;opacity:${sel?1:0.4};transition:opacity 0.2s">
+      ${m.photo?`<img src="${m.photo}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;${ring}">`:`<div style="width:40px;height:40px;border-radius:50%;background:${m.bg};color:#555;font-size:16px;font-weight:600;display:flex;align-items:center;justify-content:center;${ring}">${m.initials}</div>`}
+      <span class="td-assignee-name" style="font-size:13px;color:${sel?'#8b8580':'#b4ada5'};white-space:nowrap">${m.name}</span>
+    </div>`;
+  }).join('');
+  renderDetailSubs(t);
+  document.getElementById('taskDetailOverlay').classList.add('open');
+}
+
+function detailToggleAssignee(mid) {
+  const t = _detailTaskId ? tasks.find(x => x.id === _detailTaskId) : null;
+  if (!t) return;
+  let parts = [...(t.parts || [])];
+  const idx = parts.indexOf(mid);
+  if (idx >= 0) parts.splice(idx, 1); else parts.push(mid);
+  t.parts = parts;
+  db.ref(`tasks/${t.id}/parts`).set(parts).then(() => openProgDetail(_detailKey), dbFail('指派負責人'));
+}
+
+function renderDetailSubs(task) {
+  const el = document.getElementById('tdSubtasks');
+  if (!el) return;
+  const subs = task && task.subtasks ? Object.entries(task.subtasks) : [];
+  if (!subs.length) { el.innerHTML = '<div style="font-size:14px;color:var(--text3);margin-top:8px;">尚無子計畫</div>'; return; }
+  
+  el.innerHTML = subs.map(([subKey, s]) => `
+    <div style="padding:16px;border-radius:8px;background:var(--bg);border:1px solid var(--border2);margin-bottom:12px">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+        <div class="check ${s.done?'done':''}" onclick="progSubToggle('${_detailKey}','${subKey}');renderDetailSubs(getProgTask('${_detailKey}'))">${s.done?'✓':''}</div>
+        <input type="text" value="${s.title||''}" placeholder="請輸入子計畫名稱" onchange="updateSubField('${subKey}','title',this.value)" style="flex:1;font-size:16px;font-weight:600;color:var(--text);border:none;background:transparent;outline:none;${s.done?'text-decoration:line-through;color:var(--text3)':''}">
+        <button onclick="deleteDetailSub('${subKey}')" style="border:none;background:transparent;cursor:pointer;color:var(--text3);font-size:18px">✕</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div><div class="flabel">日期</div><input type="date" value="${s.date||''}" onchange="updateSubField('${subKey}','date',this.value)"></div>
+        <div><div class="flabel">DEADLINE</div><input type="date" value="${s.deadline||''}" onchange="updateSubField('${subKey}','deadline',this.value)"></div>
+        <div><div class="flabel">完成日期</div><input type="date" value="${s.doneDate||''}" onchange="updateSubField('${subKey}','doneDate',this.value)"></div>
+        <div><div class="flabel">負責人</div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">${getActiveMembers().map(m => `<span onclick="toggleSubMember('${subKey}','${m.id}')" style="cursor:pointer;opacity:${s.parts&&s.parts.includes(m.id)?1:0.35}">${getMemberAvatar(m, 28)}</span>`).join('')}</div></div>
+      </div>
+    </div>`).join('');
+}
+
+function updateSubField(subKey, field, val) {
+  const t = _detailTaskId ? tasks.find(x => x.id === _detailTaskId) : null;
+  if (t && t.subtasks[subKey]) { t.subtasks[subKey][field] = val; db.ref(`tasks/${t.id}/subtasks/${subKey}/${field}`).set(val).catch(dbFail('修改子計畫')); }
+}
+
+function toggleSubMember(subKey, mid) {
+  const t = _detailTaskId ? tasks.find(x => x.id === _detailTaskId) : null;
+  if (!t) return;
+  const sub = t.subtasks[subKey];
+  let parts = [...(sub.parts || [])];
+  const idx = parts.indexOf(mid);
+  if (idx >= 0) parts.splice(idx, 1); else parts.push(mid);
+  sub.parts = parts;
+  db.ref(`tasks/${t.id}/subtasks/${subKey}/parts`).set(parts).then(() => renderDetailSubs(t), dbFail('指派子計畫負責人'));
+}
+
+function addSubtask() {
+  const newSub = { title: '', done: false, date: '', deadline: '', doneDate: '', parts: [], createdAt: new Date().toISOString() };
+  ensureProgTask(_detailKey, t => {
+    db.ref(`tasks/${t.id}/subtasks`).push(newSub).catch(dbFail('新增子計畫')).then(() => {
+      db.ref(`tasks/${t.id}`).once('value', snap => {
+        const updated = { id: t.id, ...snap.val() };
+        const idx = tasks.findIndex(x => x.id === t.id);
+        if (idx >= 0) tasks[idx] = updated; else tasks.push(updated);
+        _detailTaskId = t.id;
+        renderDetailSubs(updated);
+        renderProgContent();
+      });
+    });
+  });
+}
+
+function openProgNew() {
+  const k = 'custom_' + Date.now();
+  const n = prompt('請輸入自訂工作名稱:');
+  if (!n) return;
+  const data = { annualKey: k, progYear: String(progYear), title: n, done: false, status: 'notstarted', parts: [], subtasks: {}, deleted: false };
+  db.ref('tasks').push(data).then(() => {
+    setTimeout(() => openProgDetail(k), 400);
+  });
+}
+
+function progSubToggle(atKey, subKey) {
+  const t = getProgTask(atKey);
+  if (!t || !t.subtasks || !t.subtasks[subKey]) return;
+  const cur = t.subtasks[subKey].done;
+  const doneDate = !cur ? new Date().toISOString().split('T')[0] : '';
+  db.ref(`tasks/${t.id}/subtasks/${subKey}`).update({ done: !cur, doneDate }).catch(dbFail('勾選子計畫')).then(() => {
+    t.subtasks[subKey].done = !cur;
+    t.subtasks[subKey].doneDate = doneDate;
+    renderDetailSubs(t); renderProgContent();
+  });
+}
+
+function deleteDetailSub(subKey) {
+  if (!confirm('確定刪除子計畫？')) return;
+  const t = _detailTaskId ? tasks.find(x => x.id === _detailTaskId) : null;
+  if (!t) return;
+  db.ref(`tasks/${t.id}/subtasks/${subKey}`).remove().then(() => { delete t.subtasks[subKey]; renderDetailSubs(t); renderProgContent(); }, dbFail('刪除子計畫'));
+}
+
+function saveTaskDetail() {
+  const status = document.getElementById('tdStatus').value;
+  const data = { annualKey: _detailKey, progYear: String(progYear), title: document.getElementById('tdTitle').value.trim() || '未命名工作', date: document.getElementById('tdDate').value, deadline: document.getElementById('tdDeadline').value, doneDate: document.getElementById('tdDoneDate').value, status, desc: document.getElementById('tdDesc').value, done: status === 'done', deleted: false };
+  const t = _detailTaskId ? tasks.find(x => x.id === _detailTaskId) : null;
+  if (t) {
+    data.parts = t.parts || []; data.subtasks = t.subtasks || {};
+    db.ref('tasks/' + _detailTaskId).update(data).then(() => { Object.assign(t, data); renderProgContent(); closeTaskDetail(); });
+  } else {
+    data.parts = []; data.subtasks = {};
+    db.ref('tasks').push(data).then(ref => { tasks.push({ id: ref.key, ...data }); renderProgContent(); closeTaskDetail(); });
+  }
+}
+
+function copyCurrentTask() {
+  const fresh = _detailKey ? getProgTask(_detailKey) : null;
+  if (fresh) _detailTaskId = fresh.id;
+  if (!_detailTaskId) { alert('請先點擊「儲存」後再進行複製！'); return; }
+  const t = tasks.find(x => x.id === _detailTaskId);
+  if (!t || !confirm('確定要完整複製此工作（包含所有子計畫與負責人）嗎？')) return;
+  const newKey = 'custom_' + Date.now();
+  const newData = { ...t, annualKey: newKey, title: t.title + ' (複製)', createdAt: new Date().toISOString() };
+  delete newData.id;
+  db.ref('tasks').push(newData).then(() => { openProgDetail(newKey); renderProgContent(); });
+}
+
+function deleteCurrentTask() {
+  const fresh = _detailKey ? getProgTask(_detailKey) : null;
+  if (fresh) _detailTaskId = fresh.id;
+  if (!_detailTaskId) {
+    // 這個項目還沒有任何紀錄：建立一筆標記為刪除的，讓它在本波次不再顯示
+    if (!confirm('確定要在本波次移除此工作嗎？')) return;
+    const at = ANNUAL_TASKS.find(x => x.key === _detailKey);
+    db.ref('tasks').push({
+      annualKey: _detailKey, progYear: String(progYear),
+      title: at ? at.label : '未命名工作',
+      done: false, status: 'notstarted', parts: {}, subtasks: {}, deleted: true
+    }).then(() => { _detailKey = null; closeTaskDetail(); }, dbFail('移除工作'));
+    return;
+  }
+  if (!confirm('確定要刪除此工作的所有資料（包含子計畫）？')) return;
+  db.ref('tasks/' + _detailTaskId).update({ deleted: true }).then(() => {
+    const idx = tasks.findIndex(x => x.id === _detailTaskId);
+    if (idx >= 0) tasks[idx].deleted = true;
+    _detailTaskId = null; _detailKey = null; closeTaskDetail(); renderProgContent();
+  }, dbFail('刪除工作'));
+}
+
+function ensureProgTask(atKey, cb) {
+  let t = getProgTask(atKey);
+  if (t) { cb(t); return; }
+  const at = ANNUAL_TASKS.find(x => x.key === atKey);
+  const data = { annualKey: atKey, progYear: String(progYear), title: at ? at.label : (document.getElementById('tdTitle')?.value || '未命名工作'), done: false, status: 'notstarted', parts: [], subtasks: {}, deleted: false };
+  db.ref('tasks').push(data).then(ref => { const newT = { id: ref.key, ...data }; tasks.push(newT); cb(newT); }, dbFail('建立工作'));
+}
+
+
+// ── Calendar Modal Logic ──
+function openAdd() {
+  editingId = null; 
+  // 自動帶入登入者
+  selCreator = loggedInMemberId || (getActiveMembers()[0]?.id || ''); 
+  selParts = loggedInMemberId ? [loggedInMemberId] : [];
+  
+  document.getElementById('iTitle').value = ''; document.getElementById('iDesc').value = '';
+  document.getElementById('iDate').value = ''; document.getElementById('iDeadline').value = '';
+  document.getElementById('iTimeH').value = ''; document.getElementById('iTimeM').value = '';
+  document.getElementById('iDeadlineH').value = ''; document.getElementById('iDeadlineM').value = '';
+  document.getElementById('iUrgency').value = 'low';
+  document.getElementById('iRecurrence').value = 'none'; 
+  document.getElementById('iDoneCheckbox').checked = false; document.getElementById('iAlarmCheckbox').checked = false;
+  updateCatColor(document.getElementById('iCat'));
+  document.querySelector('#modalOverlay .btn-primary').textContent = '新增';
+  document.getElementById('modalDeleteBtn').style.display = 'none';
+  renderProgYearSelect(progYear); renderModalMembers();
+  document.getElementById('modalOverlay').classList.add('open');
+}
+function openAddOnDate(ds) { openAdd(); document.getElementById('iDate').value = ds; }
+function openEdit(id) {
+  const t = tasks.find(x => x.id === id); if (!t) return;
+  editingId = id; selCreator = t.creator || ''; selParts = [...(t.parts || [])];
+  document.getElementById('iTitle').value = t.title || ''; document.getElementById('iDesc').value = t.desc || '';
+  document.getElementById('iDate').value = t.date || ''; document.getElementById('iDeadline').value = t.deadline || '';
+  const tp = t.time ? t.time.split(':') : []; document.getElementById('iTimeH').value = tp[0] || ''; document.getElementById('iTimeM').value = tp[1] || '';
+  const dp = t.deadlineTime ? t.deadlineTime.split(':') : []; document.getElementById('iDeadlineH').value = dp[0] || ''; document.getElementById('iDeadlineM').value = dp[1] || '';
+  document.getElementById('iUrgency').value = t.urgency || 'low';
+  document.getElementById('iRecurrence').value = t.recurrence || 'none'; 
+  document.getElementById('iDoneCheckbox').checked = t.done || false;
+  document.getElementById('iAlarmCheckbox').checked = t.alarm || false;
+  const cat = document.getElementById('iCat'); cat.value = t.cat || 'data'; updateCatColor(cat);
+  document.querySelector('#modalOverlay .btn-primary').textContent = '儲存';
+  document.getElementById('modalDeleteBtn').style.display = '';
+  renderProgYearSelect(t.progYear || progYear); renderModalMembers();
+  document.getElementById('modalOverlay').classList.add('open');
+}
+function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
+function updateCatColor(sel) { const colors = { data:'#dce4ef', meeting:'#efdcdc', admin:'#dceee0', questionnaire:'#eee8d8', platform:'#e5dced' }; sel.style.background = colors[sel.value] || ''; }
+function renderProgYearSelect(y) { document.getElementById('iProgYear').innerHTML = progYears.map(yr => `<option value="${yr}" ${String(yr)===String(y)?'selected':''}>${waveLabel(yr)}</option>`).join(''); }
+function renderModalMembers() {
+  const vis = getActiveMembers();
+  document.getElementById('creatorChips').innerHTML = vis.map(m => `<div onclick="selCreator='${m.id}';renderModalMembers()" style="cursor:pointer;opacity:${m.id===selCreator?1:0.4}">${m.photo?`<img src="${m.photo}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;${m.id===selCreator?'box-shadow:0 0 0 2.5px var(--accent);':''}">`:`<div style="width:32px;height:32px;border-radius:50%;background:${m.bg};color:#555;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;${m.id===selCreator?'box-shadow:0 0 0 2.5px var(--accent);':''}">${m.initials}</div>`}</div>`).join('');
+  document.getElementById('partChips').innerHTML = vis.map(m => `<div onclick="(function(){const i=selParts.indexOf('${m.id}');i>=0?selParts.splice(i,1):selParts.push('${m.id}');renderModalMembers();})()" style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;opacity:${selParts.includes(m.id)?1:0.4}">
+      ${m.photo?`<img src="${m.photo}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;${selParts.includes(m.id)?'box-shadow:0 0 0 2.5px var(--accent);':''}">`:`<div style="width:40px;height:40px;border-radius:50%;background:${m.bg};color:#555;font-size:15px;font-weight:600;display:flex;align-items:center;justify-content:center;${selParts.includes(m.id)?'box-shadow:0 0 0 2.5px var(--accent);':''}">${m.initials}</div>`}
+      <span style="font-size:11px;color:var(--text2);">${m.name}</span>
+    </div>`).join('');
+}
+function saveTask() {
+  const title = document.getElementById('iTitle').value.trim(); if (!title) return alert('請輸入名稱');
+  const isDone = document.getElementById('iDoneCheckbox').checked;
+  const isAlarm = document.getElementById('iAlarmCheckbox').checked;
+  const data = { title, desc: document.getElementById('iDesc').value, date: document.getElementById('iDate').value, time: (document.getElementById('iTimeH').value && document.getElementById('iTimeM').value)?`${document.getElementById('iTimeH').value}:${document.getElementById('iTimeM').value}`:'', deadline: document.getElementById('iDeadline').value, deadlineTime: (document.getElementById('iDeadlineH').value && document.getElementById('iDeadlineM').value)?`${document.getElementById('iDeadlineH').value}:${document.getElementById('iDeadlineM').value}`:'', cat: document.getElementById('iCat').value, urgency: document.getElementById('iUrgency').value, recurrence: document.getElementById('iRecurrence').value, status: isDone?'done':'notstarted', creator: selCreator, parts: [...selParts], done: isDone, alarm: isAlarm, progYear: document.getElementById('iProgYear').value, timestamp: new Date().toISOString() };
+  if (!editingId) data.annualKey = 'custom_' + Date.now();
+  if (editingId) db.ref('tasks/' + editingId).update(data); else db.ref('tasks').push(data);
+  closeModal(); if (isAlarm) sendAlarmEmail(title, selParts);
+}
+function deleteEditingTask() { if (editingId && confirm('確定要刪除？')) db.ref('tasks/' + editingId).update({ deleted: true }).then(closeModal, dbFail('刪除工作')); }
+function toggleSidebar() { document.getElementById('mainSidebar').classList.toggle('collapsed'); }
+
+function switchView(v, el) {
+  document.querySelectorAll('.view').forEach(x => x.classList.remove('active'));
+  const target = document.getElementById('view-' + v); if (target) target.classList.add('active');
+  document.querySelectorAll('.sb-item').forEach(x => x.classList.remove('active')); if (el) el.classList.add('active');
+  if (v === 'progress') renderProgContent();
+  else if (v === 'dashboard') { renderCalendar(); renderDashSidebar(); }
+  else if (v === 'schedule') { renderSchedule(); }
+  else if (v === 'ledger') { initLedgerFilters(); renderLedger(); }
+  else if (v === 'manual') { loadManualFrame(); }
+}
+
+// ── 使用手冊 (延遲載入 iframe) ──────────────────────────────────────────────────
+function loadManualFrame() {
+  const f = document.getElementById('manualFrame');
+  if (f && !f.getAttribute('src')) f.setAttribute('src', f.dataset.src);
+}
+
+// ── 排班表模組 (Schedule Module) ─────────────────────────────────────────────
+// 資料改為結構化事件（像新增行程一樣）：scheduleEntries/{id} = {memberId,date,start,end,type}
+
+function escapeHtml(str) {
+  return String(str == null ? '' : str)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function dateStr(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function formatHours(h) {
+  if (!h) return '0';
+  const r = Math.round(h * 100) / 100;
+  return String(r);
+}
+
+// 計算某筆排班的時數（HH:MM 字串），結束時間小於等於開始時間時視為跨午夜
+function schedDuration(start, end) {
+  if (!start || !end) return 0;
+  const [sh, sm] = start.split(':').map(Number);
+  const [eh, em] = end.split(':').map(Number);
+  let s = sh * 60 + sm, e = eh * 60 + em;
+  if (e <= s) e += 24 * 60;
+  return (e - s) / 60;
+}
+
+function changeSchedMonth(delta) {
+  schedMonth += delta;
+  if (schedMonth > 11) { schedMonth = 0; schedYear++; }
+  if (schedMonth < 0) { schedMonth = 11; schedYear--; }
+  renderSchedule();
+}
+function schedGoToday() {
+  schedYear = new Date().getFullYear();
+  schedMonth = new Date().getMonth();
+  renderSchedule();
+}
+
+// ── 新增／編輯排班 Modal ──
+function populateSchedMemberSelect(selectedId) {
+  const sel = document.getElementById('sMember');
+  const vis = getActiveMembers();
+  sel.innerHTML = vis.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
+  if (selectedId) sel.value = selectedId;
+}
+
+function setSchedType(t) {
+  selSchedType = t;
+  document.getElementById('sTypeOnsiteBtn').classList.toggle('active', t === 'onsite');
+  document.getElementById('sTypeRemoteBtn').classList.toggle('active', t === 'remote');
+}
+
+function openSchedAdd(ds) {
+  document.getElementById('schedModalTitle').textContent = '新增排班';
+  document.getElementById('sEditingId').value = '';
+  populateSchedMemberSelect(loggedInMemberId || null);
+  document.getElementById('sDate').value = ds || dateStr(new Date());
+  document.getElementById('sStart').value = '09:00';
+  document.getElementById('sEnd').value = '18:00';
+  setSchedType('onsite');
+  document.getElementById('schedModalDeleteBtn').style.display = 'none';
+  document.getElementById('schedModalOverlay').classList.add('open');
+}
+
+function openSchedEdit(id) {
+  const e = scheduleEntries[id];
+  if (!e) return;
+  document.getElementById('schedModalTitle').textContent = '編輯排班';
+  document.getElementById('sEditingId').value = id;
+  populateSchedMemberSelect(e.memberId);
+  document.getElementById('sDate').value = e.date || '';
+  document.getElementById('sStart').value = e.start || '';
+  document.getElementById('sEnd').value = e.end || '';
+  setSchedType(e.type === 'remote' ? 'remote' : 'onsite');
+  document.getElementById('schedModalDeleteBtn').style.display = 'inline-block';
+  document.getElementById('schedModalOverlay').classList.add('open');
+}
+
+function closeSchedModal() {
+  document.getElementById('schedModalOverlay').classList.remove('open');
+}
+
+function saveSchedEntry() {
+  const mid = document.getElementById('sMember').value;
+  const ds = document.getElementById('sDate').value;
+  const start = document.getElementById('sStart').value;
+  const end = document.getElementById('sEnd').value;
+  if (!mid || !ds || !start || !end) { alert('請完整填寫人員、日期與時間'); return; }
+  const data = { memberId: mid, date: ds, start, end, type: selSchedType };
+  const id = document.getElementById('sEditingId').value;
+  if (id) {
+    scheduleEntries[id] = data;
+    db.ref('scheduleEntries/' + id).set(data).catch(dbFail('排班儲存'));
+  } else {
+    const ref = db.ref('scheduleEntries').push();
+    scheduleEntries[ref.key] = data;
+    ref.set(data).catch(dbFail('排班新增'));
+  }
+  closeSchedModal();
+  renderSchedule();
+}
+
+function deleteSchedEntry() {
+  const id = document.getElementById('sEditingId').value;
+  if (!id) return;
+  if (!confirm('確定要刪除這筆排班嗎？')) return;
+  delete scheduleEntries[id];
+  db.ref('scheduleEntries/' + id).remove().catch(dbFail('排班刪除'));
+  closeSchedModal();
+  renderSchedule();
+}
+
+function updateSchedRate(mid, val) {
+  const num = val === '' ? null : Number(val);
+  if (num === null) {
+    delete scheduleRates[mid];
+    db.ref('scheduleRates/' + mid).remove().catch(dbFail('時薪儲存'));
+  } else {
+    scheduleRates[mid] = num;
+    db.ref('scheduleRates/' + mid).set(num).catch(dbFail('時薪儲存'));
+  }
+  renderSchedule();
+}
+
+function updateSchedDeclared(monthKey, mid, val) {
+  if (!scheduleDeclared[monthKey]) scheduleDeclared[monthKey] = {};
+  const num = val === '' ? null : Number(val);
+  if (num === null) {
+    delete scheduleDeclared[monthKey][mid];
+    db.ref(`scheduleDeclared/${monthKey}/${mid}`).remove().catch(dbFail('月申報儲存'));
+  } else {
+    scheduleDeclared[monthKey][mid] = num;
+    db.ref(`scheduleDeclared/${monthKey}/${mid}`).set(num).catch(dbFail('月申報儲存'));
+  }
+  renderSchedule();
+}
+
+// ── 渲染：月曆 + 右側月時數統計 ──
+function renderSchedule() {
+  const mainEl = document.getElementById('schedMain');
+  const statEl = document.getElementById('schedStatTable');
+  if (!mainEl || !statEl) return;
+
+  document.getElementById('schedMonthTitle').textContent = MONTHS[schedMonth];
+  document.getElementById('schedYearLabel').textContent = schedYear + '年';
+
+  const first = new Date(schedYear, schedMonth, 1);
+  const lastDay = new Date(schedYear, schedMonth + 1, 0).getDate();
+  const startDow = first.getDay();
+  const prevMonth = schedMonth === 0 ? 11 : schedMonth - 1;
+  const prevYear = schedMonth === 0 ? schedYear - 1 : schedYear;
+  const prevLastDay = new Date(prevYear, prevMonth + 1, 0).getDate();
+
+  const allEntries = Object.entries(scheduleEntries).map(([id, e]) => ({ id, ...e }));
+
+  let cells = '';
+  for (let i = 0; i < startDow; i++) {
+    const d = prevLastDay - startDow + i + 1;
+    cells += `<div class="cal-cell other-month"><div class="cal-date-num">${d}</div></div>`;
+  }
+
+  for (let d = 1; d <= lastDay; d++) {
+    const ds = `${schedYear}-${String(schedMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dayEntries = allEntries.filter(e => e.date === ds).sort((a,b) => (a.start||'').localeCompare(b.start||''));
+    const isT = new Date(schedYear, schedMonth, d).getTime() === today.getTime();
+    const numCls = isT ? 'cal-date-num today' : 'cal-date-num';
+    const dow = new Date(ds).getDay();
+    const weekendCls = (dow === 0 || dow === 6) ? 'weekend' : '';
+    const holidayName = TW_HOLIDAYS[ds] || '';
+    const holidayCls = holidayName ? 'holiday' : '';
+    const todayCls = isT ? 'is-today' : '';
+    const holidayLabel = holidayName
+      ? `<div style="font-size:10px;color:#c97070;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${holidayName}</div>`
+      : '';
+    const chips = dayEntries.slice(0, 4).map(e => {
+      const mem = memberData[e.memberId] || {};
+      const name = mem.name || '?';
+      const icon = e.type === 'remote' ? '🏠' : '🏢';
+      const typeCls = e.type === 'remote' ? 'remote' : 'onsite';
+      return `<div class="sched-chip ${typeCls}" onclick="openSchedEdit('${e.id}');event.stopPropagation()">${icon} ${name} ${e.start}-${e.end}</div>`;
+    }).join('');
+    const more = dayEntries.length > 4 ? `<div style="font-size:11px;color:var(--text3);padding:1px">+${dayEntries.length-4}</div>` : '';
+    cells += `<div class="cal-cell ${weekendCls} ${holidayCls} ${todayCls}" onclick="openSchedAdd('${ds}')">
+      <div class="${numCls}">${d}</div>${holidayLabel}${chips}${more}
+    </div>`;
+  }
+
+  const total = startDow + lastDay;
+  const rem = (7 - total % 7) % 7;
+  for (let i = 0; i < rem; i++) cells += `<div class="cal-cell other-month"><div class="cal-date-num">${i+1}</div></div>`;
+
+  mainEl.innerHTML = `
+    <div class="cal-dow-row">
+      <div class="cal-dow">日</div><div class="cal-dow">一</div><div class="cal-dow">二</div>
+      <div class="cal-dow">三</div><div class="cal-dow">四</div><div class="cal-dow">五</div><div class="cal-dow">六</div>
+    </div>
+    <div class="cal-body">${cells}</div>
+  `;
+
+  // ── 右側月時數統計（依目前顯示月份，含實體／遠端拆分）──
+  const monthKey = `${schedYear}-${String(schedMonth + 1).padStart(2, '0')}`;
+  const monthEntries = allEntries.filter(e => e.date && e.date.startsWith(monthKey));
+  const members = getActiveMembers();
+
+  let statHtml = `<colgroup>
+      <col style="width:26%"><col style="width:11%"><col style="width:11%"><col style="width:11%">
+      <col style="width:14%"><col style="width:14%"><col style="width:14%">
+    </colgroup>
+    <thead><tr><th>姓名</th><th>實體</th><th>遠端</th><th>合計</th><th>時薪</th><th>月薪</th><th>月申報</th></tr></thead><tbody>`;
+  let sumOnsite = 0, sumRemote = 0, sumTotal = 0, sumSalary = 0, sumDeclared = 0;
+  members.forEach((m, mi) => {
+    const mine = monthEntries.filter(e => e.memberId === m.id);
+    const onsiteH = mine.filter(e => e.type !== 'remote').reduce((s, e) => s + schedDuration(e.start, e.end), 0);
+    const remoteH = mine.filter(e => e.type === 'remote').reduce((s, e) => s + schedDuration(e.start, e.end), 0);
+    const totalH = onsiteH + remoteH;
+    const rate = scheduleRates[m.id];
+    const salary = rate ? Math.round(totalH * rate) : null;
+    const declared = (scheduleDeclared[monthKey] && scheduleDeclared[monthKey][m.id] != null) ? scheduleDeclared[monthKey][m.id] : '';
+    sumOnsite += onsiteH; sumRemote += remoteH; sumTotal += totalH;
+    if (salary != null) sumSalary += salary;
+    if (declared !== '') sumDeclared += Number(declared);
+    const accent = SCHED_ACCENTS[mi % SCHED_ACCENTS.length];
+    const rowBg = SCHED_ROW_BG[mi % SCHED_ROW_BG.length];
+    statHtml += `<tr class="sched-member-row" style="--row-accent:${accent};--row-bg:${rowBg}">
+      <td class="sched-stat-name">${getMemberAvatar(m, 20)} ${m.name}</td>
+      <td>${formatHours(onsiteH)}</td>
+      <td>${formatHours(remoteH)}</td>
+      <td style="font-weight:600">${formatHours(totalH)}</td>
+      <td><input type="number" min="0" value="${rate != null ? rate : ''}" placeholder="-" onchange="updateSchedRate('${m.id}',this.value)"></td>
+      <td>${salary != null ? salary.toLocaleString() : '-'}</td>
+      <td><input type="number" min="0" value="${declared}" placeholder="-" onchange="updateSchedDeclared('${monthKey}','${m.id}',this.value)"></td>
+    </tr>`;
+  });
+  statHtml += `<tr class="sched-total-row">
+    <td>合計</td>
+    <td>${formatHours(sumOnsite)}</td>
+    <td>${formatHours(sumRemote)}</td>
+    <td>${formatHours(sumTotal)}</td>
+    <td></td>
+    <td>${sumSalary.toLocaleString()}</td>
+    <td>${sumDeclared.toLocaleString()}</td>
+  </tr>`;
+  statHtml += '</tbody>';
+  statEl.innerHTML = statHtml;
+}
+
+// ── 零用金記帳邏輯模組 (Pocket Money Ledger Module) ───────────────────────────────────
+
+
+function switchLedgerTab(tab) {
+  document.getElementById('tabLedgerMain').classList.toggle('active', tab === 'main');
+  document.getElementById('tabLedgerRemit').classList.toggle('active', tab === 'remit');
+  
+  document.getElementById('ledgerMainWrap').style.display = tab === 'main' ? 'block' : 'none';
+  const mainToolbar = document.getElementById('ledgerMainToolbar');
+  if (mainToolbar) mainToolbar.style.visibility = tab === 'main' ? 'visible' : 'hidden';
+  
+  document.getElementById('ledgerRemitWrap').style.display = tab === 'remit' ? 'block' : 'none';
+  
+  if (tab === 'remit') {
+    renderRemitList();
+  }
+}
+
+function saveBankBalance() {
+  const val = document.getElementById('bankBalanceInput').value;
+  const now = new Date().toLocaleString('zh-TW', { hour12: false });
+  db.ref('bankAccount').set({ amount: val, lastUpdate: now }).then(() => {
+    alert('戶頭餘額已更新！');
+  });
+}
+
+function renderRemitList() {
+  const tbody = document.getElementById('ledgerRemitTbody');
+  if(!tbody) return;
+  
+  // 過濾出有填寫報支日期的項目，並根據報支日期降序排列
+  const remitItems = ledgerEntries.filter(e => e.reimburseDate && e.reimburseDate.trim() !== '');
+  remitItems.sort((a,b) => new Date(b.reimburseDate) - new Date(a.reimburseDate));
+
+  let html = '';
+  remitItems.forEach(e => {
+    const isRemitted = !!(e.remitDate && e.remitDate.trim() !== '');
+    const chkId = `remit_chk_${e.id}`;
+    
+    // 設定文字顏色
+    const statusColor = isRemitted ? '#2e7d32' : '#c62828'; 
+    const inputBgColor = isRemitted ? '#ffffff' : 'var(--bg)';
+    
+    html += `<tr style="${isRemitted ? 'background:#f8f7f5;' : ''}">
+      <td style="color:var(--text2);">${e.reimburseDate}</td>
+      <td style="font-weight:500;">${e.title}</td>
+      <td>${e.payer || '-'}</td>
+      <td style="text-align:right;" class="text-expense">${e.expense || 0}</td>
+      <td style="text-align:center;">
+        <label style="cursor:pointer; display:inline-flex; align-items:center; gap:8px; padding:4px 10px; border-radius:6px; background:var(--bg); border:1px solid var(--border2); transition:all 0.2s;">
+          <input type="checkbox" id="${chkId}" ${isRemitted ? 'checked' : ''} onclick="toggleRemitStatus('${e.id}', this.checked)" style="width:16px; height:16px; cursor:pointer;">
+          <span style="font-size:14px; font-weight:700; color:${statusColor};">${isRemitted ? '已匯入' : '未匯入'}</span>
+        </label>
+      </td>
+      <td style="text-align:center;">
+        <input type="date" value="${e.remitDate || ''}" onchange="updateRemitDate('${e.id}', this.value)" style="width:100%; max-width:115px; padding:4px 8px; border:1px solid var(--border2); border-radius:4px; font-size:13px; font-family:inherit; outline:none; background:${inputBgColor}; cursor:pointer;">
+      </td>
+    </tr>`;
+  });
+  
+  tbody.innerHTML = html || '<tr><td colspan="6" style="text-align:center; padding: 24px; color: var(--text3);">尚無包含報支日期的項目，因此無待匯入資料。</td></tr>';
+}
+
+function toggleRemitStatus(id, isChecked) {
+  if (isChecked) {
+    const today = new Date().toISOString().split('T')[0];
+    db.ref('ledger/' + id).update({ remitDate: today });
+  } else {
+    db.ref('ledger/' + id).update({ remitDate: '' });
+  }
+}
+
+function updateRemitDate(id, val) {
+  db.ref('ledger/' + id).update({ remitDate: val });
+}
+
+function initLedgerFilters() {
+  const yearFilter = document.getElementById('ledgerYearFilter');
+  if (!yearFilter) return;
+
+  const currentVal = yearFilter.value;
+  // 取得所有資料中的年份
+  const years = new Set([2026]); // 強制包含 2026
+  ledgerEntries.forEach(e => {
+    if (e.date) years.add(new Date(e.date).getFullYear());
+  });
+
+  const sortedYears = Array.from(years).sort((a, b) => b - a);
+  
+  yearFilter.innerHTML = '';
+  sortedYears.forEach(yr => {
+    const opt = document.createElement('option');
+    opt.value = yr;
+    opt.textContent = yr + ' 年';
+    yearFilter.appendChild(opt);
+  });
+
+  // 若原有選項存在則維持，否則預設選 2026
+  if (currentVal && sortedYears.includes(parseInt(currentVal))) {
+    yearFilter.value = currentVal;
+  } else {
+    yearFilter.value = '2026';
+  }
+}
+
+function renderLedgerResponsibleChips() {
+  const vis = getActiveMembers();
+  const container = document.getElementById('ledgerResponsibleChips');
+  if (!container) return;
+  
+  container.innerHTML = vis.map(m => {
+    const isSelected = (m.name === selLedgerResponsible);
+    const ring = isSelected ? 'box-shadow:0 0 0 2.5px var(--accent);' : '';
+    return `<div onclick="selLedgerResponsible='${m.name}';renderLedgerResponsibleChips()" style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;opacity:${isSelected?1:0.4}">
+      ${m.photo ? `<img src="${m.photo}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;${ring}">` : `<div style="width:36px;height:36px;border-radius:50%;background:${m.bg};color:#555;font-size:14px;font-weight:600;display:flex;align-items:center;justify-content:center;${ring}">${m.initials}</div>`}
+      <span style="font-size:11px;color:var(--text2);">${m.name}</span>
+    </div>`;
+  }).join('');
+}
+
+function openLedgerAdd() {
+  document.getElementById('ledgerEditingId').value = '';
+  document.getElementById('ledgerModalTitle').textContent = '新增收支紀錄';
+  document.getElementById('lDate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('lTitle').value = '';
+  document.getElementById('lIncome').value = '';
+  document.getElementById('lExpense').value = '';
+  document.getElementById('lClearedInfo').value = '';
+  document.getElementById('lPayer').value = '';
+  document.getElementById('lIsPaid').checked = false;
+  document.getElementById('lReimburseDate').value = '';
+  document.getElementById('lRemitDate').value = '';
+  
+  // 自動帶入登入者為負責人
+  selLedgerResponsible = loggedInMemberName || ''; 
+  renderLedgerResponsibleChips();
+  
+  document.getElementById('ledgerModalDeleteBtn').style.display = 'none';
+  document.getElementById('ledgerModalOverlay').classList.add('open');
+}
+
+function openLedgerEdit(id) {
+  const entry = ledgerEntries.find(e => e.id === id);
+  if (!entry) return;
+  document.getElementById('ledgerEditingId').value = id;
+  document.getElementById('ledgerModalTitle').textContent = '編輯收支紀錄';
+  document.getElementById('lDate').value = entry.date;
+  document.getElementById('lTitle').value = entry.title;
+  document.getElementById('lIncome').value = entry.income || '';
+  document.getElementById('lExpense').value = entry.expense || '';
+  document.getElementById('lClearedInfo').value = entry.clearedInfo || '';
+  document.getElementById('lPayer').value = entry.payer || '';
+  document.getElementById('lIsPaid').checked = !!entry.isPaid;
+  document.getElementById('lReimburseDate').value = entry.reimburseDate || '';
+  document.getElementById('lRemitDate').value = entry.remitDate || '';
+  selLedgerResponsible = entry.responsible || ''; 
+  renderLedgerResponsibleChips();
+  document.getElementById('ledgerModalDeleteBtn').style.display = 'inline-block';
+  document.getElementById('ledgerModalOverlay').classList.add('open');
+}
+
+function closeLedgerModal() {
+  document.getElementById('ledgerModalOverlay').classList.remove('open');
+}
+
+function saveLedgerEntry() {
+  const id = document.getElementById('ledgerEditingId').value;
+  const date = document.getElementById('lDate').value;
+  const title = document.getElementById('lTitle').value.trim();
+  const income = parseInt(document.getElementById('lIncome').value) || 0;
+  const expense = parseInt(document.getElementById('lExpense').value) || 0;
+  const clearedInfo = document.getElementById('lClearedInfo').value.trim();
+  const payer = document.getElementById('lPayer').value.trim();
+  const isPaid = document.getElementById('lIsPaid').checked;
+  const reimburseDate = document.getElementById('lReimburseDate').value;
+  const remitDate = document.getElementById('lRemitDate').value;
+  const responsible = selLedgerResponsible; 
+
+  if (!date || !title) {
+    alert('請填寫日期與項目名稱');
+    return;
+  }
+
+  const data = { date, title, income, expense, clearedInfo, payer, isPaid, responsible, reimburseDate, remitDate };
+
+  if (id) {
+    db.ref('ledger/' + id).update(data).then(() => {
+      closeLedgerModal();
+    });
+  } else {
+    db.ref('ledger').push(data).then(() => {
+      closeLedgerModal();
+    });
+  }
+}
+
+function deleteLedgerEntry() {
+  const id = document.getElementById('ledgerEditingId').value;
+  if (id && confirm('確定要刪除此筆記帳明細嗎？')) {
+    db.ref('ledger/' + id).remove().then(closeLedgerModal);
+  }
+}
+
+function renderLedger() {
+  const tbody = document.getElementById('ledgerTbody');
+  if (!tbody) return;
+
+  const filterYear = document.getElementById('ledgerYearFilter').value;
+  const filterMonth = document.getElementById('ledgerMonthFilter').value;
+
+  let currentBalance = 0; 
+  let annualIncome = 0;
+  let annualExpense = 0;
+  let html = '';
+
+  let expandedEntries = [];
+  ledgerEntries.forEach(e => {
+    expandedEntries.push({...e});
+
+    if (e.payer && e.payer.trim() !== '' && Number(e.income) > 0 && e.isPaid) {
+      const repayDate = e.remitDate || e.reimburseDate || e.date;
+      expandedEntries.push({
+        id: e.id + '_repay',
+        isVirtual: true,
+        originalId: e.id,
+        date: repayDate,
+        title: `還款：${e.payer}代墊 (${e.title})`,
+        income: 0,
+        expense: e.income,
+        payer: '',
+        isPaid: true,
+        responsible: e.responsible
+      });
+    }
+  });
+
+  const sortedEntries = expandedEntries.sort((a, b) => a.date.localeCompare(b.date));
+
+  sortedEntries.forEach(e => {
+    const isPending = e.payer && e.payer.trim() !== '' && !e.isPaid && !e.isVirtual;
+    
+    currentBalance = currentBalance + (Number(e.income) || 0) - (Number(e.expense) || 0);
+
+    const eDate = new Date(e.date);
+    const eYear = eDate.getFullYear().toString();
+    const eMonth = (eDate.getMonth() + 1).toString();
+
+    if (eYear === filterYear && (filterMonth === 'all' || eMonth === filterMonth)) {
+      
+      annualIncome += (Number(e.income) || 0);
+      annualExpense += (Number(e.expense) || 0);
+      
+      const rowStyle = isPending ? 'style="font-style: italic;"' : (e.isVirtual ? 'style="background: #fdf5f0;"' : '');
+      const textGray = isPending ? 'color: #b4ada5;' : (e.isVirtual ? 'color: #8a6b66;' : '');
+      const dynamicColorClass = isPending ? 'text-income' : 'text-expense';
+      
+      const titleDisplay = e.isVirtual 
+        ? `<span style="font-size:13px; color:#8a6b66;">↳ ${e.title}</span>` 
+        : `${e.title}${isPending ? ' <span style="font-size:12px; color:#8b8580; font-style:normal;">(待支付)</span>' : ''}`;
+
+      const clickId = e.isVirtual ? e.originalId : e.id;
+
+      html += `<tr ${rowStyle} onclick="openLedgerEdit('${clickId}')" style="cursor:pointer;">
+        <td style="${textGray}">${e.date}</td>
+        <td style="${textGray}">${titleDisplay}</td>
+        <td style="text-align:right;" class="${e.income > 0 ? 'text-income' : ''}">${e.income > 0 ? e.income : ''}</td>
+        <td style="text-align:right;" class="${e.expense > 0 ? dynamicColorClass : ''}">${e.expense > 0 ? e.expense : ''}</td>
+        <td style="text-align:right;font-weight:600; ${textGray}">${currentBalance}</td>
+        <td style="${textGray}">${e.responsible || ''}</td>
+        <td style="text-align:center; color: var(--accent); font-size:16px;">✎</td>
+      </tr>`;
+    }
+  });
+
+  html += `<tr style="background:#f8f7f5; font-weight:700; border-top:2px solid var(--border);">
+    <td colspan="2" style="text-align:right;">年度合計：</td>
+    <td style="text-align:right;" class="text-income">${annualIncome}</td>
+    <td style="text-align:right;" class="text-expense">${annualExpense}</td>
+    <td style="text-align:right;">${annualIncome - annualExpense}</td>
+    <td colspan="2"></td>
+  </tr>`;
+
+  tbody.innerHTML = html || '<tr><td colspan="7" style="text-align:center;">無收支紀錄</td></tr>';
+}
+
+initProgTabs(); 
+switchView('dashboard', null);
+</script>
+</body>
+</html>
