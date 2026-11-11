@@ -3,83 +3,117 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>奶油雜貨店 - 線上選購系統</title>
+  <title>奶油雜貨店 - 安全管理後台</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script type="importmap">
     {
       "imports": {
         "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js",
-        "firebase/database": "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js"
+        "firebase/database": "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js",
+        "firebase/auth": "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js"
       }
     }
   </script>
 </head>
-<body class="bg-amber-50 min-h-screen font-sans text-slate-800 antialiased pb-12">
+<body class="bg-slate-100 min-h-screen font-sans text-slate-800 antialiased pb-12">
 
-  <header class="bg-amber-400 text-amber-950 shadow-md sticky top-0 z-50">
-    <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
-      <div class="flex items-center gap-3">
-        <i class="fa-solid font-bold text-2xl fa-cookie-bite"></i>
-        <h1 class="text-2xl font-bold tracking-wide">奶油雜貨店 Butter Store</h1>
-      </div>
-      <!-- 隱蔽的管理登入入口：導向後台獨立頁面 -->
-      <a href="admin.html" class="px-3 py-2 rounded-lg text-sm bg-amber-500/30 hover:bg-amber-500/50 text-amber-950 transition-all" title="商家後台登入">
-        <i class="fa-solid fa-lock mr-1"></i> 管理登入
-      </a>
-    </div>
-  </header>
-
-  <main class="max-w-6xl mx-auto px-4 mt-6">
-    <div id="connection-status" class="mb-6 p-3 rounded-lg text-sm bg-blue-50 text-blue-700 border border-blue-200">
-      <i class="fa-solid fa-spinner fa-spin mr-2"></i> 連線資料庫中...
-    </div>
-
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <div class="lg:col-span-2 space-y-4">
-        <h2 class="text-xl font-bold text-amber-900"><i class="fa-solid fa-boxes-packing mr-2"></i>商品目錄</h2>
-        <div id="customer-product-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
-      </div>
-
-      <div class="lg:col-span-1">
-        <div class="bg-white rounded-2xl shadow-sm border border-amber-200/80 p-5 sticky top-24 space-y-4">
-          <h3 class="text-lg font-bold text-slate-800 border-b pb-2 flex justify-between items-center">
-            <span><i class="fa-solid fa-cart-shopping text-amber-500 mr-2"></i>您的選購清單</span>
-            <span id="cart-item-count" class="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">0 件</span>
-          </h3>
-          <div id="cart-items-list" class="space-y-2 max-h-60 overflow-y-auto divide-y text-sm">
-            <p class="text-slate-400 text-center py-6">尚未選擇商品</p>
-          </div>
-          <form onsubmit="submitCustomerOrder(event)" class="space-y-3 pt-3 border-t">
-            <div>
-              <label class="block text-xs font-semibold text-slate-600 mb-1">購買平台</label>
-              <select id="cust-platform" class="w-full text-sm p-2 rounded-lg border">
-                <option value="LINE">LINE</option>
-                <option value="Threads">Threads</option>
-                <option value="IG">Instagram</option>
-                <option value="FB">Facebook</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-slate-600 mb-1">買家暱稱 / ID <span class="text-red-500">*</span></label>
-              <input type="text" id="cust-name" required placeholder="例如：Annn" class="w-full text-sm p-2 rounded-lg border">
-            </div>
-            <div class="bg-amber-50 p-3 rounded-lg flex justify-between items-center font-bold text-amber-900">
-              <span>總金額：</span>
-              <span id="cart-total-price" class="text-xl text-amber-600">NT$ 0</span>
-            </div>
-            <button type="submit" id="btn-submit-order" disabled class="w-full py-3 bg-amber-400 hover:bg-amber-500 disabled:opacity-50 text-amber-950 font-bold rounded-xl shadow">
-              確認送出訂單
-            </button>
-          </form>
+  <!-- 登入遮罩 -->
+  <div id="auth-overlay" class="fixed inset-0 bg-slate-900 z-50 flex items-center justify-center p-4">
+    <div class="bg-white p-6 rounded-2xl shadow-xl max-w-sm w-full space-y-4 text-center">
+      <i class="fa-solid fa-shield-halved text-4xl text-amber-500"></i>
+      <h2 class="text-xl font-bold">管理員安全登入</h2>
+      <p class="text-xs text-slate-500">請輸入您在 Firebase 建立的管理員帳號與密碼</p>
+      <form onsubmit="handleLogin(event)" class="space-y-3 text-left">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">管理員 Email</label>
+          <input type="email" id="admin-email" required placeholder="admin@butter.com" class="w-full p-2 border rounded-lg text-sm">
         </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">密碼</label>
+          <input type="password" id="admin-password" required placeholder="••••••••" class="w-full p-2 border rounded-lg text-sm">
+        </div>
+        <button type="submit" class="w-full py-2.5 bg-amber-500 text-white font-bold rounded-lg shadow hover:bg-amber-600 transition-all">登入後台</button>
+      </form>
+      <p id="login-error" class="text-xs text-red-500 font-medium"></p>
+    </div>
+  </div>
+
+  <!-- 後台主體內容 (登入後顯示) -->
+  <div id="admin-content" class="hidden max-w-6xl mx-auto px-4 mt-6 space-y-6">
+    <header class="bg-white p-4 rounded-xl shadow-sm flex justify-between items-center border">
+      <h1 class="text-xl font-bold text-amber-900"><i class="fa-solid fa-user-shield mr-2"></i>奶油雜貨店 管理後台</h1>
+      <button onclick="handleLogout()" class="px-3 py-1.5 bg-slate-200 text-xs font-bold rounded-lg hover:bg-slate-300">安全登出</button>
+    </header>
+
+    <!-- 標籤導覽 -->
+    <div class="flex border-b bg-white rounded-t-xl overflow-hidden shadow-sm">
+      <button onclick="switchTab('procurement')" id="tab-btn-procurement" class="flex-1 py-3 font-bold text-sm bg-amber-500 text-white">採購總統計表</button>
+      <button onclick="switchTab('queue')" id="tab-btn-queue" class="flex-1 py-3 font-bold text-sm text-slate-600">排隊出貨清單</button>
+      <button onclick="switchTab('products')" id="tab-btn-products" class="flex-1 py-3 font-bold text-sm text-slate-600">商品定價與圖片管理</button>
+    </div>
+
+    <!-- 1. 採購總統計表 -->
+    <div id="tab-procurement" class="bg-white rounded-b-xl shadow-sm p-5 space-y-4">
+      <h3 class="font-bold text-slate-800">自動加總採購清單</h3>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+          <thead>
+            <tr class="bg-slate-50 border-b text-xs text-slate-500">
+              <th class="p-3 w-12 text-center">已購</th>
+              <th class="p-3">商品名稱</th>
+              <th class="p-3">規格</th>
+              <th class="p-3 text-right">總數量</th>
+              <th class="p-3 text-right">單價</th>
+              <th class="p-3 text-right">小計</th>
+            </tr>
+          </thead>
+          <tbody id="procurement-tbody" class="divide-y"></tbody>
+        </table>
       </div>
     </div>
-  </main>
+
+    <!-- 2. 排隊出貨清單 -->
+    <div id="tab-queue" class="hidden bg-white rounded-b-xl shadow-sm p-5 space-y-4">
+      <h3 class="font-bold text-slate-800">依下單時間排序之客戶訂單</h3>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+          <thead>
+            <tr class="bg-slate-50 border-b text-xs text-slate-500">
+              <th class="p-3 w-12">序</th>
+              <th class="p-3">時間</th>
+              <th class="p-3">平台</th>
+              <th class="p-3">買家</th>
+              <th class="p-3">明細</th>
+              <th class="p-3 text-right">金額</th>
+              <th class="p-3 text-center">刪除</th>
+            </tr>
+          </thead>
+          <tbody id="queue-tbody" class="divide-y"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 3. 商品與圖片管理 -->
+    <div id="tab-products" class="hidden bg-white rounded-b-xl shadow-sm p-5 space-y-6">
+      <div class="border p-4 rounded-xl bg-slate-50 space-y-3">
+        <h3 class="font-bold text-slate-800">新增上架商品（可設定圖片與定價）</h3>
+        <form onsubmit="addProduct(event)" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          <input type="text" id="p-name" required placeholder="商品名稱" class="p-2 border rounded text-sm">
+          <input type="text" id="p-spec" placeholder="規格/顏色" class="p-2 border rounded text-sm">
+          <input type="number" id="p-price" required placeholder="單價 (NT$)" class="p-2 border rounded text-sm">
+          <input type="url" id="p-image" placeholder="圖片網址 (URL)" class="p-2 border rounded text-sm">
+          <button type="submit" class="bg-emerald-600 text-white font-bold rounded text-sm shadow hover:bg-emerald-700">確認上架</button>
+        </form>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4" id="admin-product-grid"></div>
+    </div>
+  </div>
 
   <script type="module">
     import { initializeApp } from "firebase/app";
-    import { getDatabase, ref, set, push, onValue } from "firebase/database";
+    import { getDatabase, ref, set, push, onValue, remove } from "firebase/database";
+    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
 
     const firebaseConfig = {
       apiKey: "AIzaSyD25JH9MgZtpDbOgox8vp4_bS16-3Y_fnk",
@@ -91,108 +125,138 @@
       appId: "1:498008003432:web:4ecd08d11538d03f1b3cdd"
     };
 
-    const db = getDatabase(initializeApp(firebaseConfig));
-    let catalogProducts = {};
-    let currentCart = {};
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const auth = getAuth(app);
 
-    onValue(ref(db, "catalog"), (snapshot) => {
-      catalogProducts = snapshot.val() || {};
-      renderCatalog();
-      renderCart();
-      document.getElementById("connection-status").className = "mb-6 p-3 rounded-lg text-sm bg-emerald-50 text-emerald-700 border border-emerald-200";
-      document.getElementById("connection-status").innerHTML = `<i class="fa-solid fa-wifi mr-2"></i> 已連線至資料庫`;
+    let catalog = {}, orders = [], checkedStatus = {};
+
+    // 監聽登入狀態
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        document.getElementById("auth-overlay").classList.add("hidden");
+        document.getElementById("admin-content").classList.remove("hidden");
+        initListeners();
+      } else {
+        document.getElementById("auth-overlay").classList.remove("hidden");
+        document.getElementById("admin-content").classList.add("hidden");
+      }
     });
 
-    function renderCatalog() {
-      const grid = document.getElementById("customer-product-grid");
-      grid.innerHTML = "";
-      Object.keys(catalogProducts).forEach(id => {
-        const item = catalogProducts[id];
-        const qty = currentCart[id] || 0;
-        const card = document.createElement("div");
-        card.className = "bg-white p-4 rounded-xl border border-amber-100 shadow-sm flex flex-col justify-between";
-        card.innerHTML = `
-          <div>
-            ${item.image ? `<img src="${item.image}" class="w-full h-36 object-cover rounded-lg mb-3" onerror="this.style.display='none'">` : ''}
-            <div class="flex justify-between items-start gap-2">
-              <h4 class="font-bold text-slate-800">${item.name}</h4>
-              <span class="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded">${item.spec || '單一規格'}</span>
-            </div>
-            <p class="text-sm font-semibold text-amber-600 mt-1">NT$ ${item.price}</p>
-          </div>
-          <div class="flex items-center justify-between mt-4 pt-3 border-t">
-            <span class="text-xs text-slate-400">數量</span>
-            <div class="flex items-center gap-2">
-              <button type="button" onclick="updateCart('${id}', -1)" class="w-8 h-8 rounded-lg border font-bold">-</button>
-              <span class="w-6 text-center font-bold">${qty}</span>
-              <button type="button" onclick="updateCart('${id}', 1)" class="w-8 h-8 rounded-lg bg-amber-400 font-bold">+</button>
-            </div>
-          </div>
-        `;
-        grid.appendChild(card);
-      });
-    }
+    window.handleLogin = function(e) {
+      e.preventDefault();
+      const email = document.getElementById("admin-email").value;
+      const pass = document.getElementById("admin-password").value;
+      const errEl = document.getElementById("login-error");
 
-    window.updateCart = function(id, change) {
-      const next = (currentCart[id] || 0) + change;
-      if (next <= 0) delete currentCart[id];
-      else currentCart[id] = next;
-      renderCatalog();
-      renderCart();
+      signInWithEmailAndPassword(auth, email, pass)
+        .catch((error) => {
+          errEl.innerText = "登入失敗：" + error.message;
+        });
     };
 
-    function renderCart() {
-      const cartList = document.getElementById("cart-items-list");
-      const totalEl = document.getElementById("cart-total-price");
-      const submitBtn = document.getElementById("btn-submit-order");
-      cartList.innerHTML = "";
-      let total = 0, count = 0;
+    window.handleLogout = function() {
+      signOut(auth);
+    };
 
-      const keys = Object.keys(currentCart);
-      if (keys.length === 0) {
-        cartList.innerHTML = `<p class="text-slate-400 text-center py-6">尚未選擇商品</p>`;
-        totalEl.innerText = "NT$ 0";
-        submitBtn.disabled = true;
-        return;
-      }
-
-      keys.forEach(id => {
-        const item = catalogProducts[id];
-        const qty = currentCart[id];
-        total += item.price * qty;
-        count += qty;
-        cartList.innerHTML += `<div class="py-2 flex justify-between text-sm"><div><p class="font-medium">${item.name}</p><p class="text-xs text-slate-400">${item.spec || ''} x ${qty}</p></div><span class="font-bold">NT$ ${item.price * qty}</span></div>`;
+    function initListeners() {
+      onValue(ref(db, "catalog"), s => { catalog = s.val() || {}; renderAll(); });
+      onValue(ref(db, "orders"), s => {
+        const data = s.val() || {};
+        orders = Object.keys(data).map(id => ({ id, ...data[id] }));
+        orders.sort((a, b) => a.timestamp - b.timestamp);
+        renderAll();
       });
-
-      totalEl.innerText = `NT$ ${total}`;
-      document.getElementById("cart-item-count").innerText = `${count} 件`;
-      submitBtn.disabled = false;
+      onValue(ref(db, "procurement_status"), s => { checkedStatus = s.val() || {}; renderProcurement(); });
     }
 
-    window.submitCustomerOrder = function(e) {
-      e.preventDefault();
-      const name = document.getElementById("cust-name").value.trim();
-      if (!name) return alert("請填寫暱稱");
+    window.switchTab = function(tab) {
+      ['procurement', 'queue', 'products'].forEach(t => {
+        document.getElementById(`tab-${t}`).classList.add('hidden');
+        document.getElementById(`tab-btn-${t}`).className = "flex-1 py-3 font-bold text-sm text-slate-600";
+      });
+      document.getElementById(`tab-${tab}`).classList.remove('hidden');
+      document.getElementById(`tab-btn-${tab}`).className = "flex-1 py-3 font-bold text-sm bg-amber-500 text-white";
+    };
 
-      const items = Object.keys(currentCart).map(id => ({
-        name: catalogProducts[id].name,
-        spec: catalogProducts[id].spec || "",
-        price: catalogProducts[id].price,
-        qty: currentCart[id]
+    function renderAll() {
+      renderProcurement();
+      renderQueue();
+      renderProducts();
+    }
+
+    function renderProcurement() {
+      const tbody = document.getElementById("procurement-tbody");
+      if (!tbody) return;
+      tbody.innerHTML = "";
+      const map = {};
+      orders.forEach(o => (o.items || []).forEach(i => {
+        const key = `${i.name}_${i.spec || '預設'}`;
+        if (!map[key]) map[key] = { ...i, totalQty: 0 };
+        map[key].totalQty += i.qty;
       }));
 
-      set(push(ref(db, "orders")), {
-        platform: document.getElementById("cust-platform").value,
-        customerName: name,
-        items,
-        totalAmount: items.reduce((sum, i) => sum + i.price * i.qty, 0),
-        timestamp: Date.now(),
-        createdAtStr: new Date().toLocaleString("zh-TW")
+      Object.keys(map).forEach(k => {
+        const item = map[k], checked = checkedStatus[k] || false;
+        tbody.innerHTML += `
+          <tr class="${checked ? 'bg-emerald-50 line-through text-slate-400' : ''}">
+            <td class="p-3 text-center"><input type="checkbox" ${checked ? 'checked' : ''} onchange="set(ref(db, 'procurement_status/${k}'), this.checked)"></td>
+            <td class="p-3 font-bold">${item.name}</td>
+            <td class="p-3">${item.spec || '-'}</td>
+            <td class="p-3 text-right font-black text-amber-600">${item.totalQty}</td>
+            <td class="p-3 text-right">NT$ ${item.price}</td>
+            <td class="p-3 text-right font-bold">NT$ ${item.price * item.totalQty}</td>
+          </tr>`;
+      });
+    }
+
+    function renderQueue() {
+      const tbody = document.getElementById("queue-tbody");
+      if (!tbody) return;
+      tbody.innerHTML = "";
+      orders.forEach((o, idx) => {
+        const details = (o.items || []).map(i => `${i.name}(${i.spec || ''})x${i.qty}`).join(", ");
+        tbody.innerHTML += `
+          <tr>
+            <td class="p-3">${idx + 1}</td>
+            <td class="p-3 text-xs text-slate-500">${o.createdAtStr}</td>
+            <td class="p-3"><span class="bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-xs">${o.platform}</span></td>
+            <td class="p-3 font-bold">${o.customerName}</td>
+            <td class="p-3 text-xs">${details}</td>
+            <td class="p-3 text-right font-bold text-amber-600">NT$ ${o.totalAmount}</td>
+            <td class="p-3 text-center"><button onclick="remove(ref(db, 'orders/${o.id}'))" class="text-red-400"><i class="fa-solid fa-trash"></i></button></td>
+          </tr>`;
+      });
+    }
+
+    function renderProducts() {
+      const grid = document.getElementById("admin-product-grid");
+      if (!grid) return;
+      grid.innerHTML = "";
+      Object.keys(catalog).forEach(id => {
+        const item = catalog[id];
+        grid.innerHTML += `
+          <div class="border rounded-xl p-3 bg-white space-y-2 shadow-sm">
+            ${item.image ? `<img src="${item.image}" class="w-full h-28 object-cover rounded" onerror="this.style.display='none'">` : '<div class="w-full h-28 bg-slate-100 rounded flex items-center justify-center text-xs text-slate-400">無圖片</div>'}
+            <div class="font-bold text-sm">${item.name} <span class="text-xs text-slate-400">(${item.spec || '無'})</span></div>
+            <div class="text-amber-600 font-semibold text-sm">NT$ ${item.price}</div>
+            <button onclick="remove(ref(db, 'catalog/${id}'))" class="w-full py-1.5 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold rounded transition-all">刪除/下架商品</button>
+          </div>`;
+      });
+    }
+
+    window.addProduct = function(e) {
+      e.preventDefault();
+      set(push(ref(db, "catalog")), {
+        name: document.getElementById("p-name").value.trim(),
+        spec: document.getElementById("p-spec").value.trim(),
+        price: Number(document.getElementById("p-price").value),
+        image: document.getElementById("p-image").value.trim()
       }).then(() => {
-        alert("訂單已送出！");
-        currentCart = {};
-        renderCatalog();
-        renderCart();
+        document.getElementById("p-name").value = "";
+        document.getElementById("p-spec").value = "";
+        document.getElementById("p-price").value = "";
+        document.getElementById("p-image").value = "";
       });
     };
   </script>
